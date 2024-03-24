@@ -1,0 +1,17 @@
+cloud.google.com/go/compute/metadata v0.2.3/go.mod h1:VAV5nSsACxMJvgaAuX6Pk2AawlZn8kiOGuCv6gTkwuA=
+github.com/cenkalti/backoff/v4 v4.2.1 h1:y4OZtCnogmCPw98Zjyt5a6+QwPLGkiQsYW5oUqylYbM=
+github.com/cenkalti/backoff/v4 v4.2.1/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
+github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa/go.mod h1:x/1Gn8zydmfq8dk6e9PdstVsDgu9RuyIIJqAaF//0IM=
+github.com/envoyproxy/protoc-gen-validate v1.0.4/go.mod h1:qys6tmnRsYrQqIhm2bvKZH4Blx/1gTIZ2UKVY1M+Yew=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+go.opentelemetry.io/collector v0.96.0 h1:qXA3biNps8LPYYCTJwepGu58sW0XInmwnQbkkWZchIg=
+go.opentelemetry.io/collector v0.96.0/go.mod h1:/i3zyRg23r7vloTLzKG/mRI2VkEt1Q4ARXbe3vKnAaE=
+go.opentelemetry.io/collector/config/configretry v0.96.0 h1:rdZqq/ddPCjZCYYuqDGxrC93uHzQWhX5MQ9tt5uMSpM=
+go.opentelemetry.io/collector/config/configretry v0.96.0/go.mod h1:Nq7hp4nk+zeH0LYYsx348NHl02O89FnV45hcCCmqdtg=
+go.opentelemetry.io/collector/extension v0.96.0 h1:b02WX/2XxDf/PlqboYwWUSmiT2BXXWSntlnDlGiJuWw=
+go.opentelemetry.io/collector/extension v0.96.0/go.mod h1:RrjDbQUCPKZmR9mfZ6kVQ0J8OfrcYnf09U+6ZyToV/Q=
+go.opentelemetry.io/collector/receiver v0.96.0 h1:OrlcuyFCBQpbWNb2klzTdz1ZXMk0acRDh7fbaQtP4eo=
+go.opentelemetry.io/collector/receiver v0.96.0/go.mod h1:fb5Vr2+tAkzB4qE6+lNaMsZwaeE8qZvG3IBdzK5hCRY=
+google.golang.org/appengine v1.6.8/go.mod h1:1jJ3jBArFh5pcgW8gCtRJnepW8FzD1V44FJffLiz/Ds=
+google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80 h1:KAeGQVN3M9nD0/bQXnr/ClcEMJ968gUXJQ9pwfSynuQ=
+google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80/go.mod h1:4jWUdICTdgc3Ibxmr8nAJiiLHwQBY0UI0XZcEMaFKaA=

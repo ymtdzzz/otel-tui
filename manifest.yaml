@@ -1,0 +1,14 @@
+dist:
+  otelcol_version: 0.96.0
+  description: OpenTelemetry Collector with TUI viewer
+  name: otelcol
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0
+  - gomod: github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0
+
+replaces:
+  - github.com/ymtdzzz/otel-tui/tuiexporter => ./tuiexporter

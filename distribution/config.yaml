@@ -1,0 +1,18 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+exporters:
+  tui:
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [tui]
+    metrics:
+      receivers: [otlp]
+      exporters: [tui]
+    logs:
+      receivers: [otlp]
+      exporters: [tui]
