@@ -1,9 +1,9 @@
 package tui
 
 import (
-	"log"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component"
@@ -14,6 +14,7 @@ const refreshInterval = 500 * time.Millisecond
 // TUIApp is the TUI application.
 type TUIApp struct {
 	app         *tview.Application
+	pages       *component.TUIPages
 	store       *telemetry.Store
 	refreshedAt time.Time
 }
@@ -21,21 +22,28 @@ type TUIApp struct {
 // NewTUIApp creates a new TUI application.
 func NewTUIApp(store *telemetry.Store) *TUIApp {
 	app := tview.NewApplication()
-	pages := tview.NewPages()
-
-	logview := tview.NewTextView().SetDynamicColors(true)
-	logview.Box.SetTitle("Log").SetBorder(true)
-	log.SetOutput(logview)
-
-	pages.AddPage("Traces", component.CreateTracePage(store, logview, pages), true, true)
+	tpages := component.NewTUIPages(store)
+	pages := tpages.GetPages()
+	tapp := &TUIApp{
+		app:   app,
+		pages: tpages,
+		store: store,
+	}
 
 	app.SetRoot(pages, true)
 
-	return &TUIApp{
-		app:         app,
-		store:       store,
-		refreshedAt: time.Now(),
-	}
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlL {
+			tpages.ToggleLog(app)
+
+			return nil
+		}
+		return event
+	})
+
+	tapp.refreshedAt = time.Now()
+
+	return tapp
 }
 
 // Store returns the store
