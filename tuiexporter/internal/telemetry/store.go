@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+const MAX_SERVICE_SPAN_COUNT = 1000
+
 type SpanData struct {
 	Span         *ptrace.Span
 	ResourceSpan *ptrace.ResourceSpans
@@ -90,8 +92,16 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 					s.traces = append(s.traces, sd)
 				}
 			}
-			// TODO: data rotation
 		}
+	}
+
+	// data rotation
+	if len(s.traces) > MAX_SERVICE_SPAN_COUNT {
+		deleteSpans := s.traces[:len(s.traces)-MAX_SERVICE_SPAN_COUNT]
+
+		s.cache.DeleteCache(deleteSpans)
+
+		s.traces = s.traces[len(s.traces)-MAX_SERVICE_SPAN_COUNT:]
 	}
 }
 

@@ -52,6 +52,28 @@ func (c *TraceCache) UpdateCache(sname string, data *SpanData) (newtracesvc bool
 	return newtracesvc
 }
 
+// DeleteCache deletes a list of spans from the cache
+func (c *TraceCache) DeleteCache(serviceSpans []*SpanData) {
+	// FIXME: more efficient way ?
+	for _, ss := range serviceSpans {
+		traceID := ss.Span.TraceID().String()
+		sname, _ := ss.ResourceSpan.Resource().Attributes().Get("service.name")
+
+		if spans, ok := c.GetSpansByTraceIDAndSvc(ss.Span.TraceID().String(), sname.AsString()); ok {
+			for _, s := range spans {
+				delete(c.spanid2span, s.Span.SpanID().String())
+			}
+		}
+		delete(c.tracesvc2spans[traceID], sname.AsString())
+		if len(c.tracesvc2spans[traceID]) == 0 {
+			delete(c.tracesvc2spans, traceID)
+			// delete spans in traceid2spans only if there are no spans left in tracesvc2spans
+			// for better performance
+			delete(c.traceid2spans, traceID)
+		}
+	}
+}
+
 // GetSpansByTraceID returns all spans for a given trace id
 func (c *TraceCache) GetSpansByTraceID(traceID string) ([]*SpanData, bool) {
 	spans, ok := c.traceid2spans[traceID]
