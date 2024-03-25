@@ -3,6 +3,7 @@ package telemetry
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/rivo/tview"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -24,10 +25,10 @@ type Traces []*SpanData
 
 // Store is a store of trace spans
 type Store struct {
-	mut        sync.Mutex
-	traces     Traces
-	cache      *TraceCache
-	callbackFn func()
+	mut       sync.Mutex
+	traces    Traces
+	cache     *TraceCache
+	updatedAt time.Time
 }
 
 // NewStore creates a new store
@@ -49,6 +50,11 @@ func (s *Store) GetTraces() *Traces {
 	return &s.traces
 }
 
+// UpdatedAt returns the last updated time
+func (s *Store) UpdatedAt() time.Time {
+	return s.updatedAt
+}
+
 // GetTraceIDByIdx returns the trace at the given index
 func (s *Store) GetTraceIDByIdx(idx int) string {
 	if idx >= 0 && idx < len(s.traces) {
@@ -57,18 +63,11 @@ func (s *Store) GetTraceIDByIdx(idx int) string {
 	return ""
 }
 
-// SetCallback sets the callback function to be called when the store is updated
-func (s *Store) SetCallback(fn func()) {
-	s.callbackFn = fn
-}
-
 // AddSpan adds a span to the store
 func (s *Store) AddSpan(traces *ptrace.Traces) {
 	s.mut.Lock()
 	defer func() {
-		if s.callbackFn != nil {
-			s.callbackFn()
-		}
+		s.updatedAt = time.Now()
 		s.mut.Unlock()
 	}()
 

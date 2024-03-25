@@ -2,26 +2,26 @@ package tui
 
 import (
 	"log"
+	"time"
 
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component"
 )
 
+const refreshInterval = 500 * time.Millisecond
+
 // TUIApp is the TUI application.
 type TUIApp struct {
-	app   *tview.Application
-	store *telemetry.Store
+	app         *tview.Application
+	store       *telemetry.Store
+	refreshedAt time.Time
 }
 
 // NewTUIApp creates a new TUI application.
 func NewTUIApp(store *telemetry.Store) *TUIApp {
 	app := tview.NewApplication()
 	pages := tview.NewPages()
-
-	store.SetCallback(func() {
-		app.Draw()
-	})
 
 	logview := tview.NewTextView().SetDynamicColors(true)
 	logview.Box.SetTitle("Log").SetBorder(true)
@@ -32,8 +32,9 @@ func NewTUIApp(store *telemetry.Store) *TUIApp {
 	app.SetRoot(pages, true)
 
 	return &TUIApp{
-		app:   app,
-		store: store,
+		app:         app,
+		store:       store,
+		refreshedAt: time.Now(),
 	}
 }
 
@@ -44,6 +45,7 @@ func (t *TUIApp) Store() *telemetry.Store {
 
 // Run starts the TUI application.
 func (t *TUIApp) Run() error {
+	go t.refresh()
 	return t.app.Run()
 }
 
@@ -51,4 +53,17 @@ func (t *TUIApp) Run() error {
 func (t *TUIApp) Stop() error {
 	t.app.Stop()
 	return nil
+}
+
+func (t *TUIApp) refresh() {
+	tick := time.NewTicker(refreshInterval)
+	for {
+		select {
+		case <-tick.C:
+			if t.refreshedAt.Before(t.store.UpdatedAt()) {
+				t.app.Draw()
+				t.refreshedAt = time.Now()
+			}
+		}
+	}
 }
