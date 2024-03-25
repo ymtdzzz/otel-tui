@@ -14,6 +14,7 @@ type SpanData struct {
 	Span         *ptrace.Span
 	ResourceSpan *ptrace.ResourceSpans
 	ScopeSpans   *ptrace.ScopeSpans
+	ReceivedAt   time.Time
 }
 
 // IsRoot returns true if the span is a root span
@@ -85,6 +86,7 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 					Span:         &span,
 					ResourceSpan: &rs,
 					ScopeSpans:   &ss,
+					ReceivedAt:   time.Now(),
 				}
 				newtracesvc := s.cache.UpdateCache(sname.AsString(), sd)
 				if newtracesvc {
@@ -131,6 +133,8 @@ func (s *SpanData) GetCell(column int) *tview.TableCell {
 		if serviceName, ok := s.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
 			text = serviceName.AsString()
 		}
+	case 2:
+		text = s.ReceivedAt.Local().Format("2006-01-02 15:04:05")
 	}
 
 	return tview.NewTableCell(text)
@@ -150,7 +154,8 @@ func (t Traces) GetRowCount() int {
 func (t Traces) GetColumnCount() int {
 	// 0: TraceID
 	// 1: ServiceName
-	return 2
+  // 2: ReceivedAt
+	return 3
 }
 
 // readonly table

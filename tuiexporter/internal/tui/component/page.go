@@ -86,7 +86,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	})
 	table.Box.SetTitle("Traces").SetBorder(true)
 
-	page.AddItem(table, 0, 5, true).AddItem(details, 0, 5, false)
+	page.AddItem(table, 0, 6, true).AddItem(details, 0, 4, false)
 
 	return page
 }
