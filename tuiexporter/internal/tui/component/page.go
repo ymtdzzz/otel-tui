@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gdamore/tcell/v2"
@@ -70,7 +69,7 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	page := tview.NewFlex().SetDirection(tview.FlexColumn)
 
-	details := tview.NewTextView().SetDynamicColors(true)
+	details := tview.NewFlex().SetDirection(tview.FlexRow)
 	details.SetTitle("Details").SetBorder(true)
 
 	table := tview.NewTable().
@@ -78,13 +77,12 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		SetSelectable(true, false).
 		SetContent(store.GetTraces()).
 		SetSelectedFunc(func(row, _ int) {
-			//pages.AddAndSwitchToPage(PAGE_TIMELINE, CreateTimelinePage(store, pages, row), true)
 			p.refreshTimeline(store, row)
 			p.pages.SwitchToPage(PAGE_TIMELINE)
 		})
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		details.Clear()
-		fmt.Fprint(details, store.GetTraceInfo(row))
+		details.AddItem(GetTraceInfoTree(store.GetServiceSpansByIdx(row)), 0, 1, false)
 	})
 	table.Box.SetTitle("Traces").SetBorder(true)
 

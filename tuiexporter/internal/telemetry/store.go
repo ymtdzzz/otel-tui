@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -105,24 +104,17 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 	}
 }
 
-func (s *Store) GetTraceInfo(idx int) string {
+// GetServiceSpansByIdx returns the spans for a given service at the given index
+func (s *Store) GetServiceSpansByIdx(idx int) []*SpanData {
 	if idx < 0 || idx >= len(s.traces) {
-		return "No spans found"
+		return nil
 	}
 	span := s.traces[idx]
 	traceID := span.Span.TraceID().String()
 	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
 	spans, _ := s.cache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
-	return fmt.Sprintf(`
-Statistics
-span count: %d
 
-Resource
-%s
-
-Scope
-%s
-  `, len(spans), fmt.Sprintf("%+v", span.ResourceSpan.Resource().Attributes().AsRaw()), fmt.Sprintf("%+v", span.ScopeSpans.Scope().Attributes().AsRaw()))
+	return spans
 }
 
 // implementations for tview Virtual Table
