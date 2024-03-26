@@ -22,7 +22,7 @@ type TUIApp struct {
 // NewTUIApp creates a new TUI application.
 func NewTUIApp(store *telemetry.Store) *TUIApp {
 	app := tview.NewApplication()
-	tpages := component.NewTUIPages(store)
+	tpages := component.NewTUIPages(app, store)
 	pages := tpages.GetPages()
 	tapp := &TUIApp{
 		app:   app,
@@ -34,7 +34,7 @@ func NewTUIApp(store *telemetry.Store) *TUIApp {
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
-			tpages.ToggleLog(app)
+			tpages.ToggleLog()
 
 			return nil
 		}

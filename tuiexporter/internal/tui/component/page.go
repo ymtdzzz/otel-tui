@@ -2,6 +2,7 @@ package component
 
 import (
 	"log"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -15,15 +16,17 @@ const (
 )
 
 type TUIPages struct {
+	app      *tview.Application
 	pages    *tview.Pages
 	traces   *tview.Flex
 	timeline *tview.Flex
 	log      *tview.Flex
 }
 
-func NewTUIPages(store *telemetry.Store) *TUIPages {
+func NewTUIPages(app *tview.Application, store *telemetry.Store) *TUIPages {
 	pages := tview.NewPages()
 	tp := &TUIPages{
+		app:   app,
 		pages: pages,
 	}
 
@@ -38,7 +41,7 @@ func (p *TUIPages) GetPages() *tview.Pages {
 }
 
 // ToggleLog toggles the log page.
-func (p *TUIPages) ToggleLog(app *tview.Application) {
+func (p *TUIPages) ToggleLog() {
 	cname, cpage := p.pages.GetFrontPage()
 	if cname == PAGE_LOG {
 		// hide log
@@ -48,7 +51,7 @@ func (p *TUIPages) ToggleLog(app *tview.Application) {
 		// show log
 		p.pages.ShowPage(PAGE_LOG)
 		p.pages.SendToFront(PAGE_LOG)
-		app.SetFocus(cpage)
+		p.app.SetFocus(cpage)
 	}
 }
 
@@ -72,21 +75,64 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	details := tview.NewFlex().SetDirection(tview.FlexRow)
 	details.SetTitle("Details").SetBorder(true)
 
+	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
+	tableContainer.SetTitle("Traces").SetBorder(true)
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false).
-		SetContent(store.GetTraces()).
+		SetContent(store.GetFilteredTraces()).
 		SetSelectedFunc(func(row, _ int) {
 			p.refreshTimeline(store, row)
 			p.pages.SwitchToPage(PAGE_TIMELINE)
 		})
+
+	input := ""
+	inputConfirmed := ""
+	search := tview.NewInputField().
+		SetLabel("Service Name: ").
+		SetFieldWidth(20)
+	search.SetChangedFunc(func(text string) {
+		// remove the suffix '/' from input because it is passed from SetInputCapture()
+		if strings.HasSuffix(text, "/") {
+			text = strings.TrimSuffix(text, "/")
+			search.SetText(text)
+		}
+		input = text
+	})
+	search.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEnter {
+			inputConfirmed = input
+			log.Println("search service name: ", inputConfirmed)
+			store.ApplyFilterService(inputConfirmed)
+
+			p.app.SetFocus(table)
+		} else if key == tcell.KeyEsc {
+			search.SetText(inputConfirmed)
+
+			p.app.SetFocus(table)
+		}
+	})
+
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		details.Clear()
-		details.AddItem(GetTraceInfoTree(store.GetServiceSpansByIdx(row)), 0, 1, false)
+		details.AddItem(GetTraceInfoTree(store.GetFilteredServiceSpansByIdx(row)), 0, 1, false)
+		log.Printf("selected row: %d", row)
 	})
-	table.Box.SetTitle("Traces").SetBorder(true)
+	tableContainer.
+		AddItem(search, 1, 0, false).
+		AddItem(table, 0, 1, true)
 
-	page.AddItem(table, 0, 6, true).AddItem(details, 0, 4, false)
+	tableContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == '/' {
+			if !search.HasFocus() {
+				p.app.SetFocus(search)
+			}
+		}
+
+		return event
+	})
+
+	page.AddItem(tableContainer, 0, 6, true).AddItem(details, 0, 4, false)
 
 	return page
 }
@@ -111,7 +157,7 @@ func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 
 	if store != nil {
 		timeline.AddItem(DrawTimeline(
-			store.GetTraceIDByIdx(row),
+			store.GetTraceIDByFilteredIdx(row),
 			store.GetCache(),
 		), 0, 1, true)
 	}

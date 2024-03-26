@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -27,18 +28,21 @@ type Traces []*SpanData
 
 // Store is a store of trace spans
 type Store struct {
-	mut       sync.Mutex
-	traces    Traces
-	cache     *TraceCache
-	updatedAt time.Time
+	mut            sync.Mutex
+	filterSvc      string
+	traces         Traces
+	tracesFiltered Traces
+	cache          *TraceCache
+	updatedAt      time.Time
 }
 
 // NewStore creates a new store
 func NewStore() *Store {
 	return &Store{
-		mut:    sync.Mutex{},
-		traces: []*SpanData{},
-		cache:  NewTraceCache(),
+		mut:            sync.Mutex{},
+		traces:         []*SpanData{},
+		tracesFiltered: []*SpanData{},
+		cache:          NewTraceCache(),
 	}
 }
 
@@ -52,15 +56,42 @@ func (s *Store) GetTraces() *Traces {
 	return &s.traces
 }
 
+// GetFilteredTraces returns the filtered traces in the store
+func (s *Store) GetFilteredTraces() *Traces {
+	return &s.tracesFiltered
+}
+
 // UpdatedAt returns the last updated time
 func (s *Store) UpdatedAt() time.Time {
 	return s.updatedAt
 }
 
-// GetTraceIDByIdx returns the trace at the given index
-func (s *Store) GetTraceIDByIdx(idx int) string {
-	if idx >= 0 && idx < len(s.traces) {
-		return s.traces[idx].Span.TraceID().String()
+// ApplyFilterService applies a filter to the traces
+func (s *Store) ApplyFilterService(svc string) {
+	s.filterSvc = svc
+	s.tracesFiltered = []*SpanData{}
+
+	if svc == "" {
+		s.tracesFiltered = s.traces
+		return
+	}
+
+	for _, span := range s.traces {
+		sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
+		if strings.Contains(sname.AsString(), svc) {
+			s.tracesFiltered = append(s.tracesFiltered, span)
+		}
+	}
+}
+
+func (s *Store) updateFilterService() {
+	s.ApplyFilterService(s.filterSvc)
+}
+
+// GetTraceIDByFilteredIdx returns the trace at the given index
+func (s *Store) GetTraceIDByFilteredIdx(idx int) string {
+	if idx >= 0 && idx < len(s.tracesFiltered) {
+		return s.tracesFiltered[idx].Span.TraceID().String()
 	}
 	return ""
 }
@@ -104,14 +135,16 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 
 		s.traces = s.traces[len(s.traces)-MAX_SERVICE_SPAN_COUNT:]
 	}
+
+	s.updateFilterService()
 }
 
-// GetServiceSpansByIdx returns the spans for a given service at the given index
-func (s *Store) GetServiceSpansByIdx(idx int) []*SpanData {
-	if idx < 0 || idx >= len(s.traces) {
+// GetFilteredServiceSpansByIdx returns the spans for a given service at the given index
+func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
+	if idx < 0 || idx >= len(s.tracesFiltered) {
 		return nil
 	}
-	span := s.traces[idx]
+	span := s.tracesFiltered[idx]
 	traceID := span.Span.TraceID().String()
 	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
 	spans, _ := s.cache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
@@ -154,7 +187,7 @@ func (t Traces) GetRowCount() int {
 func (t Traces) GetColumnCount() int {
 	// 0: TraceID
 	// 1: ServiceName
-  // 2: ReceivedAt
+	// 2: ReceivedAt
 	return 3
 }
 
