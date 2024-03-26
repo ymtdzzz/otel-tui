@@ -130,6 +130,12 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	})
 
 	page.AddItem(tableContainer, 0, 6, true).AddItem(details, 0, 4, false)
+	page = attatchCommandList(page, map[tcell.EventKey]string{
+		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Toggle Log",
+		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search traces",
+		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
+		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
+	})
 
 	return page
 }
@@ -159,6 +165,11 @@ func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 		), 0, 1, true)
 	}
 
+	timeline = attatchCommandList(timeline, map[tcell.EventKey]string{
+		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Toggle Log",
+		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "Back to Traces",
+	})
+
 	p.timeline.AddItem(timeline, 0, 1, true)
 }
 
@@ -172,4 +183,19 @@ func (p *TUIPages) createLogPage() *tview.Flex {
 		AddItem(logview, 0, 3, false)
 
 	return page
+}
+
+func attatchCommandList(p tview.Primitive, keys map[tcell.EventKey]string) *tview.Flex {
+	keytexts := []string{}
+	for k, v := range keys {
+		keytexts = append(keytexts, k.Name()+": "+v)
+	}
+
+	command := tview.NewTextView().SetText(strings.Join(keytexts, ", "))
+
+	base := tview.NewFlex().SetDirection(tview.FlexRow)
+	base.AddItem(p, 0, 1, true).
+		AddItem(command, 1, 1, false)
+
+	return base
 }
