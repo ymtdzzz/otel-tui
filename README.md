@@ -24,20 +24,22 @@ There're a lot of things to do. Here are some of them:
 
 - Traces
   - [x] Display traces
-  - [ ] Filter traces
-  - [ ] Show trace information
+  - [x] Filter traces
+  - [x] Show trace information
   - [ ] ...
 - Metrics
   - [ ] Display metrics
-  - [ ] ...
-- Logs
-  - [ ] Display logs
   - [ ] ...
 - UI
   - [ ] Improve UI
   - [ ] Add more keybindings
   - [ ] ...
 - Performance
-  - [ ] Timer based refresh
-  - [ ] Data rotation
+  - [x] Timer based refresh
+  - [x] Data rotation (current buffer size: 1000 service root spans)
+  - [ ] ...
+- Configurations
+  - [ ] Endpoint
+  - [ ] Refresh interval
+  - [ ] Buffer size
   - [ ] ...
