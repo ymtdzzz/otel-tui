@@ -15,6 +15,8 @@ const (
 	PAGE_LOG      = "Log"
 )
 
+type KeyMaps map[tcell.EventKey]string
+
 type TUIPages struct {
 	pages      *tview.Pages
 	traces     *tview.Flex
@@ -130,7 +132,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	})
 
 	page.AddItem(tableContainer, 0, 6, true).AddItem(details, 0, 4, false)
-	page = attatchCommandList(page, map[tcell.EventKey]string{
+	page = attatchCommandList(page, KeyMaps{
 		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Toggle Log",
 		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search traces",
 		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
@@ -157,18 +159,25 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 	p.timeline.Clear()
 	timeline := tview.NewFlex().SetDirection(tview.FlexRow)
+	var (
+		keymaps KeyMaps
+		tl      tview.Primitive
+	)
 
 	if store != nil {
-		timeline.AddItem(DrawTimeline(
+		tl, keymaps = DrawTimeline(
 			store.GetTraceIDByFilteredIdx(row),
 			store.GetCache(),
-		), 0, 1, true)
+			func(pr tview.Primitive) {
+				p.setFocusFn(pr)
+			},
+		)
+		timeline.AddItem(tl, 0, 1, true)
 	}
 
-	timeline = attatchCommandList(timeline, map[tcell.EventKey]string{
-		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Toggle Log",
-		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "Back to Traces",
-	})
+	keymaps[*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone)] = "Toggle Log"
+	keymaps[*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone)] = "Back to Traces"
+	timeline = attatchCommandList(timeline, keymaps)
 
 	p.timeline.AddItem(timeline, 0, 1, true)
 }
@@ -185,7 +194,7 @@ func (p *TUIPages) createLogPage() *tview.Flex {
 	return page
 }
 
-func attatchCommandList(p tview.Primitive, keys map[tcell.EventKey]string) *tview.Flex {
+func attatchCommandList(p tview.Primitive, keys KeyMaps) *tview.Flex {
 	keytexts := []string{}
 	for k, v := range keys {
 		keytexts = append(keytexts, k.Name()+": "+v)

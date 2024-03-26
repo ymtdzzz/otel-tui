@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"time"
 
@@ -17,19 +18,24 @@ type spanTreeNode struct {
 	children []*spanTreeNode
 }
 
-func DrawTimeline(traceID string, cache *telemetry.TraceCache) tview.Primitive {
+func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p tview.Primitive)) (tview.Primitive, KeyMaps) {
 	if traceID == "" || cache == nil {
-		return NewPrimitive("No spans found")
+		return newTextView("No spans found"), KeyMaps{}
 	}
 	_, ok := cache.GetSpansByTraceID(traceID)
 	if !ok {
-		return NewPrimitive("No spans found")
+		return newTextView("No spans found"), KeyMaps{}
 	}
 
+	base := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	// details
+	details := tview.NewTreeView()
+
+	// draw timeline
 	title := tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("Spans")
 	tree, duration := newSpanTree(traceID, cache)
 
-	// draw timeline
 	timeline := tview.NewBox().SetBorder(false).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			// Draw a horizontal line across the middle of the box.
@@ -40,9 +46,9 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache) tview.Primitive {
 
 			// Write some text along the horizontal line.
 			durunit := duration.Milliseconds() / 10
-			tview.Print(screen, "0", x+GetXByRatio(0, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
+			tview.Print(screen, "0", x+getXByRatio(0, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
 			for i := 1; i < 10; i++ {
-				tview.Print(screen, fmt.Sprintf("%dms", durunit*int64(i)), x+GetXByRatio(float64(i)*0.1, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
+				tview.Print(screen, fmt.Sprintf("%dms", durunit*int64(i)), x+getXByRatio(float64(i)*0.1, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
 			}
 
 			// Space for other content.
@@ -56,31 +62,88 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache) tview.Primitive {
 		AddItem(title, 0, 0, 1, 1, 0, 0, false).
 		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
 
-	row := 0
+	var (
+		tvs   []*tview.TextView
+		nodes []*spanTreeNode
+	)
+	totalRow := 0
 	for _, n := range tree {
-		row = placeSpan(grid, n, row, 0)
+		totalRow = placeSpan(grid, n, totalRow, 0, &tvs, &nodes)
 	}
 
-	rows := make([]int, row+2, row+2)
-	for i := 0; i < row+1; i++ {
+	rows := make([]int, totalRow+2, totalRow+2)
+	for i := 0; i < totalRow+1; i++ {
 		rows[i] = 1
 	}
 
 	grid.SetRows(rows...)
 
-	return grid
+	log.Printf("totalRow: %d, tviews: %+v", totalRow, tvs)
+
+	// set key handler to grid
+	if totalRow > 0 {
+		currentRow := 0
+		setFocusFn(tvs[currentRow])
+		treeTitle := "Span Details"
+
+		grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			// FIXME: key 'j' and 'k' should be used to move the focus
+			//   but these keys are captured by the parent grid.
+			switch event.Key() {
+			case tcell.KeyDown:
+				if currentRow < totalRow-1 {
+					currentRow++
+					setFocusFn(tvs[currentRow])
+
+					// update details
+					oldDetails := base.GetItem(1)
+					base.RemoveItem(oldDetails)
+					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					base.AddItem(details, 0, 3, false)
+				}
+				return nil
+			case tcell.KeyUp:
+				if currentRow > 0 {
+					currentRow--
+					setFocusFn(tvs[currentRow])
+					details = getSpanInfoTree(nodes[currentRow].span, treeTitle)
+
+					// update details
+					oldDetails := base.GetItem(1)
+					base.RemoveItem(oldDetails)
+					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					base.AddItem(details, 0, 3, false)
+				}
+				return nil
+			}
+			return event
+		})
+	}
+
+	details.SetBorder(true).SetTitle("Span Details")
+
+	base.AddItem(grid, 0, 7, true).
+		AddItem(details, 0, 3, false)
+
+	return base, KeyMaps{
+		*tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone):   "Move up",
+		*tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone): "Move down",
+	}
 }
 
-func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int) int {
+func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tview.TextView, nodes *[]*spanTreeNode) int {
 	row++
 	label := node.label
 	for i := 0; i < depth; i++ {
 		label = ">" + label
 	}
-	grid.AddItem(NewPrimitive(label), row, 0, 1, 1, 0, 0, false)
+	tv := newTextView(label)
+	*tvs = append(*tvs, tv)
+	*nodes = append(*nodes, node)
+	grid.AddItem(tv, row, 0, 1, 1, 0, 0, false)
 	grid.AddItem(node.box, row, 1, 1, 1, 0, 0, false)
 	for _, child := range node.children {
-		row = placeSpan(grid, child, row, depth+1)
+		row = placeSpan(grid, child, row, depth+1, tvs, nodes)
 	}
 	return row
 }
@@ -115,7 +178,7 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 		node := nodes[spanMemo[current]]
 		st, en := span.Span.StartTimestamp().AsTime().Sub(start), span.Span.EndTimestamp().AsTime().Sub(start)
 		d := en - st
-		node.box = CreateSpan(current, int(duration.Milliseconds()), int(st.Milliseconds()), int(en.Milliseconds()))
+		node.box = createSpan(current, int(duration.Milliseconds()), int(st.Milliseconds()), int(en.Milliseconds()))
 		node.label = fmt.Sprintf("%s %dms", span.Span.Name(), d.Milliseconds())
 
 		parent := span.Span.ParentSpanID().String()
@@ -138,25 +201,35 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 	return rootNodes, duration
 }
 
-func NewPrimitive(text string) tview.Primitive {
-	return tview.NewTextView().
+func newTextView(text string) *tview.TextView {
+	tv := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
 		SetText(text)
+	tv.SetFocusFunc(func() {
+		tv.SetBackgroundColor(tcell.ColorWhite)
+		tv.SetTextColor(tcell.ColorBlack)
+	})
+	tv.SetBlurFunc(func() {
+		tv.SetBackgroundColor(tcell.ColorNone)
+		tv.SetTextColor(tcell.ColorDefault)
+	})
+
+	return tv
 }
 
-func GetXByRatio(ratio float64, width int) int {
+func getXByRatio(ratio float64, width int) int {
 	return int(float64(width) * ratio)
 }
 
-func CreateSpan(name string, total, start, end int) (span *tview.Box) {
+func createSpan(name string, total, start, end int) (span *tview.Box) {
 	return tview.NewBox().SetBorder(false).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			// Draw a horizontal line across the middle of the box.
 			centerY := y + height/2
 			sRatio := float64(start) / float64(total)
 			eRatio := float64(end) / float64(total)
-			s := x + GetXByRatio(sRatio, width)
-			e := x + GetXByRatio(eRatio, width)
+			s := x + getXByRatio(sRatio, width)
+			e := x + getXByRatio(eRatio, width)
 			if s == e {
 				screen.SetContent(s, centerY, tview.BoxDrawingsHeavyVertical, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
 			} else {
@@ -168,4 +241,133 @@ func CreateSpan(name string, total, start, end int) (span *tview.Box) {
 			// Space for other content.
 			return x + 1, centerY + 1, width - 2, height - (centerY + 1 - y)
 		})
+}
+
+func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
+	traceID := span.Span.TraceID().String()
+	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
+	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
+	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
+	tree.SetBorder(true).SetTitle(title)
+
+	spanID := span.Span.SpanID().String()
+	spanNode := tview.NewTreeNode(fmt.Sprintf("span id: %s", spanID))
+	root.AddChild(spanNode)
+
+	parentSpanID := span.Span.ParentSpanID().String()
+	parentSpanNode := tview.NewTreeNode(fmt.Sprintf("parent span id: %s", parentSpanID))
+	root.AddChild(parentSpanNode)
+
+	state := span.Span.TraceState().AsRaw()
+	stateNode := tview.NewTreeNode(fmt.Sprintf("trace state: %s", state))
+	root.AddChild(stateNode)
+
+	status := tview.NewTreeNode("Status")
+	smessage := span.Span.Status().Message()
+	smessageNode := tview.NewTreeNode(fmt.Sprintf("message: %s", smessage))
+	status.AddChild(smessageNode)
+	scode := span.Span.Status().Code()
+	scodeNode := tview.NewTreeNode(fmt.Sprintf("code: %s", scode))
+	status.AddChild(scodeNode)
+	root.AddChild(status)
+
+	flags := span.Span.Flags()
+	flagsNode := tview.NewTreeNode(fmt.Sprintf("flags: %d", flags))
+	root.AddChild(flagsNode)
+
+	name := span.Span.Name()
+	nameNode := tview.NewTreeNode(fmt.Sprintf("name: %s", name))
+	root.AddChild(nameNode)
+
+	kind := span.Span.Kind()
+	kindNode := tview.NewTreeNode(fmt.Sprintf("kind: %s", kind))
+	root.AddChild(kindNode)
+
+	duration := span.Span.EndTimestamp().AsTime().Sub(span.Span.StartTimestamp().AsTime())
+	durationNode := tview.NewTreeNode(fmt.Sprintf("duration: %s", duration.String()))
+	root.AddChild(durationNode)
+
+	startTime := span.Span.StartTimestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+	startTimeNode := tview.NewTreeNode(fmt.Sprintf("start time: %s", startTime))
+	root.AddChild(startTimeNode)
+
+	endTime := span.Span.EndTimestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+	endTimeNode := tview.NewTreeNode(fmt.Sprintf("end time: %s", endTime))
+	root.AddChild(endTimeNode)
+
+	dropped := span.ResourceSpan.Resource().DroppedAttributesCount()
+	droppedNode := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", dropped))
+	root.AddChild(droppedNode)
+
+	attrs := tview.NewTreeNode("Attributes")
+	for k, v := range span.Span.Attributes().AsRaw() {
+		attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v))
+		attrs.AddChild(attr)
+	}
+	root.AddChild(attrs)
+
+	// events
+	events := tview.NewTreeNode("Events")
+	for ei := 0; ei < span.Span.Events().Len(); ei++ {
+		event := span.Span.Events().At(ei)
+		name := event.Name()
+		eventNode := tview.NewTreeNode(name)
+
+		timestamp := event.Timestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+		timestampNode := tview.NewTreeNode(fmt.Sprintf("timestamp: %s", timestamp))
+		eventNode.AddChild(timestampNode)
+
+		dropped := event.DroppedAttributesCount()
+		droppedNode := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", dropped))
+		eventNode.AddChild(droppedNode)
+
+		attrs := tview.NewTreeNode("Attributes")
+		for k, v := range event.Attributes().AsRaw() {
+			attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v))
+			attrs.AddChild(attr)
+		}
+		eventNode.AddChild(attrs)
+
+		events.AddChild(eventNode)
+	}
+	root.AddChild(events)
+
+	// links
+	links := tview.NewTreeNode("Links")
+	for li := 0; li < span.Span.Links().Len(); li++ {
+		link := span.Span.Links().At(li)
+		linkNode := tview.NewTreeNode(fmt.Sprintf("link %d", li))
+
+		linkTraceID := link.TraceID().String()
+		linkTraceIDNode := tview.NewTreeNode(fmt.Sprintf("trace id: %s", linkTraceID))
+		linkNode.AddChild(linkTraceIDNode)
+
+		linkSpanID := link.SpanID().String()
+		linkSpanIDNode := tview.NewTreeNode(fmt.Sprintf("span id: %s", linkSpanID))
+		linkNode.AddChild(linkSpanIDNode)
+
+		linkFlags := link.Flags()
+		linkFlagsNode := tview.NewTreeNode(fmt.Sprintf("flags: %d", linkFlags))
+		linkNode.AddChild(linkFlagsNode)
+
+		linkState := link.TraceState().AsRaw()
+		linkStateNode := tview.NewTreeNode(fmt.Sprintf("trace state: %s", linkState))
+		linkNode.AddChild(linkStateNode)
+
+		linkDropped := link.DroppedAttributesCount()
+		linkDroppedNode := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", linkDropped))
+		linkNode.AddChild(linkDroppedNode)
+
+		attrs := tview.NewTreeNode("Attributes")
+		for k, v := range link.Attributes().AsRaw() {
+			attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v))
+			attrs.AddChild(attr)
+		}
+		linkNode.AddChild(attrs)
+
+		links.AddChild(linkNode)
+	}
+	root.AddChild(links)
+
+	return tree
 }
