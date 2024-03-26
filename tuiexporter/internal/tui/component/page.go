@@ -16,18 +16,18 @@ const (
 )
 
 type TUIPages struct {
-	app      *tview.Application
-	pages    *tview.Pages
-	traces   *tview.Flex
-	timeline *tview.Flex
-	log      *tview.Flex
+	pages      *tview.Pages
+	traces     *tview.Flex
+	timeline   *tview.Flex
+	log        *tview.Flex
+	setFocusFn func(p tview.Primitive)
 }
 
-func NewTUIPages(app *tview.Application, store *telemetry.Store) *TUIPages {
+func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TUIPages {
 	pages := tview.NewPages()
 	tp := &TUIPages{
-		app:   app,
-		pages: pages,
+		pages:      pages,
+		setFocusFn: setFocusFn,
 	}
 
 	tp.registerPages(store)
@@ -51,7 +51,7 @@ func (p *TUIPages) ToggleLog() {
 		// show log
 		p.pages.ShowPage(PAGE_LOG)
 		p.pages.SendToFront(PAGE_LOG)
-		p.app.SetFocus(cpage)
+		p.setFocusFn(cpage)
 	}
 }
 
@@ -104,13 +104,10 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			inputConfirmed = input
 			log.Println("search service name: ", inputConfirmed)
 			store.ApplyFilterService(inputConfirmed)
-
-			p.app.SetFocus(table)
 		} else if key == tcell.KeyEsc {
 			search.SetText(inputConfirmed)
-
-			p.app.SetFocus(table)
 		}
+		p.setFocusFn(table)
 	})
 
 	table.SetSelectionChangedFunc(func(row, _ int) {
@@ -125,7 +122,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	tableContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == '/' {
 			if !search.HasFocus() {
-				p.app.SetFocus(search)
+				p.setFocusFn(search)
 			}
 		}
 

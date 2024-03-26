@@ -22,7 +22,9 @@ type TUIApp struct {
 // NewTUIApp creates a new TUI application.
 func NewTUIApp(store *telemetry.Store) *TUIApp {
 	app := tview.NewApplication()
-	tpages := component.NewTUIPages(app, store)
+	tpages := component.NewTUIPages(store, func(p tview.Primitive) {
+		app.SetFocus(p)
+	})
 	pages := tpages.GetPages()
 	tapp := &TUIApp{
 		app:   app,
