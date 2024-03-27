@@ -30,6 +30,9 @@ There're a lot of things to do. Here are some of them:
 - Metrics
   - [ ] Display metrics
   - [ ] ...
+- Logs
+  - [ ] Display logs
+  - [ ] ...
 - UI
   - [ ] Improve UI
   - [ ] Add more keybindings
