@@ -6,10 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUpdateCache(t *testing.T) {
-	t.Skip("TODO")
-}
-
 func TestGetSpansByTraceID(t *testing.T) {
 	c := NewTraceCache()
 	spans := []*SpanData{{}}
@@ -45,9 +41,79 @@ func TestGetSpansByTraceID(t *testing.T) {
 }
 
 func TestGetSpansByTraceIDAndSvc(t *testing.T) {
-	t.Skip("TODO")
+	c := NewTraceCache()
+	spans := []*SpanData{{}}
+	c.tracesvc2spans["traceid"] = map[string][]*SpanData{"svc-name": spans}
+
+	tests := []struct {
+		name     string
+		traceID  string
+		svcName  string
+		wantdata []*SpanData
+		wantok   bool
+	}{
+		{
+			name:     "traceid and service exists",
+			traceID:  "traceid",
+			svcName:  "svc-name",
+			wantdata: spans,
+			wantok:   true,
+		},
+		{
+			name:     "traceid exists but service does not",
+			traceID:  "traceid",
+			svcName:  "non-existent-service",
+			wantdata: nil,
+			wantok:   false,
+		},
+		{
+			name:     "traceid does not exist",
+			traceID:  "non-existent-traceid",
+			svcName:  "svc-name",
+			wantdata: nil,
+			wantok:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotdata, gotok := c.GetSpansByTraceIDAndSvc(tt.traceID, tt.svcName)
+			assert.Equal(t, tt.wantdata, gotdata)
+			assert.Equal(t, tt.wantok, gotok)
+		})
+	}
 }
 
 func TestGetSpanByID(t *testing.T) {
-	t.Skip("TODO")
+	c := NewTraceCache()
+	span := &SpanData{}
+	c.spanid2span["spanid"] = span
+
+	tests := []struct {
+		name     string
+		spanID   string
+		wantdata *SpanData
+		wantok   bool
+	}{
+		{
+			name:     "spanid exists",
+			spanID:   "spanid",
+			wantdata: span,
+			wantok:   true,
+		},
+		{
+			name:     "spanid does not exist",
+			spanID:   "non-existent-spanid",
+			wantdata: nil,
+			wantok:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotdata, gotok := c.GetSpanByID(tt.spanID)
+			assert.Equal(t, tt.wantdata, gotdata)
+			assert.Equal(t, tt.wantok, gotok)
+		})
+	}
 }

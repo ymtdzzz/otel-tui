@@ -30,9 +30,6 @@ func NewTraceCache() *TraceCache {
 
 // UpdateCache updates the cache with a new span
 func (c *TraceCache) UpdateCache(sname string, data *SpanData) (newtracesvc bool) {
-	if data == nil {
-		return false
-	}
 	c.spanid2span[data.Span.SpanID().String()] = data
 	traceID := data.Span.TraceID().String()
 	if ts, ok := c.traceid2spans[traceID]; ok {

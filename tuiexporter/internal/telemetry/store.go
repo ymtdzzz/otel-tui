@@ -23,26 +23,29 @@ func (sd *SpanData) IsRoot() bool {
 	return sd.Span.ParentSpanID().IsEmpty()
 }
 
-// Traces is a slice of root spans
-type Traces []*SpanData
+// SvcSpans is a slice of service spans
+// This is a slice of one span of a single service
+type SvcSpans []*SpanData
 
 // Store is a store of trace spans
 type Store struct {
-	mut            sync.Mutex
-	filterSvc      string
-	traces         Traces
-	tracesFiltered Traces
-	cache          *TraceCache
-	updatedAt      time.Time
+	mut                 sync.Mutex
+	filterSvc           string
+	svcspans            SvcSpans
+	svcspansFiltered    SvcSpans
+	cache               *TraceCache
+	updatedAt           time.Time
+	maxServiceSpanCount int
 }
 
 // NewStore creates a new store
 func NewStore() *Store {
 	return &Store{
-		mut:            sync.Mutex{},
-		traces:         []*SpanData{},
-		tracesFiltered: []*SpanData{},
-		cache:          NewTraceCache(),
+		mut:                 sync.Mutex{},
+		svcspans:            []*SpanData{},
+		svcspansFiltered:    []*SpanData{},
+		cache:               NewTraceCache(),
+		maxServiceSpanCount: MAX_SERVICE_SPAN_COUNT, // TODO: make this configurable
 	}
 }
 
@@ -51,14 +54,14 @@ func (s *Store) GetCache() *TraceCache {
 	return s.cache
 }
 
-// GetTraces returns the traces in the store
-func (s *Store) GetTraces() *Traces {
-	return &s.traces
+// GetSvcSpans returns the service spans in the store
+func (s *Store) GetSvcSpans() *SvcSpans {
+	return &s.svcspans
 }
 
-// GetFilteredTraces returns the filtered traces in the store
-func (s *Store) GetFilteredTraces() *Traces {
-	return &s.tracesFiltered
+// GetFilteredSvcSpans returns the filtered service spans in the store
+func (s *Store) GetFilteredSvcSpans() *SvcSpans {
+	return &s.svcspansFiltered
 }
 
 // UpdatedAt returns the last updated time
@@ -69,17 +72,17 @@ func (s *Store) UpdatedAt() time.Time {
 // ApplyFilterService applies a filter to the traces
 func (s *Store) ApplyFilterService(svc string) {
 	s.filterSvc = svc
-	s.tracesFiltered = []*SpanData{}
+	s.svcspansFiltered = []*SpanData{}
 
 	if svc == "" {
-		s.tracesFiltered = s.traces
+		s.svcspansFiltered = s.svcspans
 		return
 	}
 
-	for _, span := range s.traces {
+	for _, span := range s.svcspans {
 		sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
 		if strings.Contains(sname.AsString(), svc) {
-			s.tracesFiltered = append(s.tracesFiltered, span)
+			s.svcspansFiltered = append(s.svcspansFiltered, span)
 		}
 	}
 }
@@ -90,10 +93,23 @@ func (s *Store) updateFilterService() {
 
 // GetTraceIDByFilteredIdx returns the trace at the given index
 func (s *Store) GetTraceIDByFilteredIdx(idx int) string {
-	if idx >= 0 && idx < len(s.tracesFiltered) {
-		return s.tracesFiltered[idx].Span.TraceID().String()
+	if idx >= 0 && idx < len(s.svcspansFiltered) {
+		return s.svcspansFiltered[idx].Span.TraceID().String()
 	}
 	return ""
+}
+
+// GetFilteredServiceSpansByIdx returns the spans for a given service at the given index
+func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
+	if idx < 0 || idx >= len(s.svcspansFiltered) {
+		return nil
+	}
+	span := s.svcspansFiltered[idx]
+	traceID := span.Span.TraceID().String()
+	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
+	spans, _ := s.cache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
+
+	return spans
 }
 
 // AddSpan adds a span to the store
@@ -112,6 +128,8 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 
 			for si := 0; si < ss.Spans().Len(); si++ {
 				span := ss.Spans().At(si)
+				// attribute service.name is required
+				// see: https://opentelemetry.io/docs/specs/semconv/resource/#service
 				sname, _ := rs.Resource().Attributes().Get("service.name")
 				sd := &SpanData{
 					Span:         &span,
@@ -121,35 +139,22 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 				}
 				newtracesvc := s.cache.UpdateCache(sname.AsString(), sd)
 				if newtracesvc {
-					s.traces = append(s.traces, sd)
+					s.svcspans = append(s.svcspans, sd)
 				}
 			}
 		}
 	}
 
 	// data rotation
-	if len(s.traces) > MAX_SERVICE_SPAN_COUNT {
-		deleteSpans := s.traces[:len(s.traces)-MAX_SERVICE_SPAN_COUNT]
+	if len(s.svcspans) > s.maxServiceSpanCount {
+		deleteSpans := s.svcspans[:len(s.svcspans)-s.maxServiceSpanCount]
 
 		s.cache.DeleteCache(deleteSpans)
 
-		s.traces = s.traces[len(s.traces)-MAX_SERVICE_SPAN_COUNT:]
+		s.svcspans = s.svcspans[len(s.svcspans)-s.maxServiceSpanCount:]
 	}
 
 	s.updateFilterService()
-}
-
-// GetFilteredServiceSpansByIdx returns the spans for a given service at the given index
-func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
-	if idx < 0 || idx >= len(s.tracesFiltered) {
-		return nil
-	}
-	span := s.tracesFiltered[idx]
-	traceID := span.Span.TraceID().String()
-	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
-	spans, _ := s.cache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
-
-	return spans
 }
 
 // implementations for tview Virtual Table
@@ -173,18 +178,18 @@ func (s *SpanData) GetCell(column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func (t Traces) GetCell(row, column int) *tview.TableCell {
+func (t SvcSpans) GetCell(row, column int) *tview.TableCell {
 	if row >= 0 && row < len(t) {
 		return t[row].GetCell(column)
 	}
 	return nil
 }
 
-func (t Traces) GetRowCount() int {
+func (t SvcSpans) GetRowCount() int {
 	return len(t)
 }
 
-func (t Traces) GetColumnCount() int {
+func (t SvcSpans) GetColumnCount() int {
 	// 0: TraceID
 	// 1: ServiceName
 	// 2: ReceivedAt
@@ -192,9 +197,9 @@ func (t Traces) GetColumnCount() int {
 }
 
 // readonly table
-func (t Traces) SetCell(row, column int, cell *tview.TableCell) {}
-func (t Traces) RemoveRow(row int)                              {}
-func (t Traces) RemoveColumn(column int)                        {}
-func (t Traces) InsertRow(row int)                              {}
-func (t Traces) InsertColumn(column int)                        {}
-func (t Traces) Clear()                                         {}
+func (t SvcSpans) SetCell(row, column int, cell *tview.TableCell) {}
+func (t SvcSpans) RemoveRow(row int)                              {}
+func (t SvcSpans) RemoveColumn(column int)                        {}
+func (t SvcSpans) InsertRow(row int)                              {}
+func (t SvcSpans) InsertColumn(column int)                        {}
+func (t SvcSpans) Clear()                                         {}
