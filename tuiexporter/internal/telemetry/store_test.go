@@ -142,7 +142,7 @@ func TestStoreAddSpanWithoutRotation(t *testing.T) {
 	// assert cache spanid2span
 	assert.Equal(t, 4, len(store.cache.spanid2span))
 	for _, span := range testdata.Spans {
-		got, _ := store.cache.spanid2span[span.SpanID().String()]
+		got := store.cache.spanid2span[span.SpanID().String()]
 		assert.Equal(t, span, got.Span)
 	}
 
@@ -206,7 +206,7 @@ func TestStoreAddSpanWithRotation(t *testing.T) {
 	assert.Equal(t, 1, len(store.cache.spanid2span))
 	{
 		want := testdata2.Spans[0]
-		got, _ := store.cache.spanid2span[want.SpanID().String()]
+		got := store.cache.spanid2span[want.SpanID().String()]
 		assert.Equal(t, want, got.Span)
 	}
 

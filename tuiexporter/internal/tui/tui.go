@@ -68,12 +68,10 @@ func (t *TUIApp) Stop() error {
 func (t *TUIApp) refresh() {
 	tick := time.NewTicker(refreshInterval)
 	for {
-		select {
-		case <-tick.C:
-			if t.refreshedAt.Before(t.store.UpdatedAt()) {
-				t.app.Draw()
-				t.refreshedAt = time.Now()
-			}
+		<-tick.C
+		if t.refreshedAt.Before(t.store.UpdatedAt()) {
+			t.app.Draw()
+			t.refreshedAt = time.Now()
 		}
 	}
 }
