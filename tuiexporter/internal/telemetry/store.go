@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rivo/tview"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -156,50 +155,3 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 
 	s.updateFilterService()
 }
-
-// implementations for tview Virtual Table
-// see: https://github.com/rivo/tview/wiki/VirtualTable
-// TODO: these should be implemented in component package?
-
-func (s *SpanData) GetCell(column int) *tview.TableCell {
-	text := "N/A"
-
-	switch column {
-	case 0:
-		text = s.Span.TraceID().String()
-	case 1:
-		if serviceName, ok := s.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
-			text = serviceName.AsString()
-		}
-	case 2:
-		text = s.ReceivedAt.Local().Format("2006-01-02 15:04:05")
-	}
-
-	return tview.NewTableCell(text)
-}
-
-func (t SvcSpans) GetCell(row, column int) *tview.TableCell {
-	if row >= 0 && row < len(t) {
-		return t[row].GetCell(column)
-	}
-	return nil
-}
-
-func (t SvcSpans) GetRowCount() int {
-	return len(t)
-}
-
-func (t SvcSpans) GetColumnCount() int {
-	// 0: TraceID
-	// 1: ServiceName
-	// 2: ReceivedAt
-	return 3
-}
-
-// readonly table
-func (t SvcSpans) SetCell(row, column int, cell *tview.TableCell) {}
-func (t SvcSpans) RemoveRow(row int)                              {}
-func (t SvcSpans) RemoveColumn(column int)                        {}
-func (t SvcSpans) InsertRow(row int)                              {}
-func (t SvcSpans) InsertColumn(column int)                        {}
-func (t SvcSpans) Clear()                                         {}

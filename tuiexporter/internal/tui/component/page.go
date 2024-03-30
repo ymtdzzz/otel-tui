@@ -82,7 +82,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false).
-		SetContent(store.GetFilteredSvcSpans()).
+		SetContent(NewSpanDataForTable(store.GetFilteredSvcSpans())).
 		SetSelectedFunc(func(row, _ int) {
 			p.refreshTimeline(store, row)
 			p.pages.SwitchToPage(PAGE_TIMELINE)

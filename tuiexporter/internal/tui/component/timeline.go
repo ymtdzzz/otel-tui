@@ -155,7 +155,7 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 	}
 
 	start := time.Now().Add(time.Hour * 24)
-	end := time.Now().Add(-time.Hour * 24)
+	end := time.Time{}
 
 	// store memo and calculate start and end time of the trace
 	spanMemo := make(map[string]int)
