@@ -75,10 +75,10 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	page := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	details := tview.NewFlex().SetDirection(tview.FlexRow)
-	details.SetTitle("Details").SetBorder(true)
+	details.SetTitle("Details (d)").SetBorder(true)
 
 	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
-	tableContainer.SetTitle("Traces").SetBorder(true)
+	tableContainer.SetTitle("Traces (t)").SetBorder(true)
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false).
@@ -91,7 +91,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	input := ""
 	inputConfirmed := ""
 	search := tview.NewInputField().
-		SetLabel("Service Name: ").
+		SetLabel("Service Name (/): ").
 		SetFieldWidth(20)
 	search.SetChangedFunc(func(text string) {
 		// remove the suffix '/' from input because it is passed from SetInputCapture()
@@ -114,7 +114,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		details.Clear()
-		details.AddItem(GetTraceInfoTree(store.GetFilteredServiceSpansByIdx(row)), 0, 1, false)
+		details.AddItem(getTraceInfoTree(store.GetFilteredServiceSpansByIdx(row)), 0, 1, true)
 		log.Printf("selected row: %d", row)
 	})
 	tableContainer.
@@ -126,12 +126,28 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			if !search.HasFocus() {
 				p.setFocusFn(search)
 			}
+			return nil
 		}
 
 		return event
 	})
 
 	page.AddItem(tableContainer, 0, 6, true).AddItem(details, 0, 4, false)
+	page.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 'd':
+			if !search.HasFocus() {
+				p.setFocusFn(details)
+			}
+			// don't return nil here, because we want to pass the event to the search input
+		case 't':
+			if !search.HasFocus() {
+				p.setFocusFn(table)
+			}
+			// don't return nil here, because we want to pass the event to the search input
+		}
+		return event
+	})
 	page = attatchCommandList(page, KeyMaps{
 		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Toggle Log",
 		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search traces",

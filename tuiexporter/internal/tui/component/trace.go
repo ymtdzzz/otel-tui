@@ -59,7 +59,7 @@ func getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func GetTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
+func getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	if len(spans) == 0 {
 		return nil
 	}
@@ -110,6 +110,10 @@ func GetTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	resource.AddChild(scopes)
 
 	root.AddChild(resource)
+
+	tree.SetSelectedFunc(func(node *tview.TreeNode) {
+		node.SetExpanded(!node.IsExpanded())
+	})
 
 	return tree
 }
