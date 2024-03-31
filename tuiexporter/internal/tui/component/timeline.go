@@ -11,6 +11,11 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
 
+const (
+	TIMELINE_DETAILS_IDX = 1 // index of details in the base flex container
+	TIMELINE_TREE_TITLE  = "Details (d)"
+)
+
 type spanTreeNode struct {
 	span     *telemetry.SpanData
 	label    string
@@ -28,9 +33,6 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	}
 
 	base := tview.NewFlex().SetDirection(tview.FlexColumn)
-
-	// details
-	details := tview.NewTreeView()
 
 	// draw timeline
 	title := tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("Spans")
@@ -61,10 +63,11 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 
 	// place spans on the timeline
 	grid := tview.NewGrid().
-		SetColumns(30, 0).
+		SetColumns(30, 0). // TODO: dynamic width
 		SetBorders(true).
 		AddItem(title, 0, 0, 1, 1, 0, 0, false).
 		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
+	grid.SetTitle("Trace Timeline (t)").SetBorder(true)
 
 	var (
 		tvs   []*tview.TextView
@@ -74,6 +77,9 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	for _, n := range tree {
 		totalRow = placeSpan(grid, n, totalRow, 0, &tvs, &nodes)
 	}
+
+	// details
+	details := getSpanInfoTree(nodes[0].span, TIMELINE_TREE_TITLE)
 
 	rows := make([]int, totalRow+2)
 	for i := 0; i < totalRow+1; i++ {
@@ -88,7 +94,6 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	if totalRow > 0 {
 		currentRow := 0
 		setFocusFn(tvs[currentRow])
-		treeTitle := "Span Details"
 
 		grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			// FIXME: key 'j' and 'k' should be used to move the focus
@@ -100,9 +105,9 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 					setFocusFn(tvs[currentRow])
 
 					// update details
-					oldDetails := base.GetItem(1)
+					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
 					base.RemoveItem(oldDetails)
-					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					base.AddItem(details, 0, 3, false)
 				}
 				return nil
@@ -110,12 +115,12 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 				if currentRow > 0 {
 					currentRow--
 					setFocusFn(tvs[currentRow])
-					details = getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					details = getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 
 					// update details
-					oldDetails := base.GetItem(1)
+					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
 					base.RemoveItem(oldDetails)
-					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					base.AddItem(details, 0, 3, false)
 				}
 				return nil
@@ -124,10 +129,24 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 		})
 	}
 
-	details.SetBorder(true).SetTitle("Span Details")
+	details.SetBorder(true).SetTitle("Details (d)")
 
 	base.AddItem(grid, 0, 7, true).
 		AddItem(details, 0, 3, false)
+
+	base.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 'd':
+			log.Printf("d key pressed")
+			setFocusFn(base.GetItem(TIMELINE_DETAILS_IDX))
+			return nil
+		case 't':
+			log.Printf("t key pressed")
+			setFocusFn(grid)
+			return nil
+		}
+		return event
+	})
 
 	return base, KeyMaps{
 		*tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone):   "Move up",
@@ -160,13 +179,15 @@ func roundDownDuration(d time.Duration) time.Duration {
 func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tview.TextView, nodes *[]*spanTreeNode) int {
 	row++
 	label := node.label
+	prefix := ""
 	for i := 0; i < depth; i++ {
 		if i == depth-1 {
-			label = string(tview.BoxDrawingsLightUpAndRight) + label
+			prefix = prefix + string(tview.BoxDrawingsLightUpAndRight)
+			break
 		}
-		label = " " + label
+		prefix = prefix + " "
 	}
-	tv := newTextView(label)
+	tv := newTextView(prefix + label)
 	*tvs = append(*tvs, tv)
 	*nodes = append(*nodes, node)
 	grid.AddItem(tv, row, 0, 1, 1, 0, 0, false)
@@ -233,7 +254,8 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 func newTextView(text string) *tview.TextView {
 	tv := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
-		SetText(text)
+		SetText(text).
+		SetWordWrap(false)
 	tv.SetFocusFunc(func() {
 		tv.SetBackgroundColor(tcell.ColorWhite)
 		tv.SetTextColor(tcell.ColorBlack)
@@ -397,6 +419,10 @@ func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
 		links.AddChild(linkNode)
 	}
 	root.AddChild(links)
+
+	tree.SetSelectedFunc(func(node *tview.TreeNode) {
+		node.SetExpanded(!node.IsExpanded())
+	})
 
 	return tree
 }
