@@ -92,18 +92,16 @@ func getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	scopes := tview.NewTreeNode("Scopes")
 	for si := 0; si < rs.ScopeSpans().Len(); si++ {
 		ss := rs.ScopeSpans().At(si)
-		scope := tview.NewTreeNode(fmt.Sprintf("Scope %d", si))
+		scope := tview.NewTreeNode(ss.Scope().Name())
 		sschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", ss.SchemaUrl()))
 		scope.AddChild(sschema)
 
-		isc := tview.NewTreeNode("Instrumentation Scope")
-		isc.AddChild(tview.NewTreeNode(fmt.Sprintf("name: %s", ss.Scope().Name())))
-		isc.AddChild(tview.NewTreeNode(fmt.Sprintf("version: %s", ss.Scope().Version())))
-		isc.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", ss.Scope().DroppedAttributesCount())))
+		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("version: %s", ss.Scope().Version())))
+		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", ss.Scope().DroppedAttributesCount())))
 
 		attrs := tview.NewTreeNode("Attributes")
 		appendAttrsSorted(attrs, ss.Scope().Attributes().AsRaw())
-		isc.AddChild(attrs)
+		scope.AddChild(attrs)
 
 		scopes.AddChild(scope)
 	}

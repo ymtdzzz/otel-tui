@@ -160,7 +160,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 
 func (p *TUIPages) createTimelinePage() *tview.Flex {
 	page := tview.NewFlex().SetDirection(tview.FlexRow)
-	page.Box.SetTitle("Timeline").SetBorder(true)
+	page.Box.SetBorder(false)
 	page.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
 			p.pages.SwitchToPage(PAGE_TRACES)

@@ -11,6 +11,8 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
 
+const TIMELINE_DETAILS_IDX = 1 // index of details in the base flex container
+
 type spanTreeNode struct {
 	span     *telemetry.SpanData
 	label    string
@@ -65,6 +67,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 		SetBorders(true).
 		AddItem(title, 0, 0, 1, 1, 0, 0, false).
 		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
+	grid.SetTitle("Trace Timeline (t)").SetBorder(true)
 
 	var (
 		tvs   []*tview.TextView
@@ -88,7 +91,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	if totalRow > 0 {
 		currentRow := 0
 		setFocusFn(tvs[currentRow])
-		treeTitle := "Span Details"
+		treeTitle := "Details (d)"
 
 		grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			// FIXME: key 'j' and 'k' should be used to move the focus
@@ -100,7 +103,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 					setFocusFn(tvs[currentRow])
 
 					// update details
-					oldDetails := base.GetItem(1)
+					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
 					base.RemoveItem(oldDetails)
 					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
 					base.AddItem(details, 0, 3, false)
@@ -113,7 +116,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 					details = getSpanInfoTree(nodes[currentRow].span, treeTitle)
 
 					// update details
-					oldDetails := base.GetItem(1)
+					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
 					base.RemoveItem(oldDetails)
 					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
 					base.AddItem(details, 0, 3, false)
@@ -124,10 +127,24 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 		})
 	}
 
-	details.SetBorder(true).SetTitle("Span Details")
+	details.SetBorder(true).SetTitle("Details (d)")
 
 	base.AddItem(grid, 0, 7, true).
 		AddItem(details, 0, 3, false)
+
+	base.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 'd':
+			log.Printf("d key pressed")
+			setFocusFn(base.GetItem(TIMELINE_DETAILS_IDX))
+			return nil
+		case 't':
+			log.Printf("t key pressed")
+			setFocusFn(grid)
+			return nil
+		}
+		return event
+	})
 
 	return base, KeyMaps{
 		*tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone):   "Move up",
@@ -397,6 +414,10 @@ func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
 		links.AddChild(linkNode)
 	}
 	root.AddChild(links)
+
+	tree.SetSelectedFunc(func(node *tview.TreeNode) {
+		node.SetExpanded(!node.IsExpanded())
+	})
 
 	return tree
 }

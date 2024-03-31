@@ -137,7 +137,7 @@ func TestGetTraceInfoTree(t *testing.T) {
 		ResourceSpan: testdata.RSpans[1],
 		ScopeSpans:   testdata.SSpans[2],
 	})
-	sw, sh := 55, 15
+	sw, sh := 55, 20
 	screen := tcell.NewSimulationScreen("")
 	screen.Init()
 	screen.SetSize(sw, sh)
@@ -172,10 +172,15 @@ func TestGetTraceInfoTree(t *testing.T) {
    │  ├──resource index: %!s(int64=0)                  
    │  └──service.name: test-service-1                  
    └──Scopes                                           
-      ├──Scope 0                                       
-      │  └──schema url:                                
-      └──Scope 1                                       
-         └──schema url:                                
+      ├──test-scope-1-1                                
+      │  ├──schema url:                                
+      │  ├──version: v0.0.1                            
+      │  ├──dropped attributes count: 2                
+      │  └──Attributes                                 
+      │     └──scope index: %!s(int64=0)               
+      └──test-scope-1-2                                
+         ├──schema url:                                
+         └──version: v0.0.1                            
 `
 	assert.Equal(t, want, got.String())
 }
