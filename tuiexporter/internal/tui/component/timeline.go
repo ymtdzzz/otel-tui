@@ -135,7 +135,10 @@ func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tvi
 	row++
 	label := node.label
 	for i := 0; i < depth; i++ {
-		label = ">" + label
+		if i == depth-1 {
+			label = string(tview.BoxDrawingsLightUpAndRight) + label
+		}
+		label = " " + label
 	}
 	tv := newTextView(label)
 	*tvs = append(*tvs, tv)
