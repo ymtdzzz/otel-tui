@@ -11,7 +11,10 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
 
-const TIMELINE_DETAILS_IDX = 1 // index of details in the base flex container
+const (
+	TIMELINE_DETAILS_IDX = 1 // index of details in the base flex container
+	TIMELINE_TREE_TITLE  = "Details (d)"
+)
 
 type spanTreeNode struct {
 	span     *telemetry.SpanData
@@ -30,9 +33,6 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	}
 
 	base := tview.NewFlex().SetDirection(tview.FlexColumn)
-
-	// details
-	details := tview.NewTreeView()
 
 	// draw timeline
 	title := tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("Spans")
@@ -78,6 +78,9 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 		totalRow = placeSpan(grid, n, totalRow, 0, &tvs, &nodes)
 	}
 
+	// details
+	details := getSpanInfoTree(nodes[0].span, TIMELINE_TREE_TITLE)
+
 	rows := make([]int, totalRow+2)
 	for i := 0; i < totalRow+1; i++ {
 		rows[i] = 1
@@ -91,7 +94,6 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	if totalRow > 0 {
 		currentRow := 0
 		setFocusFn(tvs[currentRow])
-		treeTitle := "Details (d)"
 
 		grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			// FIXME: key 'j' and 'k' should be used to move the focus
@@ -105,7 +107,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 					// update details
 					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
 					base.RemoveItem(oldDetails)
-					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					base.AddItem(details, 0, 3, false)
 				}
 				return nil
@@ -113,12 +115,12 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 				if currentRow > 0 {
 					currentRow--
 					setFocusFn(tvs[currentRow])
-					details = getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					details = getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 
 					// update details
 					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
 					base.RemoveItem(oldDetails)
-					details := getSpanInfoTree(nodes[currentRow].span, treeTitle)
+					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					base.AddItem(details, 0, 3, false)
 				}
 				return nil
