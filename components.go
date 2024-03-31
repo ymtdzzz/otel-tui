@@ -3,14 +3,14 @@
 package main
 
 import (
+	tuiexporter "github.com/ymtdzzz/otel-tui/tuiexporter"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
+	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
-	tuiexporter "github.com/ymtdzzz/otel-tui/tuiexporter"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -18,8 +18,7 @@ func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 
-	factories.Extensions, err = extension.MakeFactoryMap(
-	)
+	factories.Extensions, err = extension.MakeFactoryMap()
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
@@ -39,14 +38,12 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Processors, err = processor.MakeFactoryMap(
-	)
+	factories.Processors, err = processor.MakeFactoryMap()
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Connectors, err = connector.MakeFactoryMap(
-	)
+	factories.Connectors, err = connector.MakeFactoryMap()
 	if err != nil {
 		return otelcol.Factories{}, err
 	}

@@ -71,7 +71,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 		totalRow = placeSpan(grid, n, totalRow, 0, &tvs, &nodes)
 	}
 
-	rows := make([]int, totalRow+2, totalRow+2)
+	rows := make([]int, totalRow+2)
 	for i := 0; i < totalRow+1; i++ {
 		rows[i] = 1
 	}
