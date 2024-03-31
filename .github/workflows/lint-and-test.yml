@@ -1,0 +1,50 @@
+name:  lint-and-test
+
+on: push
+
+jobs:
+  lint:
+    name: Run lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
+      - name: Run lint
+        run: make install-lint-tools lint
+  lint-exporter:
+    name: Run lint for exporter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
+      - name: Run lint for exporter
+        run: make install-lint-tools lint-exporter
+
+  test:
+    name: Run test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
+      - name: Run test
+        run: make test
+  test-exporter:
+    name: Run test for exporter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
+      - name: Run test for exporter
+        run: make test-exporter
