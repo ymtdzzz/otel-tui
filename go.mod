@@ -9,8 +9,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0
 	go.opentelemetry.io/collector/component v0.96.0
-	go.opentelemetry.io/collector/confmap v0.96.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.96.0
+	go.opentelemetry.io/collector/confmap v0.97.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.97.0
 	go.opentelemetry.io/collector/connector v0.96.0
 	go.opentelemetry.io/collector/exporter v0.96.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0
