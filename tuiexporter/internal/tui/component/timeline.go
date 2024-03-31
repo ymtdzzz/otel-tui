@@ -63,7 +63,7 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 
 	// place spans on the timeline
 	grid := tview.NewGrid().
-		SetColumns(30, 0).
+		SetColumns(30, 0). // TODO: dynamic width
 		SetBorders(true).
 		AddItem(title, 0, 0, 1, 1, 0, 0, false).
 		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
@@ -179,13 +179,15 @@ func roundDownDuration(d time.Duration) time.Duration {
 func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tview.TextView, nodes *[]*spanTreeNode) int {
 	row++
 	label := node.label
+	prefix := ""
 	for i := 0; i < depth; i++ {
 		if i == depth-1 {
-			label = string(tview.BoxDrawingsLightUpAndRight) + label
+			prefix = prefix + string(tview.BoxDrawingsLightUpAndRight)
+			break
 		}
-		label = " " + label
+		prefix = prefix + " "
 	}
-	tv := newTextView(label)
+	tv := newTextView(prefix + label)
 	*tvs = append(*tvs, tv)
 	*nodes = append(*nodes, node)
 	grid.AddItem(tv, row, 0, 1, 1, 0, 0, false)
@@ -252,7 +254,8 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 func newTextView(text string) *tview.TextView {
 	tv := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
-		SetText(text)
+		SetText(text).
+		SetWordWrap(false)
 	tv.SetFocusFunc(func() {
 		tv.SetBackgroundColor(tcell.ColorWhite)
 		tv.SetTextColor(tcell.ColorBlack)
