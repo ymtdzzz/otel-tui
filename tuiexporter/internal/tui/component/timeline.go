@@ -45,10 +45,14 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 			}
 
 			// Write some text along the horizontal line.
-			durunit := duration.Milliseconds() / 10
-			tview.Print(screen, "0", x+getXByRatio(0, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
-			for i := 1; i < 10; i++ {
-				tview.Print(screen, fmt.Sprintf("%dms", durunit*int64(i)), x+getXByRatio(float64(i)*0.1, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
+			unit, count := calculateTimelineUnit(duration)
+			for i := 0; i < count; i++ {
+				ratio := float64(i) / float64(count)
+				label := roundDownDuration(unit * time.Duration(i)).String()
+				if i == 0 {
+					label = "0"
+				}
+				tview.Print(screen, label, x+getXByRatio(ratio, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
 			}
 
 			// Space for other content.
@@ -131,11 +135,36 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 	}
 }
 
+func calculateTimelineUnit(duration time.Duration) (unit time.Duration, count int) {
+	// TODO: set count depends on the width
+	count = 5
+	unit = duration / time.Duration(count)
+	return
+}
+
+func roundDownDuration(d time.Duration) time.Duration {
+	if d < time.Microsecond {
+		return d - (d % time.Nanosecond)
+	} else if d < time.Millisecond {
+		return d - (d % time.Microsecond)
+	} else if d < time.Second {
+		return d - (d % time.Millisecond)
+	} else if d < time.Minute {
+		return d - (d % time.Second)
+	} else if d < time.Hour {
+		return d - (d % time.Minute)
+	}
+	return d
+}
+
 func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tview.TextView, nodes *[]*spanTreeNode) int {
 	row++
 	label := node.label
 	for i := 0; i < depth; i++ {
-		label = ">" + label
+		if i == depth-1 {
+			label = string(tview.BoxDrawingsLightUpAndRight) + label
+		}
+		label = " " + label
 	}
 	tv := newTextView(label)
 	*tvs = append(*tvs, tv)
@@ -178,8 +207,8 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 		node := nodes[spanMemo[current]]
 		st, en := span.Span.StartTimestamp().AsTime().Sub(start), span.Span.EndTimestamp().AsTime().Sub(start)
 		d := en - st
-		node.box = createSpan(current, int(duration.Milliseconds()), int(st.Milliseconds()), int(en.Milliseconds()))
-		node.label = fmt.Sprintf("%s %dms", span.Span.Name(), d.Milliseconds())
+		node.box = createSpan(current, duration, st, en)
+		node.label = fmt.Sprintf("%s %s", span.Span.Name(), d.String())
 
 		parent := span.Span.ParentSpanID().String()
 		_, parentExists := cache.GetSpanByID(parent)
@@ -221,7 +250,7 @@ func getXByRatio(ratio float64, width int) int {
 	return int(float64(width) * ratio)
 }
 
-func createSpan(name string, total, start, end int) (span *tview.Box) {
+func createSpan(name string, total, start, end time.Duration) (span *tview.Box) {
 	return tview.NewBox().SetBorder(false).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			// Draw a horizontal line across the middle of the box.
