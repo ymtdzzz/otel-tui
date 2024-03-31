@@ -52,3 +52,54 @@ func TestNewSpanTree(t *testing.T) {
 	assert.Equal(t, sds[4].Span, st[1].span.Span)
 	assert.Equal(t, sds[5].Span, st[1].children[0].span.Span)
 }
+
+func TestRoundDownDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		want     string
+	}{
+		{
+			name:     "0",
+			duration: 0,
+			want:     "0s", // do nothing
+		},
+		{
+			name:     "10 nano second",
+			duration: 10 * time.Nanosecond,
+			want:     "10ns", // do nothing
+		},
+		{
+			name:     "10.25 micro second",
+			duration: 10250 * time.Nanosecond,
+			want:     "10µs",
+		},
+		{
+			name:     "10.25 milli second",
+			duration: 10250 * time.Microsecond,
+			want:     "10ms",
+		},
+		{
+			name:     "10.25 second",
+			duration: 10250 * time.Millisecond,
+			want:     "10s",
+		},
+		{
+			name:     "10.25 minute",
+			duration: 615 * time.Second,
+			want:     "10m0s",
+		},
+		{
+			name:     "10.25 hour",
+			duration: 615 * time.Minute,
+			want:     "10h15m0s", // do nothing
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := roundDownDuration(tt.duration)
+			assert.Equal(t, tt.want, got.String())
+		})
+	}
+}
