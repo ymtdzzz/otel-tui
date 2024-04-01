@@ -10,12 +10,12 @@ A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github
 
 ## Getting Started
 
-```sh
-# install the CLI tool
-go install github.com/ymtdzzz/otel-tui@main
+This project is currently in the early stages of development, so you can only run it using the `go run` command:
 
-# run the CLI tool (running on localhost:4317 by default)
-otel-tui
+```sh
+$ git clone https://github.com/ymtdzzz/otel-tui.git
+$ cd otel-tui
+$ go run ./...
 ```
 
 ## TODOs
