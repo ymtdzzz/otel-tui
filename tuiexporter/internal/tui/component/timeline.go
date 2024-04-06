@@ -16,6 +16,20 @@ const (
 	TIMELINE_TREE_TITLE  = "Details (d)"
 )
 
+var colors = []tcell.Color{
+	// https://color.adobe.com/[otel-tui]-Span-Color-Theme-color-theme-08c8f7c5-7b93-4936-ae75-8f91fc045fd5
+	tcell.ColorAliceBlue,
+	tcell.ColorBurlyWood,
+	tcell.ColorCadetBlue,
+	tcell.ColorCoral,
+	tcell.ColorCornsilk,
+	tcell.ColorGold,
+	tcell.ColorLightBlue,
+	tcell.ColorLightGreen,
+	tcell.ColorLemonChiffon,
+	tcell.ColorMediumTurquoise,
+}
+
 type spanTreeNode struct {
 	span     *telemetry.SpanData
 	label    string
@@ -214,6 +228,7 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 
 	// store memo and calculate start and end time of the trace
 	spanMemo := make(map[string]int)
+	colorMemo := make(map[string]tcell.Color)
 	nodes := []*spanTreeNode{}
 	for idx, span := range spans {
 		nodes = append(nodes, &spanTreeNode{span: span})
@@ -224,6 +239,11 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 		if span.Span.EndTimestamp().AsTime().After(end) {
 			end = span.Span.EndTimestamp().AsTime()
 		}
+		// color is assigned by the service name
+		sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
+		if _, ok := colorMemo[sname.AsString()]; !ok {
+			colorMemo[sname.AsString()] = colors[len(colorMemo)%len(colors)]
+		}
 	}
 	duration = end.Sub(start)
 
@@ -231,9 +251,10 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 	for _, span := range spans {
 		current := span.Span.SpanID().String()
 		node := nodes[spanMemo[current]]
+		sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
 		st, en := span.Span.StartTimestamp().AsTime().Sub(start), span.Span.EndTimestamp().AsTime().Sub(start)
 		d := en - st
-		node.box = createSpan(duration, st, en)
+		node.box = createSpan(colorMemo[sname.AsString()], duration, st, en)
 		node.label = fmt.Sprintf("%s %s", span.Span.Name(), d.String())
 
 		parent := span.Span.ParentSpanID().String()
@@ -277,7 +298,7 @@ func getXByRatio(ratio float64, width int) int {
 	return int(float64(width) * ratio)
 }
 
-func createSpan(total, start, end time.Duration) (span *tview.Box) {
+func createSpan(color tcell.Color, total, start, end time.Duration) (span *tview.Box) {
 	return tview.NewBox().SetBorder(false).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			// Draw a horizontal line across the middle of the box.
@@ -287,10 +308,10 @@ func createSpan(total, start, end time.Duration) (span *tview.Box) {
 			s := x + getXByRatio(sRatio, width)
 			e := x + getXByRatio(eRatio, width)
 			if s == e {
-				screen.SetContent(s, centerY, tview.BoxDrawingsHeavyVertical, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+				screen.SetContent(s, centerY, tview.BoxDrawingsHeavyVertical, nil, tcell.StyleDefault.Foreground(color))
 			} else {
 				for cx := s; cx < e; cx++ {
-					screen.SetContent(cx, centerY, tview.BlockMediumShade, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+					screen.SetContent(cx, centerY, tview.BlockMediumShade, nil, tcell.StyleDefault.Foreground(color))
 				}
 			}
 
