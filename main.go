@@ -84,6 +84,6 @@ service:
 
 	rootCmd.Flags().IntVar(&httpPortFlag, "http", 4318, "The port number on which we listen for OTLP http payloads")
 	rootCmd.Flags().IntVar(&grpcPortFlag, "grpc", 4317, "The port number on which we listen for OTLP grpc payloads")
-	rootCmd.Flags().StringVar(&hostFlag, "host", "localhost", "The host where we expose our all endpoints (OTLP receivers and browser)")
+	rootCmd.Flags().StringVar(&hostFlag, "host", "0.0.0.0", "The host where we expose our all endpoints (OTLP receivers and browser)")
 	return rootCmd
 }
