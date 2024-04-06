@@ -225,3 +225,36 @@ func TestStoreAddSpanWithRotation(t *testing.T) {
 		assert.Equal(t, testdata2.Spans[0], gotsds["test-service-1"][0].Span) // trace 2, span-1-1-1
 	}
 }
+
+func TestStoreFlush(t *testing.T) {
+	// traceid: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- span: span-1-1-1
+	//  | | └- span: span-1-1-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- span: span-1-2-3
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- span: span-2-1-1
+	// traceid: 2
+	//  └- resource: test-service-1
+	//    └- scope: test-scope-1-1
+	//      └- span: span-1-1-1
+	store := NewStore()
+	store.maxServiceSpanCount = 1
+	payload1, _ := test.GenerateOTLPPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	payload2, _ := test.GenerateOTLPPayload(t, 2, 1, []int{1}, [][]int{{1}})
+	store.AddSpan(&payload1)
+	store.AddSpan(&payload2)
+
+	before := store.updatedAt
+	store.Flush()
+
+	assert.True(t, before.Before(store.updatedAt))
+	assert.Equal(t, 0, len(store.svcspans))
+	assert.Equal(t, 0, len(store.svcspansFiltered))
+	assert.Equal(t, 0, len(store.cache.spanid2span))
+	assert.Equal(t, 0, len(store.cache.traceid2spans))
+	assert.Equal(t, 0, len(store.cache.tracesvc2spans))
+}

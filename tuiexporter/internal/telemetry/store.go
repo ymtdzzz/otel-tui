@@ -155,3 +155,17 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 
 	s.updateFilterService()
 }
+
+// Flush clears the store including the cache
+func (s *Store) Flush() {
+	s.mut.Lock()
+	defer func() {
+		s.updatedAt = time.Now()
+		s.mut.Unlock()
+	}()
+
+	s.svcspans = SvcSpans{}
+	s.svcspansFiltered = SvcSpans{}
+	s.cache.flush()
+	s.updatedAt = time.Now()
+}

@@ -35,7 +35,7 @@ func NewTUIApp(store *telemetry.Store) *TUIApp {
 	app.SetRoot(pages, true)
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlL {
+		if event.Key() == tcell.KeyF12 {
 			tpages.ToggleLog()
 
 			return nil
