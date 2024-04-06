@@ -92,3 +92,9 @@ func (c *TraceCache) GetSpanByID(spanID string) (*SpanData, bool) {
 	span, ok := c.spanid2span[spanID]
 	return span, ok
 }
+
+func (c *TraceCache) flush() {
+	c.spanid2span = SpanDataMap{}
+	c.traceid2spans = TraceSpanDataMap{}
+	c.tracesvc2spans = TraceServiceSpanDataMap{}
+}

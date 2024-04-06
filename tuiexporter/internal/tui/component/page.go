@@ -146,13 +146,20 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			}
 			// don't return nil here, because we want to pass the event to the search input
 		}
+
+		if event.Key() == tcell.KeyCtrlL {
+			store.Flush()
+			return nil
+		}
+
 		return event
 	})
 	page = attatchCommandList(page, KeyMaps{
-		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Toggle Log",
+		*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone):   "Toggle Log",
 		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search traces",
 		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
 		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
+		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Clear all data",
 	})
 
 	return page
@@ -191,7 +198,7 @@ func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 		timeline.AddItem(tl, 0, 1, true)
 	}
 
-	keymaps[*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone)] = "Toggle Log"
+	keymaps[*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone)] = "Toggle Log"
 	keymaps[*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone)] = "Back to Traces"
 	timeline = attatchCommandList(timeline, keymaps)
 
