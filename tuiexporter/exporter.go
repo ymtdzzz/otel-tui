@@ -7,6 +7,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -22,6 +23,12 @@ func newTuiExporter(_ *Config) *tuiExporter {
 
 func (e *tuiExporter) pushTraces(_ context.Context, traces ptrace.Traces) error {
 	e.app.Store().AddSpan(&traces)
+
+	return nil
+}
+
+func (e *tuiExporter) pushLogs(_ context.Context, logs plog.Logs) error {
+	e.app.Store().AddLog(&logs)
 
 	return nil
 }

@@ -1,0 +1,213 @@
+package component
+
+import (
+	"bytes"
+	"fmt"
+	"testing"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
+)
+
+func TestLogDataForTable(t *testing.T) {
+	// traceid: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- span: span-1-1-1
+	//  | | | └- log: log-1-1-1-1
+	//  | | | └- log: log-1-1-1-2
+	//  | | └- span: span-1-1-2
+	//  | |   └- log: log-1-1-2-1
+	//  | |   └- log: log-1-1-2-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- span: span-1-2-3
+	//  |     └- log: log-1-2-3-1
+	//  |     └- log: log-1-2-3-2
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- span: span-2-1-1
+	//        └- log: log-2-1-1-1
+	//        └- log: log-2-1-1-2
+	// traceid: 2
+	//  └- resource: test-service-1
+	//    └- scope: test-scope-1-1
+	//      └- span: span-1-1-1
+	//        └- log: log-1-1-1-1
+	//        └- log: log-1-1-1-2
+	_, testdata1 := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	_, testdata2 := test.GenerateOTLPLogsPayload(t, 2, 1, []int{1}, [][]int{{1}})
+	logs := &[]*telemetry.LogData{
+		{
+			Log:         testdata1.Logs[0],
+			ResourceLog: testdata1.RLogs[0],
+		},
+		{
+			Log:         testdata1.Logs[1],
+			ResourceLog: testdata1.RLogs[0],
+		},
+		{
+			Log:         testdata1.Logs[2],
+			ResourceLog: testdata1.RLogs[0],
+		},
+		{
+			Log:         testdata1.Logs[3],
+			ResourceLog: testdata1.RLogs[0],
+		},
+		{
+			Log:         testdata1.Logs[4],
+			ResourceLog: testdata1.RLogs[0],
+		},
+		{
+			Log:         testdata1.Logs[5],
+			ResourceLog: testdata1.RLogs[0],
+		},
+		{
+			Log:         testdata1.Logs[6],
+			ResourceLog: testdata1.RLogs[1],
+		},
+		{
+			Log:         testdata1.Logs[7],
+			ResourceLog: testdata1.RLogs[1],
+		},
+		{
+			Log:         testdata2.Logs[0],
+			ResourceLog: testdata2.RLogs[0],
+		},
+		{
+			Log:         testdata2.Logs[1],
+			ResourceLog: testdata2.RLogs[0],
+		},
+	}
+	ldftable := NewLogDataForTable(logs)
+
+	t.Run("GetRowCount", func(t *testing.T) {
+		assert.Equal(t, 10, ldftable.GetRowCount())
+	})
+
+	t.Run("GetColumnCount", func(t *testing.T) {
+		assert.Equal(t, 4, ldftable.GetColumnCount())
+	})
+
+	t.Run("GetCell", func(t *testing.T) {
+		tests := []struct {
+			name   string
+			row    int
+			column int
+			want   string
+		}{
+			{
+				name:   "invalid row",
+				row:    10,
+				column: 0,
+				want:   "N/A",
+			},
+			{
+				name:   "invalid column",
+				row:    0,
+				column: 4,
+				want:   "N/A",
+			},
+			{
+				name:   "trace ID trace 1 span-1-1-1",
+				row:    0,
+				column: 0,
+				want:   "01000000000000000000000000000000",
+			},
+			{
+				name:   "service name trace 1 span-2-1-1",
+				row:    6,
+				column: 1,
+				want:   "test-service-2",
+			},
+			{
+				name:   "serverity trace 1 span-2-1-1",
+				row:    6,
+				column: 2,
+				want:   "INFO",
+			},
+			{
+				name:   "raw data trace 2 span-1-1-1",
+				row:    8,
+				column: 3,
+				want:   "log body 0-0-0-0",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.want, ldftable.GetCell(tt.row, tt.column).Text)
+			})
+		}
+	})
+}
+
+func TestGetLogInfoTree(t *testing.T) {
+	// traceid: 1
+	//  └- resource: test-service-1
+	//    └- scope: test-scope-1-1
+	//      └- span: span-1-1-1
+	//        └- log: log-1-1-1-1
+	//        └- log: log-1-1-1-2
+	_, testdata := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	logs := []*telemetry.LogData{
+		{
+			Log:         testdata.Logs[0],
+			ResourceLog: testdata.RLogs[0],
+			ScopeLog:    testdata.SLogs[0],
+		},
+	}
+	sw, sh := 55, 26
+	screen := tcell.NewSimulationScreen("")
+	screen.Init()
+	screen.SetSize(sw, sh)
+
+	gottree := getLogInfoTree(logs[0])
+	gottree.SetRect(0, 0, sw, sh)
+	gottree.Draw(screen)
+	screen.Sync()
+
+	contents, w, _ := screen.GetContents()
+	var got bytes.Buffer
+	for n, v := range contents {
+		var err error
+		if n%w == w-1 {
+			_, err = fmt.Fprintf(&got, "%c\n", v.Runes[0])
+		} else {
+			_, err = fmt.Fprintf(&got, "%c", v.Runes[0])
+		}
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	want := `Log                                                    
+└──Resource                                            
+   ├──dropped attributes count: 1                      
+   ├──schema url:                                      
+   ├──Attributes                                       
+   │  ├──resource attribute: resource attribute value  
+   │  ├──resource index: %!s(int64=0)                  
+   │  └──service.name: test-service-1                  
+   ├──Scopes                                           
+   │  └──test-scope-1-1                                
+   │     ├──schema url:                                
+   │     ├──version: v0.0.1                            
+   │     ├──dropped attributes count: 2                
+   │     └──Attributes                                 
+   │        └──scope index: %!s(int64=0)               
+   └──LogRecord                                        
+      ├──trace id: 01000000000000000000000000000000    
+      ├──span id: 0100000000000000                     
+      ├──timestamp: 2022/10/21 07:10:02.100000         
+      ├──observed timestamp: 2022/10/21 07:10:02.200000
+      ├──body: log body 0-0-0-0                        
+      ├──severity: INFO (9)                            
+      ├──flags: 0                                      
+      ├──dropped attributes count: 3                   
+      └──Attributes                                    
+         └──span index: %!s(int64=0)                   
+`
+	assert.Equal(t, want, got.String())
+}

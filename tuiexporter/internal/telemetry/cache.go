@@ -12,6 +12,10 @@ type TraceSpanDataMap map[string][]*SpanData
 // This is used to quickly look up all spans in a trace for a service
 type TraceServiceSpanDataMap map[string]map[string][]*SpanData
 
+// TraceLogDataMap is a map of trace id to a slice of logs
+// This is used to quickly look up all logs in a trace
+type TraceLogDataMap map[string][]*LogData
+
 // TraceCache is a cache of trace spans
 type TraceCache struct {
 	spanid2span    SpanDataMap
@@ -97,4 +101,51 @@ func (c *TraceCache) flush() {
 	c.spanid2span = SpanDataMap{}
 	c.traceid2spans = TraceSpanDataMap{}
 	c.tracesvc2spans = TraceServiceSpanDataMap{}
+}
+
+// LogCache is a cache of logs
+type LogCache struct {
+	traceid2logs TraceLogDataMap
+}
+
+// NewLogCache returns a new log cache
+func NewLogCache() *LogCache {
+	return &LogCache{
+		traceid2logs: TraceLogDataMap{},
+	}
+}
+
+// UpdateCache updates the cache with a new log
+func (c *LogCache) UpdateCache(data *LogData) {
+	traceID := data.Log.TraceID().String()
+	if ts, ok := c.traceid2logs[traceID]; ok {
+		c.traceid2logs[traceID] = append(ts, data)
+	} else {
+		c.traceid2logs[traceID] = []*LogData{data}
+	}
+}
+
+// DeleteCache deletes a list of logs from the cache
+func (c *LogCache) DeleteCache(logs []*LogData) {
+	for _, l := range logs {
+		traceID := l.Log.TraceID().String()
+		if _, ok := c.traceid2logs[traceID]; ok {
+			for i, log := range c.traceid2logs[traceID] {
+				if log == l {
+					c.traceid2logs[traceID] = append(c.traceid2logs[traceID][:i], c.traceid2logs[traceID][i+1:]...)
+					break
+				}
+			}
+		}
+	}
+}
+
+// GetLogsByTraceID returns all logs for a given trace id
+func (c *LogCache) GetLogsByTraceID(traceID string) ([]*LogData, bool) {
+	logs, ok := c.traceid2logs[traceID]
+	return logs, ok
+}
+
+func (c *LogCache) flush() {
+	c.traceid2logs = TraceLogDataMap{}
 }

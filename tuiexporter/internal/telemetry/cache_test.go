@@ -8,7 +8,7 @@ import (
 
 func TestGetSpansByTraceID(t *testing.T) {
 	c := NewTraceCache()
-	spans := []*SpanData{{}}
+	spans := []*SpanData{}
 	c.traceid2spans["traceid"] = spans
 
 	tests := []struct {
@@ -42,7 +42,7 @@ func TestGetSpansByTraceID(t *testing.T) {
 
 func TestGetSpansByTraceIDAndSvc(t *testing.T) {
 	c := NewTraceCache()
-	spans := []*SpanData{{}}
+	spans := []*SpanData{}
 	c.tracesvc2spans["traceid"] = map[string][]*SpanData{"svc-name": spans}
 
 	tests := []struct {
@@ -112,6 +112,40 @@ func TestGetSpanByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotdata, gotok := c.GetSpanByID(tt.spanID)
+			assert.Equal(t, tt.wantdata, gotdata)
+			assert.Equal(t, tt.wantok, gotok)
+		})
+	}
+}
+
+func TestGetLogsByTraceID(t *testing.T) {
+	c := NewLogCache()
+	logs := []*LogData{}
+	c.traceid2logs["traceid"] = logs
+
+	tests := []struct {
+		name     string
+		traceID  string
+		wantdata []*LogData
+		wantok   bool
+	}{
+		{
+			name:     "traceid exists",
+			traceID:  "traceid",
+			wantdata: logs,
+			wantok:   true,
+		},
+		{
+			name:     "traceid does not exist",
+			traceID:  "traceid2",
+			wantdata: nil,
+			wantok:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotdata, gotok := c.GetLogsByTraceID(tt.traceID)
 			assert.Equal(t, tt.wantdata, gotdata)
 			assert.Equal(t, tt.wantok, gotok)
 		})

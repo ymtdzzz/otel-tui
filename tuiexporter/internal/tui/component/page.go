@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	PAGE_TRACES   = "Traces"
-	PAGE_TIMELINE = "Timeline"
-	PAGE_LOG      = "Log"
+	PAGE_TRACES    = "Traces"
+	PAGE_TIMELINE  = "Timeline"
+	PAGE_LOGS      = "Logs"
+	PAGE_DEBUG_LOG = "DebugLog"
 )
 
 type KeyMaps map[tcell.EventKey]string
@@ -21,7 +22,9 @@ type TUIPages struct {
 	pages      *tview.Pages
 	traces     *tview.Flex
 	timeline   *tview.Flex
-	log        *tview.Flex
+	logs       *tview.Flex
+	debuglog   *tview.Flex
+	current    string
 	setFocusFn func(p tview.Primitive)
 }
 
@@ -29,6 +32,7 @@ func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TU
 	pages := tview.NewPages()
 	tp := &TUIPages{
 		pages:      pages,
+		current:    PAGE_TRACES,
 		setFocusFn: setFocusFn,
 	}
 
@@ -45,22 +49,33 @@ func (p *TUIPages) GetPages() *tview.Pages {
 // ToggleLog toggles the log page.
 func (p *TUIPages) ToggleLog() {
 	cname, cpage := p.pages.GetFrontPage()
-	if cname == PAGE_LOG {
+	if cname == PAGE_DEBUG_LOG {
 		// hide log
-		p.pages.SendToBack(PAGE_LOG)
-		p.pages.HidePage(PAGE_LOG)
+		p.pages.SendToBack(PAGE_DEBUG_LOG)
+		p.pages.HidePage(PAGE_DEBUG_LOG)
 	} else {
 		// show log
-		p.pages.ShowPage(PAGE_LOG)
-		p.pages.SendToFront(PAGE_LOG)
+		p.pages.ShowPage(PAGE_DEBUG_LOG)
+		p.pages.SendToFront(PAGE_DEBUG_LOG)
 		p.setFocusFn(cpage)
 	}
 }
 
+// TogglePage toggles Traces & Logs page.
+func (p *TUIPages) TogglePage() {
+	if p.current == PAGE_TRACES {
+		p.pages.SwitchToPage(PAGE_LOGS)
+		p.current = PAGE_LOGS
+	} else {
+		p.pages.SwitchToPage(PAGE_TRACES)
+		p.current = PAGE_TRACES
+	}
+}
+
 func (p *TUIPages) registerPages(store *telemetry.Store) {
-	logpage := p.createLogPage()
-	p.log = logpage
-	p.pages.AddPage(PAGE_LOG, logpage, true, true)
+	logpage := p.createDebugLogPage()
+	p.debuglog = logpage
+	p.pages.AddPage(PAGE_DEBUG_LOG, logpage, true, true)
 
 	traces := p.createTracePage(store)
 	p.traces = traces
@@ -69,6 +84,10 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	timeline := p.createTimelinePage()
 	p.timeline = timeline
 	p.pages.AddPage(PAGE_TIMELINE, timeline, true, false)
+
+	logs := p.createLogPage(store)
+	p.logs = logs
+	p.pages.AddPage(PAGE_LOGS, logs, true, false)
 }
 
 func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
@@ -134,17 +153,15 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 
 	page.AddItem(tableContainer, 0, 6, true).AddItem(details, 0, 4, false)
 	page.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Rune() {
-		case 'd':
-			if !search.HasFocus() {
+		if !search.HasFocus() {
+			switch event.Rune() {
+			case 'd':
 				p.setFocusFn(details)
-			}
-			// don't return nil here, because we want to pass the event to the search input
-		case 't':
-			if !search.HasFocus() {
+				// don't return nil here, because we want to pass the event to the search input
+			case 't':
 				p.setFocusFn(table)
+				// don't return nil here, because we want to pass the event to the search input
 			}
-			// don't return nil here, because we want to pass the event to the search input
 		}
 
 		if event.Key() == tcell.KeyCtrlL {
@@ -161,6 +178,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
 		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Clear all data",
 	})
+	page = attatchTab(page, PAGE_TRACES)
 
 	return page
 }
@@ -205,7 +223,108 @@ func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 	p.timeline.AddItem(timeline, 0, 1, true)
 }
 
-func (p *TUIPages) createLogPage() *tview.Flex {
+func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
+	pageContainer := tview.NewFlex().SetDirection(tview.FlexRow)
+	page := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	details := tview.NewFlex().SetDirection(tview.FlexRow)
+	details.SetTitle("Details (d)").SetBorder(true)
+
+	body := tview.NewTextView()
+	body.SetBorder(true).SetTitle("Body (b)")
+
+	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
+	tableContainer.SetTitle("Logs (o)").SetBorder(true)
+	table := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false).
+		SetContent(NewLogDataForTable(store.GetFilteredLogs()))
+
+	input := ""
+	inputConfirmed := ""
+	search := tview.NewInputField().
+		SetLabel("Filter by service or body (/): ").
+		SetFieldWidth(20)
+	search.SetChangedFunc(func(text string) {
+		// remove the suffix '/' from input because it is passed from SetInputCapture()
+		if strings.HasSuffix(text, "/") {
+			text = strings.TrimSuffix(text, "/")
+			search.SetText(text)
+		}
+		input = text
+	})
+	search.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEnter {
+			inputConfirmed = input
+			store.ApplyFilterLogs(inputConfirmed)
+		} else if key == tcell.KeyEsc {
+			search.SetText(inputConfirmed)
+		}
+		p.setFocusFn(table)
+	})
+
+	table.SetSelectionChangedFunc(func(row, _ int) {
+		selected := store.GetFilteredLogByIdx(row)
+		details.Clear()
+		details.AddItem(getLogInfoTree(selected), 0, 1, true)
+		log.Printf("selected row: %d", row)
+
+		if selected != nil {
+			body.SetText(selected.Log.Body().AsString())
+		}
+	})
+	tableContainer.
+		AddItem(search, 1, 0, false).
+		AddItem(table, 0, 1, true)
+
+	tableContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == '/' {
+			if !search.HasFocus() {
+				p.setFocusFn(search)
+			}
+			return nil
+		}
+
+		return event
+	})
+
+	page.AddItem(tableContainer, 0, 6, true).AddItem(details, 0, 4, false)
+	pageContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if !search.HasFocus() {
+			switch event.Rune() {
+			case 'd':
+				p.setFocusFn(details)
+				// don't return nil here, because we want to pass the event to the search input
+			case 'o':
+				p.setFocusFn(table)
+				// don't return nil here, because we want to pass the event to the search input
+			case 'b':
+				p.setFocusFn(body)
+				// don't return nil here, because we want to pass the event to the search input
+			}
+		}
+
+		if event.Key() == tcell.KeyCtrlL {
+			store.Flush()
+			return nil
+		}
+
+		return event
+	})
+	pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
+	pageContainer = attatchCommandList(pageContainer, KeyMaps{
+		*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone):   "Toggle Log",
+		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search logs",
+		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
+		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
+		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Clear all data",
+	})
+	pageContainer = attatchTab(pageContainer, PAGE_LOGS)
+
+	return pageContainer
+}
+
+func (p *TUIPages) createDebugLogPage() *tview.Flex {
 	logview := tview.NewTextView().SetDynamicColors(true)
 	logview.Box.SetTitle("Log").SetBorder(true)
 	log.SetOutput(logview)
@@ -215,6 +334,27 @@ func (p *TUIPages) createLogPage() *tview.Flex {
 		AddItem(logview, 0, 3, false)
 
 	return page
+}
+
+func attatchTab(p tview.Primitive, name string) *tview.Flex {
+	var text string
+	switch name {
+	case PAGE_TRACES:
+		text = "< [yellow]Traces[white] | Logs > (Tab to switch)"
+	case PAGE_LOGS:
+		text = "< Traces | [yellow]Logs[white] > (Tab to switch)"
+	}
+
+	tabs := tview.NewTextView().
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignCenter).
+		SetText(text)
+
+	base := tview.NewFlex().SetDirection(tview.FlexRow)
+	base.AddItem(tabs, 1, 1, false).
+		AddItem(p, 0, 1, true)
+
+	return base
 }
 
 func attatchCommandList(p tview.Primitive, keys KeyMaps) *tview.Flex {
