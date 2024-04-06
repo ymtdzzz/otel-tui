@@ -192,6 +192,11 @@ func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tvi
 	*nodes = append(*nodes, node)
 	grid.AddItem(tv, row, 0, 1, 1, 0, 0, false)
 	grid.AddItem(node.box, row, 1, 1, 1, 0, 0, false)
+	sort.SliceStable(node.children, func(i, j int) bool {
+		return node.children[i].span.Span.StartTimestamp().AsTime().Before(
+			node.children[j].span.Span.StartTimestamp().AsTime(),
+		)
+	})
 	for _, child := range node.children {
 		row = placeSpan(grid, child, row, depth+1, tvs, nodes)
 	}
@@ -228,7 +233,7 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 		node := nodes[spanMemo[current]]
 		st, en := span.Span.StartTimestamp().AsTime().Sub(start), span.Span.EndTimestamp().AsTime().Sub(start)
 		d := en - st
-		node.box = createSpan(current, duration, st, en)
+		node.box = createSpan(duration, st, en)
 		node.label = fmt.Sprintf("%s %s", span.Span.Name(), d.String())
 
 		parent := span.Span.ParentSpanID().String()
@@ -272,7 +277,7 @@ func getXByRatio(ratio float64, width int) int {
 	return int(float64(width) * ratio)
 }
 
-func createSpan(name string, total, start, end time.Duration) (span *tview.Box) {
+func createSpan(total, start, end time.Duration) (span *tview.Box) {
 	return tview.NewBox().SetBorder(false).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			// Draw a horizontal line across the middle of the box.
