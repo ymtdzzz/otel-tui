@@ -4,9 +4,12 @@
 
 A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer/tree/main)
 
+Traces
 ![Traces](./docs/traces.png)
 ![Spans](./docs/spans.png)
 
+Logs
+![Logs](./docs/logs.png)
 
 ## Getting Started
 
@@ -31,7 +34,10 @@ There're a lot of things to do. Here are some of them:
   - [ ] Display metrics
   - [ ] ...
 - Logs
-  - [ ] Display logs
+  - [x] Display logs
+  - [x] Filter logs
+  - [x] Show log information
+  - [ ] Show logs related to a specific trace or span
   - [ ] ...
 - UI
   - [ ] Improve UI
@@ -39,10 +45,10 @@ There're a lot of things to do. Here are some of them:
   - [ ] ...
 - Performance
   - [x] Timer based refresh
-  - [x] Data rotation (current buffer size: 1000 service root spans)
+  - [x] Data rotation (current buffer size: 1000 service root spans and logs)
   - [ ] ...
 - Configurations
-  - [ ] Endpoint
+  - [ ] Port
   - [ ] Refresh interval
   - [ ] Buffer size
   - [ ] ...
