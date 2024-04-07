@@ -12,7 +12,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 )
 
-func TestSpanForTable(t *testing.T) {
+func TestSpanDataForTable(t *testing.T) {
 	// traceid: 1
 	//  └- resource: test-service-1
 	//  | └- scope: test-scope-1-1
@@ -27,8 +27,8 @@ func TestSpanForTable(t *testing.T) {
 	//  └- resource: test-service-1
 	//    └- scope: test-scope-1-1
 	//      └- span: span-1-1-1
-	_, testdata1 := test.GenerateOTLPPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
-	_, testdata2 := test.GenerateOTLPPayload(t, 2, 1, []int{1}, [][]int{{1}})
+	_, testdata1 := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	_, testdata2 := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
 	receivedAt := time.Date(2024, 3, 30, 12, 30, 15, 0, time.UTC)
 	svcspans := &telemetry.SvcSpans{
 		&telemetry.SpanData{
@@ -115,7 +115,7 @@ func TestGetTraceInfoTree(t *testing.T) {
 	//  └- resource: test-service-2
 	//    └- scope: test-scope-2-1
 	//      └- span: span-2-1-1
-	_, testdata := test.GenerateOTLPPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	_, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	spans := []*telemetry.SpanData{}
 	spans = append(spans, &telemetry.SpanData{
 		Span:         testdata.Spans[0],

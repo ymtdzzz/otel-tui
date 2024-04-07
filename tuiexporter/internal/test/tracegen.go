@@ -23,7 +23,7 @@ type GeneratedSpans struct {
 }
 
 // This is written referencing following code: https://github.com/CtrlSpice/otel-desktop-viewer/blob/af38ec47a37564e5f03b6d9cefa20b2422033e03/desktopexporter/testdata/trace.go
-func GenerateOTLPPayload(t *testing.T, traceID, resourceCount int, scopeCount []int, spanCount [][]int) (ptrace.Traces, *GeneratedSpans) {
+func GenerateOTLPTracesPayload(t *testing.T, traceID, resourceCount int, scopeCount []int, spanCount [][]int) (ptrace.Traces, *GeneratedSpans) {
 	t.Helper()
 
 	generatedSpans := &GeneratedSpans{

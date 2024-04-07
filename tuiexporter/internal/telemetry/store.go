@@ -5,11 +5,16 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const MAX_SERVICE_SPAN_COUNT = 1000
+const (
+	MAX_SERVICE_SPAN_COUNT = 1000
+	MAX_LOG_COUNT          = 1000
+)
 
+// SpanData is a struct to represent a span
 type SpanData struct {
 	Span         *ptrace.Span
 	ResourceSpan *ptrace.ResourceSpans
@@ -26,31 +31,48 @@ func (sd *SpanData) IsRoot() bool {
 // This is a slice of one span of a single service
 type SvcSpans []*SpanData
 
+// LogData is a struct to represent a log
+type LogData struct {
+	Log         *plog.LogRecord
+	ResourceLog *plog.ResourceLogs
+	ScopeLog    *plog.ScopeLogs
+	ReceivedAt  time.Time
+}
+
 // Store is a store of trace spans
 type Store struct {
 	mut                 sync.Mutex
 	filterSvc           string
+	filterLog           string
 	svcspans            SvcSpans
 	svcspansFiltered    SvcSpans
-	cache               *TraceCache
+	tracecache          *TraceCache
+	logs                []*LogData
+	logsFiltered        []*LogData
+	logcache            *LogCache
 	updatedAt           time.Time
 	maxServiceSpanCount int
+	maxLogCount         int
 }
 
 // NewStore creates a new store
 func NewStore() *Store {
 	return &Store{
 		mut:                 sync.Mutex{},
-		svcspans:            []*SpanData{},
-		svcspansFiltered:    []*SpanData{},
-		cache:               NewTraceCache(),
+		svcspans:            SvcSpans{},
+		svcspansFiltered:    SvcSpans{},
+		tracecache:          NewTraceCache(),
+		logs:                []*LogData{},
+		logsFiltered:        []*LogData{},
+		logcache:            NewLogCache(),
 		maxServiceSpanCount: MAX_SERVICE_SPAN_COUNT, // TODO: make this configurable
+		maxLogCount:         MAX_LOG_COUNT,          // TODO: make this configurable
 	}
 }
 
 // GetCache returns the cache
 func (s *Store) GetCache() *TraceCache {
-	return s.cache
+	return s.tracecache
 }
 
 // GetSvcSpans returns the service spans in the store
@@ -61,6 +83,11 @@ func (s *Store) GetSvcSpans() *SvcSpans {
 // GetFilteredSvcSpans returns the filtered service spans in the store
 func (s *Store) GetFilteredSvcSpans() *SvcSpans {
 	return &s.svcspansFiltered
+}
+
+// GetFilteredLogs returns the filtered logs in the store
+func (s *Store) GetFilteredLogs() *[]*LogData {
+	return &s.logsFiltered
 }
 
 // UpdatedAt returns the last updated time
@@ -90,6 +117,29 @@ func (s *Store) updateFilterService() {
 	s.ApplyFilterService(s.filterSvc)
 }
 
+// ApplyFilterLogs applies a filter to the logs
+func (s *Store) ApplyFilterLogs(filter string) {
+	s.filterLog = filter
+	s.logsFiltered = []*LogData{}
+
+	if filter == "" {
+		s.logsFiltered = s.logs
+		return
+	}
+
+	for _, log := range s.logs {
+		sname, _ := log.ResourceLog.Resource().Attributes().Get("service.name")
+		target := sname.AsString() + " " + log.Log.Body().AsString()
+		if strings.Contains(target, filter) {
+			s.logsFiltered = append(s.logsFiltered, log)
+		}
+	}
+}
+
+func (s *Store) updateFilterLogs() {
+	s.ApplyFilterLogs(s.filterLog)
+}
+
 // GetTraceIDByFilteredIdx returns the trace at the given index
 func (s *Store) GetTraceIDByFilteredIdx(idx int) string {
 	if idx >= 0 && idx < len(s.svcspansFiltered) {
@@ -106,9 +156,17 @@ func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 	span := s.svcspansFiltered[idx]
 	traceID := span.Span.TraceID().String()
 	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
-	spans, _ := s.cache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
+	spans, _ := s.tracecache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
 
 	return spans
+}
+
+// GetFilteredLogByIdx returns the log at the given index
+func (s *Store) GetFilteredLogByIdx(idx int) *LogData {
+	if idx < 0 || idx >= len(s.logsFiltered) {
+		return nil
+	}
+	return s.logsFiltered[idx]
 }
 
 // AddSpan adds a span to the store
@@ -136,7 +194,7 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 					ScopeSpans:   &ss,
 					ReceivedAt:   time.Now(),
 				}
-				newtracesvc := s.cache.UpdateCache(sname.AsString(), sd)
+				newtracesvc := s.tracecache.UpdateCache(sname.AsString(), sd)
 				if newtracesvc {
 					s.svcspans = append(s.svcspans, sd)
 				}
@@ -148,12 +206,51 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 	if len(s.svcspans) > s.maxServiceSpanCount {
 		deleteSpans := s.svcspans[:len(s.svcspans)-s.maxServiceSpanCount]
 
-		s.cache.DeleteCache(deleteSpans)
+		s.tracecache.DeleteCache(deleteSpans)
 
 		s.svcspans = s.svcspans[len(s.svcspans)-s.maxServiceSpanCount:]
 	}
 
 	s.updateFilterService()
+}
+
+// AddLog adds a log to the store
+func (s *Store) AddLog(logs *plog.Logs) {
+	s.mut.Lock()
+	defer func() {
+		s.updatedAt = time.Now()
+		s.mut.Unlock()
+	}()
+
+	for rli := 0; rli < logs.ResourceLogs().Len(); rli++ {
+		rl := logs.ResourceLogs().At(rli)
+
+		for sli := 0; sli < rl.ScopeLogs().Len(); sli++ {
+			sl := rl.ScopeLogs().At(sli)
+
+			for li := 0; li < sl.LogRecords().Len(); li++ {
+				lr := sl.LogRecords().At(li)
+				ld := &LogData{
+					Log:         &lr,
+					ResourceLog: &rl,
+					ScopeLog:    &sl,
+					ReceivedAt:  time.Now(),
+				}
+				s.logs = append(s.logs, ld)
+				s.logcache.UpdateCache(ld)
+			}
+		}
+	}
+
+	// data rotation
+	if len(s.logs) > s.maxLogCount {
+		deleteLogs := s.logs[:len(s.logs)-s.maxLogCount]
+		s.logs = s.logs[len(s.logs)-s.maxLogCount:]
+
+		s.logcache.DeleteCache(deleteLogs)
+	}
+
+	s.updateFilterLogs()
 }
 
 // Flush clears the store including the cache
@@ -166,6 +263,9 @@ func (s *Store) Flush() {
 
 	s.svcspans = SvcSpans{}
 	s.svcspansFiltered = SvcSpans{}
-	s.cache.flush()
+	s.tracecache.flush()
+	s.logs = []*LogData{}
+	s.logsFiltered = []*LogData{}
+	s.logcache.flush()
 	s.updatedAt = time.Now()
 }

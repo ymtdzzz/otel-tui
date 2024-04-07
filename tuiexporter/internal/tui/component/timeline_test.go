@@ -20,7 +20,7 @@ func TestNewSpanTree(t *testing.T) {
 	//      └- span: span-1-1-5 [root] multiple root span is allowed
 	//        └- span: span-1-1-6
 	store := telemetry.NewStore()
-	payload, testdata := test.GenerateOTLPPayload(t, 1, 1, []int{1}, [][]int{{6}})
+	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{6}})
 	sds := []*telemetry.SpanData{}
 	for _, span := range testdata.Spans {
 		sds = append(sds, &telemetry.SpanData{

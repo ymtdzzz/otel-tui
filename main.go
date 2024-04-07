@@ -62,6 +62,10 @@ service:
       receivers: [otlp]
       processors: []
       exporters: [tui]
+    logs:
+      receivers: [otlp]
+      processors: []
+      exporters: [tui]
 `
 
 			provider := yamlprovider.New()
