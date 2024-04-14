@@ -208,7 +208,8 @@ func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 	if store != nil {
 		tl, keymaps = DrawTimeline(
 			store.GetTraceIDByFilteredIdx(row),
-			store.GetCache(),
+			store.GetTraceCache(),
+			store.GetLogCache(),
 			func(pr tview.Primitive) {
 				p.setFocusFn(pr)
 			},

@@ -70,9 +70,14 @@ func NewStore() *Store {
 	}
 }
 
-// GetCache returns the cache
-func (s *Store) GetCache() *TraceCache {
+// GetTraceCache returns the cache
+func (s *Store) GetTraceCache() *TraceCache {
 	return s.tracecache
+}
+
+// GetLogCache returns the log cache
+func (s *Store) GetLogCache() *LogCache {
+	return s.logcache
 }
 
 // GetSvcSpans returns the service spans in the store

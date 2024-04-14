@@ -38,9 +38,10 @@ func (l LogDataForTable) GetRowCount() int {
 func (l LogDataForTable) GetColumnCount() int {
 	// 0: TraceID
 	// 1: ServiceName
-	// 2: Severity
-	// 3: RawData
-	return 4
+	// 2: Timestamp
+	// 3: Severity
+	// 4: RawData
+	return 5
 }
 
 // getCellFromLog returns a table cell for the given log and column.
@@ -54,8 +55,10 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 		sname, _ := log.ResourceLog.Resource().Attributes().Get("service.name")
 		text = sname.AsString()
 	case 2:
-		text = log.Log.SeverityText()
+		text = log.Log.Timestamp().AsTime().Format("2006/01/02 15:04:05")
 	case 3:
+		text = log.Log.SeverityText()
+	case 4:
 		text = log.Log.Body().AsString()
 	}
 

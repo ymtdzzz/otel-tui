@@ -38,7 +38,7 @@ func TestNewSpanTree(t *testing.T) {
 
 	store.AddSpan(&payload)
 
-	st, d := newSpanTree(testdata.Spans[0].TraceID().String(), store.GetCache())
+	st, d := newSpanTree(testdata.Spans[0].TraceID().String(), store.GetTraceCache())
 
 	// duration assertion
 	assert.Equal(t, 200*time.Millisecond, d)
