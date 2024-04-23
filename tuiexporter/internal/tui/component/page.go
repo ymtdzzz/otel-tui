@@ -64,12 +64,15 @@ func (p *TUIPages) ToggleLog() {
 // TogglePage toggles Traces & Logs page.
 func (p *TUIPages) TogglePage() {
 	if p.current == PAGE_TRACES {
-		p.pages.SwitchToPage(PAGE_LOGS)
-		p.current = PAGE_LOGS
+		p.switchToPage(PAGE_LOGS)
 	} else {
-		p.pages.SwitchToPage(PAGE_TRACES)
-		p.current = PAGE_TRACES
+		p.switchToPage(PAGE_TRACES)
 	}
+}
+
+func (p *TUIPages) switchToPage(name string) {
+	p.pages.SwitchToPage(name)
+	p.current = name
 }
 
 func (p *TUIPages) registerPages(store *telemetry.Store) {
@@ -103,8 +106,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		SetSelectable(true, false).
 		SetContent(NewSpanDataForTable(store.GetFilteredSvcSpans())).
 		SetSelectedFunc(func(row, _ int) {
-			p.refreshTimeline(store, row)
-			p.pages.SwitchToPage(PAGE_TIMELINE)
+			p.showTimelineByRow(store, row)
 		})
 
 	input := ""
@@ -188,7 +190,7 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 	page.Box.SetBorder(false)
 	page.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
-			p.pages.SwitchToPage(PAGE_TRACES)
+			p.switchToPage(PAGE_TRACES)
 			return nil
 		}
 		return event
@@ -197,7 +199,20 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 	return page
 }
 
-func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
+func (p *TUIPages) showTimelineByRow(store *telemetry.Store, row int) {
+	if store == nil {
+		return
+	}
+	p.showTimeline(
+		store.GetTraceIDByFilteredIdx(row),
+		store.GetTraceCache(),
+		store.GetLogCache(),
+		func(pr tview.Primitive) {
+			p.setFocusFn(pr)
+		})
+}
+
+func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(pr tview.Primitive)) {
 	p.timeline.Clear()
 	timeline := tview.NewFlex().SetDirection(tview.FlexRow)
 	var (
@@ -205,23 +220,20 @@ func (p *TUIPages) refreshTimeline(store *telemetry.Store, row int) {
 		tl      tview.Primitive
 	)
 
-	if store != nil {
-		tl, keymaps = DrawTimeline(
-			store.GetTraceIDByFilteredIdx(row),
-			store.GetTraceCache(),
-			store.GetLogCache(),
-			func(pr tview.Primitive) {
-				p.setFocusFn(pr)
-			},
-		)
-		timeline.AddItem(tl, 0, 1, true)
-	}
+	tl, keymaps = DrawTimeline(
+		traceID,
+		tcache,
+		lcache,
+		setFocusFn,
+	)
+	timeline.AddItem(tl, 0, 1, true)
 
 	keymaps[*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone)] = "Toggle Log"
 	keymaps[*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone)] = "Back to Traces"
 	timeline = attatchCommandList(timeline, keymaps)
 
 	p.timeline.AddItem(timeline, 0, 1, true)
+	p.switchToPage(PAGE_TIMELINE)
 }
 
 func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
@@ -267,7 +279,11 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		selected := store.GetFilteredLogByIdx(row)
 		details.Clear()
-		details.AddItem(getLogInfoTree(selected), 0, 1, true)
+		details.AddItem(getLogInfoTree(selected, store.GetTraceCache(), func(traceID string) {
+			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), func(pr tview.Primitive) {
+				p.setFocusFn(pr)
+			})
+		}), 0, 1, true)
 		log.Printf("selected row: %d", row)
 
 		if selected != nil {

@@ -69,7 +69,7 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
+func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
 	if l == nil {
 		return nil
 	}
@@ -112,6 +112,15 @@ func getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
 
 	traceID := l.Log.TraceID().String()
 	traceNode := tview.NewTreeNode(fmt.Sprintf("trace id: %s", traceID))
+	if tcache != nil {
+		if _, ok := tcache.GetSpansByTraceID(traceID); ok {
+			traceNode.SetText("(🔗)" + traceNode.GetText())
+			traceNode.SetSelectable(true)
+			traceNode.SetSelectedFunc(func() {
+				drawTimelineFn(traceID)
+			})
+		}
+	}
 	record.AddChild(traceNode)
 
 	spanID := l.Log.SpanID().String()

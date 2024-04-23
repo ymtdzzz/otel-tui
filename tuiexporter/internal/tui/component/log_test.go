@@ -169,7 +169,7 @@ func TestGetLogInfoTree(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	gottree := getLogInfoTree(logs[0])
+	gottree := getLogInfoTree(logs[0], nil, nil)
 	gottree.SetRect(0, 0, sw, sh)
 	gottree.Draw(screen)
 	screen.Sync()
