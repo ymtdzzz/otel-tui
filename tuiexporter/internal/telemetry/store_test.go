@@ -42,7 +42,7 @@ func TestSpanDataIsRoot(t *testing.T) {
 
 func TestStoreGetter(t *testing.T) {
 	store := NewStore()
-	assert.Equal(t, store.tracecache, store.GetCache())
+	assert.Equal(t, store.tracecache, store.GetTraceCache())
 	assert.Equal(t, &store.svcspans, store.GetSvcSpans())
 	assert.Equal(t, &store.svcspansFiltered, store.GetFilteredSvcSpans())
 	assert.Equal(t, &store.logsFiltered, store.GetFilteredLogs())

@@ -87,7 +87,7 @@ func TestLogDataForTable(t *testing.T) {
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
-		assert.Equal(t, 4, ldftable.GetColumnCount())
+		assert.Equal(t, 5, ldftable.GetColumnCount())
 	})
 
 	t.Run("GetCell", func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestLogDataForTable(t *testing.T) {
 			{
 				name:   "invalid column",
 				row:    0,
-				column: 4,
+				column: 5,
 				want:   "N/A",
 			},
 			{
@@ -122,15 +122,21 @@ func TestLogDataForTable(t *testing.T) {
 				want:   "test-service-2",
 			},
 			{
-				name:   "serverity trace 1 span-2-1-1",
+				name:   "timestamp trace 1 span-2-1-1",
 				row:    6,
 				column: 2,
+				want:   "2022/10/21 07:10:02",
+			},
+			{
+				name:   "serverity trace 1 span-2-1-1",
+				row:    6,
+				column: 3,
 				want:   "INFO",
 			},
 			{
 				name:   "raw data trace 2 span-1-1-1",
 				row:    8,
-				column: 3,
+				column: 4,
 				want:   "log body 0-0-0-0",
 			},
 		}
@@ -163,7 +169,7 @@ func TestGetLogInfoTree(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	gottree := getLogInfoTree(logs[0])
+	gottree := getLogInfoTree(logs[0], nil, nil)
 	gottree.SetRect(0, 0, sw, sh)
 	gottree.Draw(screen)
 	screen.Sync()

@@ -38,9 +38,10 @@ func (l LogDataForTable) GetRowCount() int {
 func (l LogDataForTable) GetColumnCount() int {
 	// 0: TraceID
 	// 1: ServiceName
-	// 2: Severity
-	// 3: RawData
-	return 4
+	// 2: Timestamp
+	// 3: Severity
+	// 4: RawData
+	return 5
 }
 
 // getCellFromLog returns a table cell for the given log and column.
@@ -54,8 +55,10 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 		sname, _ := log.ResourceLog.Resource().Attributes().Get("service.name")
 		text = sname.AsString()
 	case 2:
-		text = log.Log.SeverityText()
+		text = log.Log.Timestamp().AsTime().Format("2006/01/02 15:04:05")
 	case 3:
+		text = log.Log.SeverityText()
+	case 4:
 		text = log.Log.Body().AsString()
 	}
 
@@ -66,7 +69,7 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
+func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
 	if l == nil {
 		return nil
 	}
@@ -109,6 +112,15 @@ func getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
 
 	traceID := l.Log.TraceID().String()
 	traceNode := tview.NewTreeNode(fmt.Sprintf("trace id: %s", traceID))
+	if tcache != nil {
+		if _, ok := tcache.GetSpansByTraceID(traceID); ok {
+			traceNode.SetText("(🔗)" + traceNode.GetText())
+			traceNode.SetSelectable(true)
+			traceNode.SetSelectedFunc(func() {
+				drawTimelineFn(traceID)
+			})
+		}
+	}
 	record.AddChild(traceNode)
 
 	spanID := l.Log.SpanID().String()

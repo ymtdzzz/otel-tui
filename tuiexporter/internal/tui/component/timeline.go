@@ -37,20 +37,21 @@ type spanTreeNode struct {
 	children []*spanTreeNode
 }
 
-func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p tview.Primitive)) (tview.Primitive, KeyMaps) {
-	if traceID == "" || cache == nil {
+func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) (tview.Primitive, KeyMaps) {
+	if traceID == "" || tcache == nil {
 		return newTextView("No spans found"), KeyMaps{}
 	}
-	_, ok := cache.GetSpansByTraceID(traceID)
+	_, ok := tcache.GetSpansByTraceID(traceID)
 	if !ok {
 		return newTextView("No spans found"), KeyMaps{}
 	}
 
-	base := tview.NewFlex().SetDirection(tview.FlexColumn)
+	base := tview.NewFlex().SetDirection(tview.FlexRow)
+	traceContainer := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	// draw timeline
 	title := tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("Spans")
-	tree, duration := newSpanTree(traceID, cache)
+	tree, duration := newSpanTree(traceID, tcache)
 
 	timeline := tview.NewBox().SetBorder(false).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
@@ -119,10 +120,10 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 					setFocusFn(tvs[currentRow])
 
 					// update details
-					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
-					base.RemoveItem(oldDetails)
+					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
+					traceContainer.RemoveItem(oldDetails)
 					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
-					base.AddItem(details, 0, 3, false)
+					traceContainer.AddItem(details, 0, 3, false)
 				}
 				return nil
 			case tcell.KeyUp:
@@ -132,10 +133,10 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 					details = getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
 
 					// update details
-					oldDetails := base.GetItem(TIMELINE_DETAILS_IDX)
-					base.RemoveItem(oldDetails)
+					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
+					traceContainer.RemoveItem(oldDetails)
 					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
-					base.AddItem(details, 0, 3, false)
+					traceContainer.AddItem(details, 0, 3, false)
 				}
 				return nil
 			}
@@ -145,18 +146,31 @@ func DrawTimeline(traceID string, cache *telemetry.TraceCache, setFocusFn func(p
 
 	details.SetBorder(true).SetTitle("Details (d)")
 
-	base.AddItem(grid, 0, 7, true).
+	// logs
+	logs := tview.NewTable().SetBorders(false).SetSelectable(true, false)
+	logs.SetBorder(true).SetTitle("Logs (l)")
+	if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
+		logs.SetContent(NewLogDataForTable(&lds))
+	}
+
+	traceContainer.AddItem(grid, 0, 7, true).
 		AddItem(details, 0, 3, false)
+	base.AddItem(traceContainer, 0, 1, true).
+		AddItem(logs, 10, 1, false)
 
 	base.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'd':
 			log.Printf("d key pressed")
-			setFocusFn(base.GetItem(TIMELINE_DETAILS_IDX))
+			setFocusFn(traceContainer.GetItem(TIMELINE_DETAILS_IDX))
 			return nil
 		case 't':
 			log.Printf("t key pressed")
 			setFocusFn(grid)
+			return nil
+		case 'l':
+			log.Printf("l key pressed")
+			setFocusFn(logs)
 			return nil
 		}
 		return event
