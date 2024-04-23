@@ -37,7 +37,7 @@ There're a lot of things to do. Here are some of them:
   - [x] Display logs
   - [x] Filter logs
   - [x] Show log information
-  - [ ] Show logs related to a specific trace or span
+  - [x] Show logs related to a specific trace or span
   - [ ] ...
 - UI
   - [ ] Improve UI
