@@ -9,8 +9,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0
 	go.opentelemetry.io/collector/component v0.96.0
-	go.opentelemetry.io/collector/confmap v0.96.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.96.0
+	go.opentelemetry.io/collector/confmap v0.101.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.101.0
 	go.opentelemetry.io/collector/connector v0.96.0
 	go.opentelemetry.io/collector/exporter v0.96.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.0
@@ -48,7 +48,7 @@ require (
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
