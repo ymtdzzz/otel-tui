@@ -68,11 +68,10 @@ service:
       exporters: [tui]
 `
 
-			provider := yamlprovider.New()
 			configProviderSettings := otelcol.ConfigProviderSettings{
 				ResolverSettings: confmap.ResolverSettings{
-					URIs:      []string{configContents},
-					Providers: map[string]confmap.Provider{provider.Scheme(): provider},
+					URIs:              []string{configContents},
+					ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
 				},
 			}
 
