@@ -13,7 +13,9 @@ Logs
 
 ## Getting Started
 
-This project is currently in the early stages of development, so you can only run it using the `go run` command:
+Download the binary from Github release page and execute it.
+
+Or, you can run it using the `go run` command:
 
 ```sh
 $ git clone https://github.com/ymtdzzz/otel-tui.git

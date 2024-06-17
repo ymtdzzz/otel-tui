@@ -1,3 +1,5 @@
 otel-tui
 .DS_Store
 coverage.*
+
+dist/
