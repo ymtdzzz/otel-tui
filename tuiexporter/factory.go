@@ -16,7 +16,7 @@ const (
 // NewFactory creates a new TUI exporter factory.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		"tui",
+		component.MustNewType("tui"),
 		createDefaultConfig,
 		exporter.WithTraces(createTraces, stability),
 		//exporter.WithMetrics(createMetrics, stability),
