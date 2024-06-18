@@ -12,10 +12,17 @@ Logs
 ![Logs](./docs/logs.png)
 
 ## Getting Started
+### Homebrew
 
-Download the binary from Github release page and execute it.
+```sh
+$ brew install ymtdzzz/tap/otel-tui
+```
 
-Or, you can run it using the `go run` command:
+### Executable Binary from Github Release page
+
+https://github.com/ymtdzzz/otel-tui/releases
+
+### From Source
 
 ```sh
 $ git clone https://github.com/ymtdzzz/otel-tui.git
