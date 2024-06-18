@@ -11,11 +11,13 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
+var version = "unknown"
+
 func main() {
 	info := component.BuildInfo{
-		Command:     "otelcol",
+		Command:     "otel-tui",
 		Description: "OpenTelemetry Collector with TUI viewer",
-		Version:     "1.0.0",
+		Version:     version,
 	}
 
 	if err := run(otelcol.CollectorSettings{BuildInfo: info, Factories: components}); err != nil {
