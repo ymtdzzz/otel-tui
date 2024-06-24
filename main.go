@@ -9,6 +9,12 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
+
+	// Force dependency on main module to ensure it is unambiguous during
+	// module resolution.
+	// See: https://github.com/googleapis/google-api-go-client/issues/2613.
+	// TODO: move to other file such as doc.go ?
+	_ "google.golang.org/genproto/googleapis/type/datetime"
 )
 
 var version = "unknown"
