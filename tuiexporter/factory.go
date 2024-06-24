@@ -28,7 +28,7 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createTraces(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
+func createTraces(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	oCfg := cfg.(*Config)
 
 	e, err := exporters.LoadOrStore(
@@ -49,7 +49,7 @@ func createTraces(ctx context.Context, set exporter.CreateSettings, cfg componen
 	)
 }
 
-func createLogs(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
+func createLogs(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	oCfg := cfg.(*Config)
 
 	e, err := exporters.LoadOrStore(
