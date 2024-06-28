@@ -441,3 +441,20 @@ func TestStoreFlush(t *testing.T) {
 	assert.Equal(t, 0, len(store.logsFiltered))
 	assert.Equal(t, 0, len(store.logcache.traceid2logs))
 }
+
+func TestLogDataGetResolvedBody(t *testing.T) {
+	l, _ := test.GenerateOTLPLogsPayload(t, 1, 1, []int{1}, [][]int{{1}})
+	lr := l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	ld := &LogData{
+		Log: &lr,
+	}
+	lr.Body().SetStr("test log. userId={userId}, quantity={quantity}, tags={tags}")
+	lr.Attributes().PutStr("userId", "user-12345")
+	lr.Attributes().PutInt("quantity", 2000)
+	tags := lr.Attributes().PutEmptySlice("tags")
+	tags.AppendEmpty().SetStr("tag_A")
+	tags.AppendEmpty().SetStr("tag_B")
+	want := `test log. userId=user-12345, quantity=2000, tags=["tag_A","tag_B"]`
+
+	assert.Equal(t, want, ld.GetResolvedBody())
+}
