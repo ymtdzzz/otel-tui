@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -37,6 +38,16 @@ type LogData struct {
 	ResourceLog *plog.ResourceLogs
 	ScopeLog    *plog.ScopeLogs
 	ReceivedAt  time.Time
+}
+
+func (l *LogData) GetResolvedBody() string {
+	b := l.Log.Body().AsString()
+	l.Log.Attributes().Range(func(k string, v pcommon.Value) bool {
+		b = strings.ReplaceAll(b, "{"+k+"}", v.AsString())
+		return true
+	})
+
+	return b
 }
 
 // Store is a store of trace spans

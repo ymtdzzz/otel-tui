@@ -287,7 +287,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		log.Printf("selected row: %d", row)
 
 		if selected != nil {
-			body.SetText(selected.Log.Body().AsString())
+			body.SetText(selected.GetResolvedBody())
 		}
 	})
 	tableContainer.
