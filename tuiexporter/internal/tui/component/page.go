@@ -7,6 +7,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"golang.design/x/clipboard"
 )
 
 const (
@@ -276,6 +277,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		p.setFocusFn(table)
 	})
 
+	resolved := ""
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		selected := store.GetFilteredLogByIdx(row)
 		details.Clear()
@@ -287,8 +289,11 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		log.Printf("selected row: %d", row)
 
 		if selected != nil {
-			body.SetText(selected.GetResolvedBody())
+			resolved = selected.GetResolvedBody()
+			body.SetText(resolved)
+			return
 		}
+		resolved = ""
 	})
 	tableContainer.
 		AddItem(search, 1, 0, false).
@@ -318,6 +323,10 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			case 'b':
 				p.setFocusFn(body)
 				// don't return nil here, because we want to pass the event to the search input
+			case 'y':
+				clipboard.Write(clipboard.FmtText, []byte(resolved))
+				log.Println("Selected log body has been copied to your clipboard")
+				// don't return nil here, because we want to pass the event to the search input
 			}
 		}
 
@@ -335,6 +344,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
 		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
 		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Clear all data",
+		*tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone):  "Copy Log to clipboard",
 	})
 	pageContainer = attatchTab(pageContainer, PAGE_LOGS)
 
@@ -345,6 +355,13 @@ func (p *TUIPages) createDebugLogPage() *tview.Flex {
 	logview := tview.NewTextView().SetDynamicColors(true)
 	logview.Box.SetTitle("Log").SetBorder(true)
 	log.SetOutput(logview)
+
+	// initialize clipboard
+	if err := clipboard.Init(); err != nil {
+		log.Printf("Clipboard can't be used on this platform so clipboard-related feature is disabled. err: %v", err)
+	} else {
+		log.Println("Clipboard initialization succeeded")
+	}
 
 	page := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 7, false).
