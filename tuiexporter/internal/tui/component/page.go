@@ -356,12 +356,7 @@ func (p *TUIPages) createDebugLogPage() *tview.Flex {
 	logview.Box.SetTitle("Log").SetBorder(true)
 	log.SetOutput(logview)
 
-	// initialize clipboard
-	if err := clipboard.Init(); err != nil {
-		log.Printf("Clipboard can't be used on this platform so clipboard-related feature is disabled. err: %v", err)
-	} else {
-		log.Println("Clipboard initialization succeeded")
-	}
+	initClipboard()
 
 	page := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 7, false).
