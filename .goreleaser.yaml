@@ -63,3 +63,4 @@ docker_manifests:
   image_templates:
   - 'ymtdzzz/otel-tui:{{ .Tag }}-amd64'
   - 'ymtdzzz/otel-tui:{{ .Tag }}-arm64'
+  - 'ymtdzzz/otel-tui:latest'
