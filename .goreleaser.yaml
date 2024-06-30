@@ -44,6 +44,7 @@ brews:
 dockers:
   - image_templates:
       - 'ymtdzzz/otel-tui:{{ .Tag }}-amd64'
+      - 'ymtdzzz/otel-tui:latest-amd64'
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -51,6 +52,7 @@ dockers:
     dockerfile: Dockerfile.goreleaser
   - image_templates:
       - 'ymtdzzz/otel-tui:{{ .Tag }}-arm64'
+      - 'ymtdzzz/otel-tui:latest-arm64'
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -63,3 +65,7 @@ docker_manifests:
   image_templates:
   - 'ymtdzzz/otel-tui:{{ .Tag }}-amd64'
   - 'ymtdzzz/otel-tui:{{ .Tag }}-arm64'
+- name_template: 'ymtdzzz/otel-tui:latest'
+  image_templates:
+  - 'ymtdzzz/otel-tui:latest-amd64'
+  - 'ymtdzzz/otel-tui:latest-arm64'
