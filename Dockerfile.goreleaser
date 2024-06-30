@@ -1,0 +1,7 @@
+FROM gcr.io/distroless/static-debian12:latest
+
+COPY otel-tui /
+
+USER nonroot
+
+CMD [ "/otel-tui" ]
