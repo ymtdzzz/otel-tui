@@ -40,3 +40,26 @@ brews:
       owner: ymtdzzz
       name: homebrew-tap
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+
+dockers:
+  - image_templates:
+      - 'ymtdzzz/otel-tui:{{ .Tag }}-amd64'
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+    dockerfile: Dockerfile.goreleaser
+  - image_templates:
+      - 'ymtdzzz/otel-tui:{{ .Tag }}-arm64'
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+    goarch: arm64
+    dockerfile: Dockerfile.goreleaser
+
+docker_manifests:
+- name_template: 'ymtdzzz/otel-tui:{{ .Tag }}'
+  image_templates:
+  - 'ymtdzzz/otel-tui:{{ .Tag }}-amd64'
+  - 'ymtdzzz/otel-tui:{{ .Tag }}-arm64'
