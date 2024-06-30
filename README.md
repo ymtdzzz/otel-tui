@@ -12,11 +12,68 @@ Logs
 ![Logs](./docs/logs.png)
 
 ## Getting Started
+Currently, this tool exposes port 4317 to receive OpenTelemetry signals.
+
 ### Homebrew
 
 ```sh
 $ brew install ymtdzzz/tap/otel-tui
 ```
+
+### Docker
+
+Run in the container simply:
+
+```sh
+$ docker run --rm -it --name otel-tui ymtdzzz/otel-tui:latest
+```
+
+Or, run as a background process and attach it:
+
+```sh
+# Run otel-tui as a background process
+$ docker run --rm -dit --name otel-tui ymtdzzz/otel-tui:latest
+
+# Show TUI in your current terminal session
+$ docker attach otel-tui
+```
+
+### Docker Compose
+
+First, add service to your manifest (`docker-compose.yaml`) for the instrumanted app
+
+```yml
+  oteltui:
+    image: ymtdzzz/otel-tui:latest
+    container_name: otel-tui
+    stdin_open: true
+    tty: true
+```
+
+Modify configuration for otelcol
+
+```yml
+exporters:
+  otlp:
+    endpoint: oteltui:4317
+service:
+  pipelines:
+    traces:
+      exporters: [otlp]
+    logs:
+      exporters: [otlp]
+```
+
+Run as a background process and attach it:
+
+```sh
+# Run services as usual
+$ docker compose up -d
+
+# Show TUI in your current terminal session
+$ docker compose attach oteltui
+```
+
 
 ### Executable Binary from Github Release page
 
