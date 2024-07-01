@@ -5,7 +5,7 @@ module github.com/ymtdzzz/otel-tui
 go 1.22.1
 
 require (
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0
 	go.opentelemetry.io/collector/component v0.103.0
