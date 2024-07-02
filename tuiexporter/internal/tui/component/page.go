@@ -2,6 +2,7 @@ package component
 
 import (
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -16,6 +17,8 @@ const (
 	PAGE_LOGS      = "Logs"
 	PAGE_DEBUG_LOG = "DebugLog"
 )
+
+var keyMapRegex = regexp.MustCompile(`Rune|\[|\]`)
 
 type KeyMaps map[tcell.EventKey]string
 
@@ -179,7 +182,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search traces",
 		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
 		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
-		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Clear all data",
+		*tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl):  "Clear all data",
 	})
 	page = attatchTab(page, PAGE_TRACES)
 
@@ -343,7 +346,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search logs",
 		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
 		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
-		*tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone): "Clear all data",
+		*tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl):  "Clear all data",
 		*tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone):  "Copy Log to clipboard",
 	})
 	pageContainer = attatchTab(pageContainer, PAGE_LOGS)
@@ -389,7 +392,7 @@ func attatchTab(p tview.Primitive, name string) *tview.Flex {
 func attatchCommandList(p tview.Primitive, keys KeyMaps) *tview.Flex {
 	keytexts := []string{}
 	for k, v := range keys {
-		keytexts = append(keytexts, k.Name()+": "+v)
+		keytexts = append(keytexts, keyMapRegex.ReplaceAllString(k.Name(), "")+": "+v)
 	}
 
 	command := tview.NewTextView().SetText(strings.Join(keytexts, ", "))
