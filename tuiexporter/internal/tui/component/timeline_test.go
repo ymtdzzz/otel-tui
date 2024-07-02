@@ -103,3 +103,67 @@ func TestRoundDownDuration(t *testing.T) {
 		})
 	}
 }
+
+func TestNarrowInLimit(t *testing.T) {
+	tests := []struct {
+		name  string
+		step  int
+		curr  int
+		limit int
+		want  int
+	}{
+		{
+			name:  "Modified",
+			step:  5,
+			curr:  35,
+			limit: 30,
+			want:  30,
+		},
+		{
+			name:  "No_Effect_Limit_Over",
+			step:  5,
+			curr:  34,
+			limit: 30,
+			want:  34,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := narrowInLimit(tt.step, tt.curr, tt.limit)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestWidenInLimit(t *testing.T) {
+	tests := []struct {
+		name  string
+		step  int
+		curr  int
+		limit int
+		want  int
+	}{
+		{
+			name:  "Modified",
+			step:  5,
+			curr:  35,
+			limit: 40,
+			want:  40,
+		},
+		{
+			name:  "No_Effect_Limit_Over",
+			step:  5,
+			curr:  30,
+			limit: 34,
+			want:  30,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := widenInLimit(tt.step, tt.curr, tt.limit)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
