@@ -12,8 +12,10 @@ import (
 )
 
 const (
-	TIMELINE_DETAILS_IDX = 1 // index of details in the base flex container
-	TIMELINE_TREE_TITLE  = "Details (d)"
+	TIMELINE_DETAILS_IDX               = 1 // index of details in the base flex container
+	TIMELINE_TREE_TITLE                = "Details (d)"
+	SPAN_NAME_COLUMN_WIDTH_RESIZE_UNIT = 5
+	SPAN_NAME_COLUMN_WIDTH_DEFAULT     = 30
 )
 
 var colors = []tcell.Color{
@@ -77,8 +79,9 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 		})
 
 	// place spans on the timeline
+	snameWidth := SPAN_NAME_COLUMN_WIDTH_DEFAULT
 	grid := tview.NewGrid().
-		SetColumns(30, 0). // TODO: dynamic width
+		SetColumns(snameWidth, 0). // TODO: dynamic width
 		SetBorders(true).
 		AddItem(title, 0, 0, 1, 1, 0, 0, false).
 		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
@@ -139,6 +142,15 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 					traceContainer.AddItem(details, 0, 3, false)
 				}
 				return nil
+			case tcell.KeyCtrlL:
+				_, _, w, _ := grid.GetInnerRect()
+				snameWidth = widenInLimit(SPAN_NAME_COLUMN_WIDTH_RESIZE_UNIT, snameWidth, w)
+				grid.SetColumns(snameWidth, 0)
+				return nil
+			case tcell.KeyCtrlH:
+				snameWidth = narrowInLimit(SPAN_NAME_COLUMN_WIDTH_RESIZE_UNIT, snameWidth, SPAN_NAME_COLUMN_WIDTH_DEFAULT)
+				grid.SetColumns(snameWidth, 0)
+				return nil
 			}
 			return event
 		})
@@ -179,7 +191,23 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 	return base, KeyMaps{
 		*tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone):   "Move up",
 		*tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone): "Move down",
+		*tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl): "Widen side col",
+		*tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl): "Narrow side col",
 	}
+}
+
+func narrowInLimit(step, curr, limit int) int {
+	if curr-step >= limit {
+		return curr - step
+	}
+	return curr
+}
+
+func widenInLimit(step, curr, limit int) int {
+	if curr+step <= limit {
+		return curr + step
+	}
+	return curr
 }
 
 func calculateTimelineUnit(duration time.Duration) (unit time.Duration, count int) {
