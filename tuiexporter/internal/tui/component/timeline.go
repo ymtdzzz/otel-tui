@@ -189,10 +189,22 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 	})
 
 	return base, KeyMaps{
-		*tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone):   "Move up",
-		*tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone): "Move down",
-		*tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl): "Widen side col",
-		*tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl): "Narrow side col",
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
+			description: "Move up",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
+			description: "Move down",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Widen side col",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			description: "Narrow side col",
+		},
 	}
 }
 
