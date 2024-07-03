@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -20,7 +21,12 @@ const (
 
 var keyMapRegex = regexp.MustCompile(`Rune|\[|\]`)
 
-type KeyMaps map[tcell.EventKey]string
+type KeyMap struct {
+	key         *tcell.EventKey
+	description string
+}
+
+type KeyMaps []*KeyMap
 
 type TUIPages struct {
 	pages      *tview.Pages
@@ -178,11 +184,26 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 	page = attatchCommandList(page, KeyMaps{
-		*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone):   "Toggle Log",
-		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search traces",
-		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
-		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
-		*tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl):  "Clear all data",
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Clear all data",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search traces",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "(search) Cancel",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "(search) Confirm",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
+			description: "(debug) Toggle Log",
+		},
 	})
 	page = attatchTab(page, PAGE_TRACES)
 
@@ -232,8 +253,14 @@ func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lc
 	)
 	timeline.AddItem(tl, 0, 1, true)
 
-	keymaps[*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone)] = "Toggle Log"
-	keymaps[*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone)] = "Back to Traces"
+	keymaps = append(keymaps, &KeyMap{
+		key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
+		description: "Toggle Log",
+	})
+	keymaps = append(keymaps, &KeyMap{
+		key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+		description: "Back to Traces",
+	})
 	timeline = attatchCommandList(timeline, keymaps)
 
 	p.timeline.AddItem(timeline, 0, 1, true)
@@ -342,12 +369,30 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	})
 	pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
 	pageContainer = attatchCommandList(pageContainer, KeyMaps{
-		*tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone):   "Toggle Log",
-		*tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone):  "Search logs",
-		*tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone):   "(search) Cancel",
-		*tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone): "(search) Confirm",
-		*tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl):  "Clear all data",
-		*tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone):  "Copy Log to clipboard",
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Clear all data",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone),
+			description: "Copy Log to clipboard",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search Logs",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "(search) Cancel",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "(search) Confirm",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
+			description: "(debug) Toggle Log",
+		},
 	})
 	pageContainer = attatchTab(pageContainer, PAGE_LOGS)
 
@@ -391,11 +436,16 @@ func attatchTab(p tview.Primitive, name string) *tview.Flex {
 
 func attatchCommandList(p tview.Primitive, keys KeyMaps) *tview.Flex {
 	keytexts := []string{}
-	for k, v := range keys {
-		keytexts = append(keytexts, keyMapRegex.ReplaceAllString(k.Name(), "")+": "+v)
+	for _, v := range keys {
+		keytexts = append(keytexts, fmt.Sprintf("[yellow]%s[white]: %s",
+			keyMapRegex.ReplaceAllString(v.key.Name(), ""),
+			v.description,
+		))
 	}
 
-	command := tview.NewTextView().SetText(strings.Join(keytexts, ", "))
+	command := tview.NewTextView().
+		SetDynamicColors(true).
+		SetText(strings.Join(keytexts, " | "))
 
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
 	base.AddItem(p, 0, 1, true).
