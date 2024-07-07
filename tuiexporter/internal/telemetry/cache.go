@@ -12,10 +12,6 @@ type TraceSpanDataMap map[string][]*SpanData
 // This is used to quickly look up all spans in a trace for a service
 type TraceServiceSpanDataMap map[string]map[string][]*SpanData
 
-// TraceLogDataMap is a map of trace id to a slice of logs
-// This is used to quickly look up all logs in a trace
-type TraceLogDataMap map[string][]*LogData
-
 // TraceCache is a cache of trace spans
 type TraceCache struct {
 	spanid2span    SpanDataMap
@@ -103,6 +99,10 @@ func (c *TraceCache) flush() {
 	c.tracesvc2spans = TraceServiceSpanDataMap{}
 }
 
+// TraceLogDataMap is a map of trace id to a slice of logs
+// This is used to quickly look up all logs in a trace
+type TraceLogDataMap map[string][]*LogData
+
 // LogCache is a cache of logs
 type LogCache struct {
 	traceid2logs TraceLogDataMap
@@ -148,4 +148,72 @@ func (c *LogCache) GetLogsByTraceID(traceID string) ([]*LogData, bool) {
 
 func (c *LogCache) flush() {
 	c.traceid2logs = TraceLogDataMap{}
+}
+
+// MetricServiceMetricDataMap is a map of service name and metric name to a slice of metrics
+// This is used to quickly look up datapoints in a service metric
+type MetricServiceMetricDataMap map[string]map[string][]*MetricData
+
+// MetricCache is a cache of metrics
+type MetricCache struct {
+	svcmetric2metrics MetricServiceMetricDataMap
+}
+
+// NewMetricCache returns a new metric cache
+func NewMetricCache() *MetricCache {
+	return &MetricCache{
+		svcmetric2metrics: MetricServiceMetricDataMap{},
+	}
+}
+
+// UpdateCache updates the cache with a new metric
+func (c *MetricCache) UpdateCache(sname string, data *MetricData) {
+	mname := data.Metric.Name()
+	if sms, ok := c.svcmetric2metrics[sname]; ok {
+		if _, ok := sms[mname]; ok {
+			c.svcmetric2metrics[sname][mname] = append(c.svcmetric2metrics[sname][mname], data)
+		} else {
+			c.svcmetric2metrics[sname][mname] = []*MetricData{data}
+		}
+	} else {
+		c.svcmetric2metrics[sname] = map[string][]*MetricData{mname: {data}}
+	}
+}
+
+// DeleteCache deletes a list of metrics from the cache
+func (c *MetricCache) DeleteCache(metrics []*MetricData) {
+	for _, m := range metrics {
+		sname := "N/A"
+		if snameattr, ok := m.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
+			sname = snameattr.AsString()
+		}
+		mname := m.Metric.Name()
+		if _, ok := c.svcmetric2metrics[sname][mname]; ok {
+			for i, metric := range c.svcmetric2metrics[sname][mname] {
+				if metric == m {
+					c.svcmetric2metrics[sname][mname] = append(c.svcmetric2metrics[sname][mname][:i], c.svcmetric2metrics[sname][mname][i+1:]...)
+					if len(c.svcmetric2metrics[sname][mname]) == 0 {
+						delete(c.svcmetric2metrics[sname], mname)
+						if len(c.svcmetric2metrics[sname]) == 0 {
+							delete(c.svcmetric2metrics, sname)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// GetMetricsBySvcAndMetricName returns all metrics for a given service name and metric name
+func (c *MetricCache) GetMetricsBySvcAndMetricName(sname, mname string) ([]*MetricData, bool) {
+	if sms, ok := c.svcmetric2metrics[sname]; ok {
+		if ms, ok := sms[mname]; ok {
+			return ms, ok
+		}
+	}
+	return nil, false
+}
+
+func (c *MetricCache) flush() {
+	c.svcmetric2metrics = MetricServiceMetricDataMap{}
 }

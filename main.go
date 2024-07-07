@@ -74,6 +74,10 @@ service:
       receivers: [otlp]
       processors: []
       exporters: [tui]
+    metrics:
+      receivers: [otlp]
+      processors: []
+      exporters: [tui]
 `
 
 			configProviderSettings := otelcol.ConfigProviderSettings{

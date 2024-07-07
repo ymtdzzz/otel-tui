@@ -43,8 +43,11 @@ func TestSpanDataIsRoot(t *testing.T) {
 func TestStoreGetter(t *testing.T) {
 	store := NewStore()
 	assert.Equal(t, store.tracecache, store.GetTraceCache())
+	assert.Equal(t, store.metriccache, store.GetMetricCache())
+	assert.Equal(t, store.logcache, store.GetLogCache())
 	assert.Equal(t, &store.svcspans, store.GetSvcSpans())
 	assert.Equal(t, &store.svcspansFiltered, store.GetFilteredSvcSpans())
+	assert.Equal(t, &store.metricsFiltered, store.GetFilteredMetrics())
 	assert.Equal(t, &store.logsFiltered, store.GetFilteredLogs())
 	assert.Equal(t, store.updatedAt, store.UpdatedAt())
 }
@@ -101,6 +104,64 @@ func TestStoreSpanFilters(t *testing.T) {
 				assert.Equal(t, want.Span, got[idx].Span)
 				assert.Equal(t, want.ResourceSpan, got[idx].ResourceSpan)
 				assert.Equal(t, want.ScopeSpans, got[idx].ScopeSpans)
+			}
+		})
+	}
+}
+
+func TestStoreMetricFilters(t *testing.T) {
+	// metric: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- metric: metric-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- metric: metric-1-2-1
+	//  |     └- datapoint: dp-1-2-1-1
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- metric: metric-2-1-1
+	//        └- datapoint: dp-2-1-1-1
+	store := NewStore()
+	payload, testdata := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	store.AddMetric(&payload)
+
+	store.ApplyFilterMetrics("service-2")
+	assert.Equal(t, 1, len(store.metricsFiltered))
+	store.ApplyFilterMetrics("metric 0")
+	assert.Equal(t, 2, len(store.metricsFiltered))
+
+	tests := []struct {
+		name string
+		idx  int
+		want *MetricData
+	}{
+		{
+			name: "invalid index",
+			idx:  2,
+			want: nil,
+		},
+		{
+			name: "valid index",
+			idx:  1,
+			want: &MetricData{
+				Metric:         testdata.Metrics[1],  // metric-1-2-1
+				ResourceMetric: testdata.RMetrics[0], // test-service-1
+				ScopeMetric:    testdata.SMetrics[1], // test-scope-1-2
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run("GetFilteredMetricByIdx_"+tt.name, func(t *testing.T) {
+			got := store.GetFilteredMetricByIdx(tt.idx)
+			if tt.want != nil {
+				assert.Equal(t, tt.want.Metric, got.Metric)
+				assert.Equal(t, tt.want.ResourceMetric, got.ResourceMetric)
+				assert.Equal(t, tt.want.ScopeMetric, got.ScopeMetric)
+			} else {
+				assert.Nil(t, got)
 			}
 		})
 	}
@@ -290,6 +351,89 @@ func TestStoreAddSpanWithRotation(t *testing.T) {
 	}
 }
 
+func TestStoreAddMetricWithoutRotation(t *testing.T) {
+	// metric: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- metric: metric-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- metric: metric-1-2-1
+	//  |     └- datapoint: dp-1-2-1-1
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- metric: metric-2-1-1
+	//        └- datapoint: dp-2-1-1-1
+	store := NewStore()
+	store.maxMetricCount = 3 // no rotation
+	before := store.updatedAt
+	payload, testdata := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	store.AddMetric(&payload)
+
+	assert.Equal(t, "", store.filterMetric)
+	assert.True(t, before.Before(store.updatedAt))
+
+	// assert metrics
+	assert.Equal(t, 3, len(store.metrics))
+	assert.Equal(t, testdata.Metrics[0], store.metrics[0].Metric)          // metric-1-1-1
+	assert.Equal(t, testdata.RMetrics[0], store.metrics[0].ResourceMetric) // test-service-1
+	assert.Equal(t, testdata.SMetrics[0], store.metrics[0].ScopeMetric)    // test-scope-1-1
+	assert.Equal(t, testdata.Metrics[2], store.metrics[2].Metric)          // metric-2-1-1
+	assert.Equal(t, testdata.RMetrics[1], store.metrics[2].ResourceMetric) // test-service-2
+	assert.Equal(t, testdata.SMetrics[2], store.metrics[2].ScopeMetric)    // test-scope-2-1
+
+	// assert metricsFiltered
+	assert.Equal(t, 3, len(store.metricsFiltered))
+	assert.Equal(t, testdata.Metrics[0], store.metricsFiltered[0].Metric) // metric-1-1-1
+	assert.Equal(t, testdata.Metrics[2], store.metricsFiltered[2].Metric) // metric-2-1-1
+
+	// assert cache svcmetric2metrics
+	assert.Equal(t, 2, len(store.metriccache.svcmetric2metrics))
+	assert.Equal(t, 2, len(store.metriccache.svcmetric2metrics["test-service-1"])) // metric-1-1-1, metric-1-2-1
+	assert.Equal(t, 1, len(store.metriccache.svcmetric2metrics["test-service-2"])) // metric-2-1-1
+	assert.Equal(t, testdata.Metrics[1], store.metriccache.svcmetric2metrics["test-service-1"]["metric 0-1"][0].Metric)
+}
+
+func TestStoreAddMetricWithRotation(t *testing.T) {
+	// metric: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- metric: metric-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- metric: metric-1-2-1
+	//  |     └- datapoint: dp-1-2-1-1
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- metric: metric-2-1-1
+	//        └- datapoint: dp-2-1-1-1
+	store := NewStore()
+	store.maxMetricCount = 1 // no rotation
+	before := store.updatedAt
+	payload, testdata := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	store.AddMetric(&payload)
+
+	assert.Equal(t, "", store.filterMetric)
+	assert.True(t, before.Before(store.updatedAt))
+
+	// assert metrics
+	assert.Equal(t, 1, len(store.metrics))
+	assert.Equal(t, testdata.Metrics[2], store.metrics[0].Metric)          // metric-2-1-1
+	assert.Equal(t, testdata.RMetrics[1], store.metrics[0].ResourceMetric) // test-service-2
+	assert.Equal(t, testdata.SMetrics[2], store.metrics[0].ScopeMetric)    // test-scope-2-1
+
+	// assert metricsFiltered
+	assert.Equal(t, 1, len(store.metricsFiltered))
+	assert.Equal(t, testdata.Metrics[2], store.metricsFiltered[0].Metric) // metric-2-1-1
+
+	// assert cache svcmetric2metrics
+	assert.Equal(t, 1, len(store.metriccache.svcmetric2metrics))
+	assert.Equal(t, 1, len(store.metriccache.svcmetric2metrics["test-service-2"])) // metric-2-1-1
+	assert.Equal(t, testdata.Metrics[2], store.metriccache.svcmetric2metrics["test-service-2"]["metric 1-0"][0].Metric)
+}
+
 func TestStoreAddLogWithoutRotation(t *testing.T) {
 	// traceid: 1
 	//  └- resource: test-service-1
@@ -413,16 +557,31 @@ func TestStoreFlush(t *testing.T) {
 	//      └- span: span-1-1-1
 	//        └- log: log-1-1-1-1
 	//        └- log: log-1-1-1-2
+	// metric: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- metric: metric-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-1
+	//  | |   └- datapoint: dp-1-1-1-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- metric: metric-1-2-1
+	//  |     └- datapoint: dp-1-2-1-1
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- metric: metric-2-1-1
+	//        └- datapoint: dp-2-1-1-1
 	store := NewStore()
 	store.maxServiceSpanCount = 1
 	tp1, _ := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	tp2, _ := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
 	lp1, _ := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	lp2, _ := test.GenerateOTLPLogsPayload(t, 2, 1, []int{1}, [][]int{{1}})
+	m, _ := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddSpan(&tp1)
 	store.AddSpan(&tp2)
 	store.AddLog(&lp1)
 	store.AddLog(&lp2)
+	store.AddMetric(&m)
 
 	before := store.updatedAt
 	store.Flush()
@@ -440,6 +599,11 @@ func TestStoreFlush(t *testing.T) {
 	assert.Equal(t, 0, len(store.logs))
 	assert.Equal(t, 0, len(store.logsFiltered))
 	assert.Equal(t, 0, len(store.logcache.traceid2logs))
+
+	// assert metrics
+	assert.Equal(t, 0, len(store.metrics))
+	assert.Equal(t, 0, len(store.metricsFiltered))
+	assert.Equal(t, 0, len(store.metriccache.svcmetric2metrics))
 }
 
 func TestLogDataGetResolvedBody(t *testing.T) {

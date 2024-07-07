@@ -1,0 +1,646 @@
+package component
+
+import (
+	"fmt"
+	"math"
+	"sort"
+	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/navidys/tvxwidgets"
+	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
+
+const NULL_VALUE_FLOAT64 = math.MaxFloat64
+
+type MetricDataForTable struct {
+	tview.TableContentReadOnly
+	metrics *[]*telemetry.MetricData
+}
+
+func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable {
+	return MetricDataForTable{
+		metrics: metrics,
+	}
+}
+
+// implementations for tview Virtual Table
+// see: https://github.com/rivo/tview/wiki/VirtualTable
+func (m MetricDataForTable) GetCell(row, column int) *tview.TableCell {
+	if row >= 0 && row < len(*m.metrics) {
+		return getCellFromMetrics((*m.metrics)[row], column)
+	}
+	return tview.NewTableCell("N/A")
+}
+
+func (m MetricDataForTable) GetRowCount() int {
+	return len(*m.metrics)
+}
+
+func (m MetricDataForTable) GetColumnCount() int {
+	// 0: ServiceName
+	// 1: MetricName
+	// 2: MetricType
+	// 3: MetricDataPointCount
+	return 4
+}
+
+// getCellFromLog returns a table cell for the given log and column.
+func getCellFromMetrics(metric *telemetry.MetricData, column int) *tview.TableCell {
+	text := "N/A"
+
+	switch column {
+	case 0:
+		if sname, ok := metric.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
+			text = sname.AsString()
+		}
+	case 1:
+		text = metric.Metric.Name()
+	case 2:
+		text = metric.Metric.Type().String()
+	case 3:
+		switch metric.Metric.Type() {
+		case pmetric.MetricTypeGauge:
+			text = fmt.Sprintf("%d", metric.Metric.Gauge().DataPoints().Len())
+		case pmetric.MetricTypeSum:
+			text = fmt.Sprintf("%d", metric.Metric.Sum().DataPoints().Len())
+		case pmetric.MetricTypeHistogram:
+			text = fmt.Sprintf("%d", metric.Metric.Histogram().DataPoints().Len())
+		case pmetric.MetricTypeExponentialHistogram:
+			text = fmt.Sprintf("%d", metric.Metric.ExponentialHistogram().DataPoints().Len())
+		case pmetric.MetricTypeSummary:
+			text = fmt.Sprintf("%d", metric.Metric.Summary().DataPoints().Len())
+		}
+	}
+
+	if text == "" {
+		text = "N/A"
+	}
+
+	return tview.NewTableCell(text)
+}
+
+func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
+	if m == nil {
+		return nil
+	}
+	root := tview.NewTreeNode("Metric")
+	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
+
+	mname := tview.NewTreeNode(fmt.Sprintf("name: %s", m.Metric.Name()))
+	munit := tview.NewTreeNode(fmt.Sprintf("unit: %s", m.Metric.Unit()))
+	mdesc := tview.NewTreeNode(fmt.Sprintf("description: %s", m.Metric.Description()))
+	mtype := tview.NewTreeNode(fmt.Sprintf("type: %s", m.Metric.Type().String()))
+
+	root.AddChild(mname)
+	root.AddChild(munit)
+	root.AddChild(mdesc)
+	root.AddChild(mtype)
+
+	// resource info
+	rm := m.ResourceMetric
+	r := rm.Resource()
+	resource := tview.NewTreeNode("Resource")
+	rdropped := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", r.DroppedAttributesCount()))
+	resource.AddChild(rdropped)
+	rschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", rm.SchemaUrl()))
+	resource.AddChild(rschema)
+
+	attrs := tview.NewTreeNode("Attributes")
+	appendAttrsSorted(attrs, r.Attributes().AsRaw())
+	resource.AddChild(attrs)
+
+	// scope info
+	scopes := tview.NewTreeNode("Scopes")
+	sm := m.ScopeMetric
+	s := sm.Scope()
+	scope := tview.NewTreeNode(s.Name())
+	sschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", sm.SchemaUrl()))
+	scope.AddChild(sschema)
+
+	scope.AddChild(tview.NewTreeNode(fmt.Sprintf("version: %s", s.Version())))
+	scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", s.DroppedAttributesCount())))
+
+	sattrs := tview.NewTreeNode("Attributes")
+	appendAttrsSorted(sattrs, s.Attributes().AsRaw())
+	scope.AddChild(sattrs)
+
+	scopes.AddChild(scope)
+	resource.AddChild(scopes)
+
+	// metric
+	metr := tview.NewTreeNode("Metrics")
+	scopes.AddChild(metr)
+	/// metadata
+	meta := tview.NewTreeNode("Metadata")
+	metr.AddChild(meta)
+	appendAttrsSorted(meta, m.Metric.Metadata().AsRaw())
+
+	/// datapoints
+	dps := tview.NewTreeNode("Datapoints")
+	metr.AddChild(dps)
+	switch m.Metric.Type() {
+	case pmetric.MetricTypeGauge:
+		for dpi := 0; dpi < m.Metric.Gauge().DataPoints().Len(); dpi++ {
+			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
+			d := m.Metric.Gauge().DataPoints().At(dpi)
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			// value
+			val := tview.NewTreeNode("Value")
+			val.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", d.ValueType().String())))
+			val.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", d.IntValue())))
+			val.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", d.DoubleValue())))
+			dp.AddChild(val)
+			// flags
+			flg := tview.NewTreeNode("Flags")
+			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
+			dp.AddChild(flg)
+			// exampler
+			exs := tview.NewTreeNode("Examplers")
+			dp.AddChild(exs)
+			for ei := 0; ei < d.Exemplars().Len(); ei++ {
+				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
+				exs.AddChild(ex)
+				e := d.Exemplars().At(ei)
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
+				// value
+				v := tview.NewTreeNode("Value")
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
+				ex.AddChild(v)
+				// filtered attributes
+				fattrs := tview.NewTreeNode("Filtered Attributes")
+				ex.AddChild(fattrs)
+				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+			}
+			// attributes
+			attrs := tview.NewTreeNode("Attributes")
+			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			dp.AddChild(attrs)
+
+			dps.AddChild(dp)
+		}
+	case pmetric.MetricTypeSum:
+		for dpi := 0; dpi < m.Metric.Sum().DataPoints().Len(); dpi++ {
+			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
+			d := m.Metric.Sum().DataPoints().At(dpi)
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			// value
+			val := tview.NewTreeNode("Value")
+			val.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", d.ValueType().String())))
+			val.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", d.IntValue())))
+			val.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", d.DoubleValue())))
+			dp.AddChild(val)
+			// flags
+			flg := tview.NewTreeNode("Flags")
+			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
+			dp.AddChild(flg)
+			// exampler
+			exs := tview.NewTreeNode("Examplers")
+			dp.AddChild(exs)
+			for ei := 0; ei < d.Exemplars().Len(); ei++ {
+				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
+				exs.AddChild(ex)
+				e := d.Exemplars().At(ei)
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
+				// value
+				v := tview.NewTreeNode("Value")
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
+				ex.AddChild(v)
+				// filtered attributes
+				fattrs := tview.NewTreeNode("Filtered Attributes")
+				ex.AddChild(fattrs)
+				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+			}
+			// attributes
+			attrs := tview.NewTreeNode("Attributes")
+			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			dp.AddChild(attrs)
+
+			dps.AddChild(dp)
+		}
+	case pmetric.MetricTypeHistogram:
+		for dpi := 0; dpi < m.Metric.Histogram().DataPoints().Len(); dpi++ {
+			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
+			d := m.Metric.Histogram().DataPoints().At(dpi)
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts: %v", d.BucketCounts().AsRaw())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("explicit bounds: %v", d.ExplicitBounds().AsRaw())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("max: %f", d.Max())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("min: %f", d.Min())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("sum: %f", d.Sum())))
+			// flags
+			flg := tview.NewTreeNode("Flags")
+			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
+			dp.AddChild(flg)
+			// exampler
+			exs := tview.NewTreeNode("Examplers")
+			dp.AddChild(exs)
+			for ei := 0; ei < d.Exemplars().Len(); ei++ {
+				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
+				exs.AddChild(ex)
+				e := d.Exemplars().At(ei)
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
+				// value
+				v := tview.NewTreeNode("Value")
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
+				ex.AddChild(v)
+				// filtered attributes
+				fattrs := tview.NewTreeNode("Filtered Attributes")
+				ex.AddChild(fattrs)
+				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+			}
+			// attributes
+			attrs := tview.NewTreeNode("Attributes")
+			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			dp.AddChild(attrs)
+
+			dps.AddChild(dp)
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		for dpi := 0; dpi < m.Metric.ExponentialHistogram().DataPoints().Len(); dpi++ {
+			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
+			d := m.Metric.ExponentialHistogram().DataPoints().At(dpi)
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("scale: %d", d.Scale())))
+			neg := tview.NewTreeNode("Negative")
+			dp.AddChild(neg)
+			neg.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts: %v", d.Negative().BucketCounts().AsRaw())))
+			neg.AddChild(tview.NewTreeNode(fmt.Sprintf("offset: %d", d.Negative().Offset())))
+			pos := tview.NewTreeNode("Positive")
+			dp.AddChild(pos)
+			pos.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts: %v", d.Positive().BucketCounts().AsRaw())))
+			pos.AddChild(tview.NewTreeNode(fmt.Sprintf("offset: %d", d.Positive().Offset())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("max: %f", d.Max())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("min: %f", d.Min())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("sum: %f", d.Sum())))
+			// flags
+			flg := tview.NewTreeNode("Flags")
+			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
+			dp.AddChild(flg)
+			// exampler
+			exs := tview.NewTreeNode("Examplers")
+			dp.AddChild(exs)
+			for ei := 0; ei < d.Exemplars().Len(); ei++ {
+				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
+				exs.AddChild(ex)
+				e := d.Exemplars().At(ei)
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
+				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
+				// value
+				v := tview.NewTreeNode("Value")
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
+				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
+				ex.AddChild(v)
+				// filtered attributes
+				fattrs := tview.NewTreeNode("Filtered Attributes")
+				ex.AddChild(fattrs)
+				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+			}
+			// attributes
+			attrs := tview.NewTreeNode("Attributes")
+			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			dp.AddChild(attrs)
+
+			dps.AddChild(dp)
+		}
+	case pmetric.MetricTypeSummary:
+		for dpi := 0; dpi < m.Metric.Summary().DataPoints().Len(); dpi++ {
+			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
+			d := m.Metric.Summary().DataPoints().At(dpi)
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
+			d.QuantileValues().At(0).Quantile()
+			d.QuantileValues().At(0).Value()
+			// quantile
+			quants := tview.NewTreeNode("Quantile Values")
+			dp.AddChild(quants)
+			for qi := 0; qi < d.QuantileValues().Len(); qi++ {
+				q := d.QuantileValues().At(qi)
+				quant := tview.NewTreeNode(fmt.Sprintf("%d", qi))
+				quants.AddChild(quant)
+				quant.AddChild(tview.NewTreeNode(fmt.Sprintf("quantile: %f", q.Quantile())))
+				quant.AddChild(tview.NewTreeNode(fmt.Sprintf("value: %f", q.Value())))
+			}
+			// flags
+			flg := tview.NewTreeNode("Flags")
+			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
+			dp.AddChild(flg)
+			// attributes
+			attrs := tview.NewTreeNode("Attributes")
+			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			dp.AddChild(attrs)
+
+			dps.AddChild(dp)
+		}
+	}
+
+	root.AddChild(resource)
+
+	tree.SetSelectedFunc(func(node *tview.TreeNode) {
+		node.SetExpanded(!node.IsExpanded())
+	})
+
+	return tree
+}
+
+type ByTimestamp []*pmetric.NumberDataPoint
+
+func (a ByTimestamp) Len() int      { return len(a) }
+func (a ByTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool {
+	return a[i].Timestamp().AsTime().Before(a[j].Timestamp().AsTime())
+}
+
+func drawMetricChartByRow(store *telemetry.Store, row int) tview.Primitive {
+	m := store.GetFilteredMetricByIdx(row)
+	mcache := store.GetMetricCache()
+	sname := "N/A"
+	if snameattr, ok := m.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
+		sname = snameattr.AsString()
+	}
+	ms, ok := mcache.GetMetricsBySvcAndMetricName(sname, m.Metric.Name())
+	if !ok {
+		return nil
+	}
+
+	// attribute name and value map
+	dataMap := make(map[string]map[string][]*pmetric.NumberDataPoint, 1)
+	attrkeys := []string{}
+
+	support := true
+	start := time.Unix(1<<63-62135596801, 999999999)
+	end := time.Unix(0, 0)
+	for _, m := range ms {
+		var (
+			attrs map[string]any
+			dp    pmetric.NumberDataPoint
+		)
+
+		switch m.Metric.Type() {
+		case pmetric.MetricTypeGauge:
+			for dpi := 0; dpi < m.Metric.Gauge().DataPoints().Len(); dpi++ {
+				dp = m.Metric.Gauge().DataPoints().At(dpi)
+				attrs = dp.Attributes().AsRaw()
+				dpts := dp.Timestamp().AsTime()
+				if dpts.Before(start) {
+					start = dpts
+				}
+				if dpts.After(end) {
+					end = dpts
+				}
+			}
+		case pmetric.MetricTypeSum:
+			for dpi := 0; dpi < m.Metric.Sum().DataPoints().Len(); dpi++ {
+				dp = m.Metric.Sum().DataPoints().At(dpi)
+				attrs = dp.Attributes().AsRaw()
+				dpts := dp.Timestamp().AsTime()
+				if dpts.Before(start) {
+					start = dpts
+				}
+				if dpts.After(end) {
+					end = dpts
+				}
+			}
+		case pmetric.MetricTypeHistogram:
+			support = false
+		case pmetric.MetricTypeExponentialHistogram:
+			support = false
+		case pmetric.MetricTypeSummary:
+			support = false
+		}
+		if !support {
+			break
+		}
+
+		if len(attrs) > 0 {
+			// sort keys
+			keys := make([]string, 0, len(attrs))
+			for k := range attrs {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				v := attrs[k]
+				vstr := fmt.Sprintf("%s", v)
+				if attrkey, ok := dataMap[k]; ok {
+					if _, ok := attrkey[vstr]; ok {
+						dataMap[k][vstr] = append(dataMap[k][vstr], &dp)
+					} else {
+						dataMap[k][vstr] = []*pmetric.NumberDataPoint{&dp}
+					}
+				} else {
+					attrkeys = append(attrkeys, k)
+					dataMap[k] = map[string][]*pmetric.NumberDataPoint{vstr: {&dp}}
+				}
+			}
+		} else {
+			k := "N/A"
+			vstr := "N/A"
+			if attrkey, ok := dataMap[k]; ok {
+				if _, ok := attrkey[vstr]; ok {
+					dataMap[k][vstr] = append(dataMap[k][vstr], &dp)
+				} else {
+					dataMap[k][vstr] = []*pmetric.NumberDataPoint{&dp}
+				}
+			} else {
+				attrkeys = append(attrkeys, k)
+				dataMap[k] = map[string][]*pmetric.NumberDataPoint{vstr: {&dp}}
+			}
+		}
+	}
+
+	chart := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	if !support {
+		txt := tview.NewTextView().SetText("This metric type is not supported")
+		chart.AddItem(txt, 0, 1, false)
+		return chart
+	}
+
+	for k := range dataMap {
+		for kk := range dataMap[k] {
+			sort.Sort(ByTimestamp(dataMap[k][kk]))
+		}
+	}
+
+	getTitle := func(idx int) string {
+		return fmt.Sprintf("%s [%d / %d] ( <- | -> )", attrkeys[idx], idx+1, len(attrkeys))
+	}
+
+	// Draw a chart of the first attribute
+	attrkeyidx := 0
+	data, txts := getDataToDraw(dataMap, attrkeys[attrkeyidx], start, end)
+	ch := tvxwidgets.NewPlot()
+	ch.SetMarker(tvxwidgets.PlotMarkerBraille)
+	ch.SetTitle(getTitle(attrkeyidx))
+	ch.SetBorder(true)
+	ch.SetData(data)
+	ch.SetDrawXAxisLabel(false)
+	ch.SetLineColor(colors)
+
+	legend := tview.NewFlex().SetDirection(tview.FlexRow)
+	legend.AddItem(txts, 0, 1, false)
+
+	ch.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyRight:
+			if attrkeyidx < len(attrkeys)-1 {
+				attrkeyidx++
+			} else {
+				attrkeyidx = 0
+			}
+			ch.SetTitle(getTitle(attrkeyidx))
+			data, txts := getDataToDraw(dataMap, attrkeys[attrkeyidx], start, end)
+			legend.Clear()
+			legend.AddItem(txts, 0, 1, false)
+			ch.SetData(data)
+			return nil
+		case tcell.KeyLeft:
+			if attrkeyidx > 0 {
+				attrkeyidx--
+			} else {
+				attrkeyidx = len(attrkeys) - 1
+			}
+			ch.SetTitle(getTitle(attrkeyidx))
+			data, txts := getDataToDraw(dataMap, attrkeys[attrkeyidx], start, end)
+			legend.Clear()
+			legend.AddItem(txts, 0, 1, false)
+			ch.SetData(data)
+			return nil
+		}
+		return event
+	})
+
+	chart.AddItem(ch, 0, 7, true).AddItem(legend, 0, 3, false)
+
+	return chart
+}
+
+func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, attrkey string, start, end time.Time) ([][]float64, *tview.Flex) {
+	// Sort keys
+	keys := make([]string, 0, len(dataMap[attrkey]))
+	for k := range dataMap[attrkey] {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	// Count datapoints
+	dpnum := 0
+	for _, k := range keys {
+		dpnum += len(dataMap[attrkey][k])
+	}
+	d := make([][]float64, len(keys))
+	for i := range d {
+		d[i] = make([]float64, dpnum)
+	}
+	// Set null value
+	for i := range d {
+		for ii := range d[i] {
+			d[i][ii] = NULL_VALUE_FLOAT64
+		}
+	}
+	txts := tview.NewFlex().SetDirection(tview.FlexRow)
+	count := 0
+	wholedur := end.Sub(start).Nanoseconds()
+	type locateMap struct {
+		prevpos int
+		prevval float64
+		pos     int
+		val     float64
+	}
+	locatedposmap := make(map[int][]locateMap, len(keys))
+	// Set values to timestamp relative position.
+	// Note that this process keeps values between corresponding positions null value.
+	// ex: [1.2 1.3 null 1.6 1.1 null null 2.5]
+	for _, k := range keys {
+		prevpos := -1
+		prevval := NULL_VALUE_FLOAT64
+		for _, dp := range dataMap[attrkey][k] {
+			// Get timestamp and locate it to relative position
+			dur := dp.Timestamp().AsTime().Sub(start).Nanoseconds()
+			var ratio float64
+			if dur == 0 {
+				ratio = 0
+			} else {
+				ratio = float64(dur) / float64(wholedur)
+			}
+			pos := int(math.Round(float64(dpnum) * ratio))
+			if pos >= len(d[count]) {
+				pos = len(d[count]) - 1
+			}
+			if pos < 0 {
+				pos = 0
+			}
+			var val float64
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeDouble:
+				val = dp.DoubleValue()
+			case pmetric.NumberDataPointValueTypeInt:
+				val = float64(dp.IntValue())
+			}
+			d[count][pos] = val
+			locatedposmap[count] = append(locatedposmap[count], locateMap{
+				prevpos: prevpos,
+				prevval: prevval,
+				pos:     pos,
+				val:     val,
+			})
+			prevpos = pos
+			prevval = val
+		}
+		txt := tview.NewTextView()
+		txt.SetTextColor(colors[count])
+		txt.SetText(fmt.Sprintf("● %s: %s", attrkey, k))
+		txts.AddItem(txt, 2, 1, false)
+		count++
+	}
+	// Replace null value with appropriate value for smooth line
+	for i := range d {
+		for c, pmap := range locatedposmap[i] {
+			// Fill after the last element
+			if c == len(locatedposmap[i])-1 && pmap.pos < dpnum {
+				for j := pmap.pos + 1; j < dpnum; j++ {
+					d[i][j] = pmap.val
+				}
+			}
+			// Fill before the first element
+			if pmap.prevpos == -1 {
+				for j := 0; j < pmap.pos; j++ {
+					d[i][j] = pmap.val
+				}
+				continue
+			}
+			split := pmap.pos - pmap.prevpos
+			diff := pmap.val - pmap.prevval
+			step := diff / float64(split+1)
+			curr := pmap.prevval
+			for j := pmap.prevpos + 1; j < pmap.pos; j++ {
+				curr += step
+				d[i][j] = curr
+			}
+		}
+	}
+	return d, txts
+}
