@@ -102,7 +102,12 @@ There're a lot of things to do. Here are some of them:
     - [x] Display metric stream
     - [x] Filter metrics
     - [x] Show metric information
-    - [x] Display basic chart of the selected metric
+    - [ ] Display basic chart of the selected metric
+      - [x] Gauge
+      - [x] Sum
+      - [ ] Histogram
+      - [ ] ExponentialHistogram
+      - [ ] Summary
   - [ ] Metric list
     - [ ] Display metric stream
     - [ ] Flexible chart (query, selectable dimensions, etc.)
