@@ -47,7 +47,7 @@ func GenerateOTLPLogsPayload(t *testing.T, traceID, resourceCount int, scopeCoun
 			fillScope(t, scopeLog.Scope(), resourceIndex, scopeIndex)
 			generatedLogs.SLogs = append(generatedLogs.SLogs, &scopeLog)
 
-			//Create and populate spans
+			// Create and populate logs
 			scopeLog.LogRecords().EnsureCapacity(spanCount)
 			for spanIndex := 0; spanIndex < spanCount; spanIndex++ {
 				// 2 logs per span

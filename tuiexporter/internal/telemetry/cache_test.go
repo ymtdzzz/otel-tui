@@ -151,3 +151,47 @@ func TestGetLogsByTraceID(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMetricsBySvcAndMetricName(t *testing.T) {
+	c := NewMetricCache()
+	metrics := []*MetricData{}
+	c.svcmetric2metrics["sname"] = map[string][]*MetricData{"mname": metrics}
+
+	tests := []struct {
+		name     string
+		sname    string
+		mname    string
+		wantdata []*MetricData
+		wantok   bool
+	}{
+		{
+			name:     "service and metrics exists",
+			sname:    "sname",
+			mname:    "mname",
+			wantdata: metrics,
+			wantok:   true,
+		},
+		{
+			name:     "service exists but metrics does not",
+			sname:    "sname",
+			mname:    "non-existent-metric",
+			wantdata: nil,
+			wantok:   false,
+		},
+		{
+			name:     "service does not exist",
+			sname:    "non-existent-sname",
+			mname:    "mname",
+			wantdata: nil,
+			wantok:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotdata, gotok := c.GetMetricsBySvcAndMetricName(tt.sname, tt.mname)
+			assert.Equal(t, tt.wantdata, gotdata)
+			assert.Equal(t, tt.wantok, gotok)
+		})
+	}
+}

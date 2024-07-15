@@ -7,11 +7,13 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
 	MAX_SERVICE_SPAN_COUNT = 1000
+	MAX_METRIC_COUNT       = 1000
 	MAX_LOG_COUNT          = 1000
 )
 
@@ -31,6 +33,14 @@ func (sd *SpanData) IsRoot() bool {
 // SvcSpans is a slice of service spans
 // This is a slice of one span of a single service
 type SvcSpans []*SpanData
+
+// MetricData is a struct to represent a metric
+type MetricData struct {
+	Metric         *pmetric.Metric
+	ResourceMetric *pmetric.ResourceMetrics
+	ScopeMetric    *pmetric.ScopeMetrics
+	ReceivedAt     time.Time
+}
 
 // LogData is a struct to represent a log
 type LogData struct {
@@ -54,15 +64,20 @@ func (l *LogData) GetResolvedBody() string {
 type Store struct {
 	mut                 sync.Mutex
 	filterSvc           string
+	filterMetric        string
 	filterLog           string
 	svcspans            SvcSpans
 	svcspansFiltered    SvcSpans
 	tracecache          *TraceCache
+	metrics             []*MetricData
+	metricsFiltered     []*MetricData
+	metriccache         *MetricCache
 	logs                []*LogData
 	logsFiltered        []*LogData
 	logcache            *LogCache
 	updatedAt           time.Time
 	maxServiceSpanCount int
+	maxMetricCount      int
 	maxLogCount         int
 }
 
@@ -73,17 +88,26 @@ func NewStore() *Store {
 		svcspans:            SvcSpans{},
 		svcspansFiltered:    SvcSpans{},
 		tracecache:          NewTraceCache(),
+		metrics:             []*MetricData{},
+		metricsFiltered:     []*MetricData{},
+		metriccache:         NewMetricCache(),
 		logs:                []*LogData{},
 		logsFiltered:        []*LogData{},
 		logcache:            NewLogCache(),
 		maxServiceSpanCount: MAX_SERVICE_SPAN_COUNT, // TODO: make this configurable
+		maxMetricCount:      MAX_METRIC_COUNT,       // TODO: make this configurable
 		maxLogCount:         MAX_LOG_COUNT,          // TODO: make this configurable
 	}
 }
 
-// GetTraceCache returns the cache
+// GetTraceCache returns the trace cache
 func (s *Store) GetTraceCache() *TraceCache {
 	return s.tracecache
+}
+
+// GetMetricCache returns the metric cache
+func (s *Store) GetMetricCache() *MetricCache {
+	return s.metriccache
 }
 
 // GetLogCache returns the log cache
@@ -99,6 +123,11 @@ func (s *Store) GetSvcSpans() *SvcSpans {
 // GetFilteredSvcSpans returns the filtered service spans in the store
 func (s *Store) GetFilteredSvcSpans() *SvcSpans {
 	return &s.svcspansFiltered
+}
+
+// GetFilteredMetrics returns the filetered metrics in the store
+func (s *Store) GetFilteredMetrics() *[]*MetricData {
+	return &s.metricsFiltered
 }
 
 // GetFilteredLogs returns the filtered logs in the store
@@ -133,6 +162,32 @@ func (s *Store) updateFilterService() {
 	s.ApplyFilterService(s.filterSvc)
 }
 
+// ApplyFilterMetrics applies a filter to the metrics
+func (s *Store) ApplyFilterMetrics(filter string) {
+	s.filterMetric = filter
+	s.metricsFiltered = []*MetricData{}
+
+	if filter == "" {
+		s.metricsFiltered = s.metrics
+		return
+	}
+
+	for _, metric := range s.metrics {
+		sname := ""
+		if snameattr, ok := metric.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
+			sname = snameattr.AsString()
+		}
+		target := sname + " " + metric.Metric.Name()
+		if strings.Contains(target, filter) {
+			s.metricsFiltered = append(s.metricsFiltered, metric)
+		}
+	}
+}
+
+func (s *Store) updateFilterMetrics() {
+	s.ApplyFilterMetrics(s.filterMetric)
+}
+
 // ApplyFilterLogs applies a filter to the logs
 func (s *Store) ApplyFilterLogs(filter string) {
 	s.filterLog = filter
@@ -144,8 +199,11 @@ func (s *Store) ApplyFilterLogs(filter string) {
 	}
 
 	for _, log := range s.logs {
-		sname, _ := log.ResourceLog.Resource().Attributes().Get("service.name")
-		target := sname.AsString() + " " + log.Log.Body().AsString()
+		sname := ""
+		if snameattr, ok := log.ResourceLog.Resource().Attributes().Get("service.name"); ok {
+			sname = snameattr.AsString()
+		}
+		target := sname + " " + log.Log.Body().AsString()
 		if strings.Contains(target, filter) {
 			s.logsFiltered = append(s.logsFiltered, log)
 		}
@@ -177,6 +235,14 @@ func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 	return spans
 }
 
+// GetFilteredMetricByIdx returns the metric at the given index
+func (s *Store) GetFilteredMetricByIdx(idx int) *MetricData {
+	if idx < 0 || idx >= len(s.metricsFiltered) {
+		return nil
+	}
+	return s.metricsFiltered[idx]
+}
+
 // GetFilteredLogByIdx returns the log at the given index
 func (s *Store) GetFilteredLogByIdx(idx int) *LogData {
 	if idx < 0 || idx >= len(s.logsFiltered) {
@@ -185,7 +251,7 @@ func (s *Store) GetFilteredLogByIdx(idx int) *LogData {
 	return s.logsFiltered[idx]
 }
 
-// AddSpan adds a span to the store
+// AddSpan adds spans to the store
 func (s *Store) AddSpan(traces *ptrace.Traces) {
 	s.mut.Lock()
 	defer func() {
@@ -203,6 +269,7 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 				span := ss.Spans().At(si)
 				// attribute service.name is required
 				// see: https://opentelemetry.io/docs/specs/semconv/resource/#service
+				// TODO: set default value when service name is not set
 				sname, _ := rs.Resource().Attributes().Get("service.name")
 				sd := &SpanData{
 					Span:         &span,
@@ -230,7 +297,50 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 	s.updateFilterService()
 }
 
-// AddLog adds a log to the store
+// AddMetric adds metrics to the store
+func (s *Store) AddMetric(metrics *pmetric.Metrics) {
+	s.mut.Lock()
+	defer func() {
+		s.updatedAt = time.Now()
+		s.mut.Unlock()
+	}()
+
+	for rmi := 0; rmi < metrics.ResourceMetrics().Len(); rmi++ {
+		rm := metrics.ResourceMetrics().At(rmi)
+
+		for smi := 0; smi < rm.ScopeMetrics().Len(); smi++ {
+			sm := rm.ScopeMetrics().At(smi)
+
+			for si := 0; si < sm.Metrics().Len(); si++ {
+				sname := "N/A"
+				if snameattr, ok := rm.Resource().Attributes().Get("service.name"); ok {
+					sname = snameattr.AsString()
+				}
+				metric := sm.Metrics().At(si)
+				sd := &MetricData{
+					Metric:         &metric,
+					ResourceMetric: &rm,
+					ScopeMetric:    &sm,
+					ReceivedAt:     time.Now(),
+				}
+				s.metrics = append(s.metrics, sd)
+				s.metriccache.UpdateCache(sname, sd)
+			}
+		}
+	}
+
+	// data rotation
+	if len(s.metrics) > s.maxMetricCount {
+		deleteMetrics := s.metrics[:len(s.metrics)-s.maxMetricCount]
+		s.metrics = s.metrics[len(s.metrics)-s.maxMetricCount:]
+
+		s.metriccache.DeleteCache(deleteMetrics)
+	}
+
+	s.updateFilterMetrics()
+}
+
+// AddLog adds logs to the store
 func (s *Store) AddLog(logs *plog.Logs) {
 	s.mut.Lock()
 	defer func() {
@@ -280,6 +390,9 @@ func (s *Store) Flush() {
 	s.svcspans = SvcSpans{}
 	s.svcspansFiltered = SvcSpans{}
 	s.tracecache.flush()
+	s.metrics = []*MetricData{}
+	s.metricsFiltered = []*MetricData{}
+	s.metriccache.flush()
 	s.logs = []*LogData{}
 	s.logsFiltered = []*LogData{}
 	s.logcache.flush()

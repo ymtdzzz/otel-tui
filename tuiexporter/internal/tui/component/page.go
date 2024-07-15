@@ -17,6 +17,7 @@ const (
 	PAGE_TIMELINE  = "Timeline"
 	PAGE_LOGS      = "Logs"
 	PAGE_DEBUG_LOG = "DebugLog"
+	PAGE_METRICS   = "Metrics"
 )
 
 var keyMapRegex = regexp.MustCompile(`Rune|\[|\]`)
@@ -32,6 +33,7 @@ type TUIPages struct {
 	pages      *tview.Pages
 	traces     *tview.Flex
 	timeline   *tview.Flex
+	metrics    *tview.Flex
 	logs       *tview.Flex
 	debuglog   *tview.Flex
 	current    string
@@ -74,6 +76,8 @@ func (p *TUIPages) ToggleLog() {
 // TogglePage toggles Traces & Logs page.
 func (p *TUIPages) TogglePage() {
 	if p.current == PAGE_TRACES {
+		p.switchToPage(PAGE_METRICS)
+	} else if p.current == PAGE_METRICS {
 		p.switchToPage(PAGE_LOGS)
 	} else {
 		p.switchToPage(PAGE_TRACES)
@@ -97,6 +101,10 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	timeline := p.createTimelinePage()
 	p.timeline = timeline
 	p.pages.AddPage(PAGE_TIMELINE, timeline, true, false)
+
+	metrics := p.createMetricsPage(store)
+	p.metrics = metrics
+	p.pages.AddPage(PAGE_METRICS, metrics, true, false)
 
 	logs := p.createLogPage(store)
 	p.logs = logs
@@ -267,6 +275,123 @@ func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lc
 	p.switchToPage(PAGE_TIMELINE)
 }
 
+func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
+	page := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	side := tview.NewFlex().SetDirection(tview.FlexRow)
+	details := tview.NewFlex().SetDirection(tview.FlexRow)
+	details.SetTitle("Details (d)").SetBorder(true)
+
+	chart := tview.NewFlex().SetDirection(tview.FlexRow)
+	chart.SetTitle("Chart (c)").SetBorder(true)
+
+	side.AddItem(details, 0, 5, false).
+		AddItem(chart, 0, 5, false)
+
+	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
+	tableContainer.SetTitle("Metrics (m)").SetBorder(true)
+	table := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false).
+		SetContent(NewMetricDataForTable(store.GetFilteredMetrics()))
+
+	input := ""
+	inputConfirmed := ""
+	search := tview.NewInputField().
+		SetLabel("Filter by service or metric name (/): ").
+		SetFieldWidth(20)
+	search.SetChangedFunc(func(text string) {
+		// remove the suffix '/' from input because it is passed from SetInputCapture()
+		if strings.HasSuffix(text, "/") {
+			text = strings.TrimSuffix(text, "/")
+			search.SetText(text)
+		}
+		input = text
+	})
+	search.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEnter {
+			inputConfirmed = input
+			store.ApplyFilterMetrics(inputConfirmed)
+		} else if key == tcell.KeyEsc {
+			search.SetText(inputConfirmed)
+		}
+		p.setFocusFn(table)
+	})
+
+	table.SetSelectionChangedFunc(func(row, _ int) {
+		selected := store.GetFilteredMetricByIdx(row)
+		details.Clear()
+		details.AddItem(getMetricInfoTree(selected), 0, 1, true)
+		// TODO: async rendering with spinner
+		chart.Clear()
+		chart.AddItem(drawMetricChartByRow(store, row), 0, 1, true)
+	})
+
+	tableContainer.
+		AddItem(search, 1, 0, false).
+		AddItem(table, 0, 1, true)
+
+	tableContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == '/' {
+			if !search.HasFocus() {
+				p.setFocusFn(search)
+			}
+			return nil
+		}
+
+		return event
+	})
+
+	page.AddItem(tableContainer, 0, 5, true).AddItem(side, 0, 5, false)
+	page.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if !search.HasFocus() {
+			switch event.Rune() {
+			case 'd':
+				p.setFocusFn(details)
+				// don't return nil here, because we want to pass the event to the search input
+			case 'm':
+				p.setFocusFn(tableContainer)
+				// don't return nil here, because we want to pass the event to the search input
+			case 'c':
+				p.setFocusFn(chart)
+				// don't return nil here, because we want to pass the event to the search input
+			}
+		}
+
+		if event.Key() == tcell.KeyCtrlL {
+			store.Flush()
+			return nil
+		}
+
+		return event
+	})
+	page = attatchCommandList(page, KeyMaps{
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Clear all data",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search Metrics",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "(search) Cancel",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "(search) Confirm",
+		},
+		&KeyMap{
+			key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
+			description: "(debug) Toggle Log",
+		},
+	})
+	page = attatchTab(page, PAGE_METRICS)
+
+	return page
+}
+
 func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	pageContainer := tview.NewFlex().SetDirection(tview.FlexRow)
 	page := tview.NewFlex().SetDirection(tview.FlexColumn)
@@ -417,9 +542,11 @@ func attatchTab(p tview.Primitive, name string) *tview.Flex {
 	var text string
 	switch name {
 	case PAGE_TRACES:
-		text = "< [yellow]Traces[white] | Logs > (Tab to switch)"
+		text = "< [yellow]Traces[white] | Metrics | Logs > (Tab to switch)"
+	case PAGE_METRICS:
+		text = "< Traces | [yellow]Metrics[white] | Logs > (Tab to switch)"
 	case PAGE_LOGS:
-		text = "< Traces | [yellow]Logs[white] > (Tab to switch)"
+		text = "< Traces | Metrics | [yellow]Logs[white] > (Tab to switch)"
 	}
 
 	tabs := tview.NewTextView().

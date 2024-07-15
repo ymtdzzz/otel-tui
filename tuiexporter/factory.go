@@ -19,7 +19,7 @@ func NewFactory() exporter.Factory {
 		component.MustNewType("tui"),
 		createDefaultConfig,
 		exporter.WithTraces(createTraces, stability),
-		//exporter.WithMetrics(createMetrics, stability),
+		exporter.WithMetrics(createMetrics, stability),
 		exporter.WithLogs(createLogs, stability),
 	)
 }
@@ -44,6 +44,27 @@ func createTraces(ctx context.Context, set exporter.Settings, cfg component.Conf
 
 	return exporterhelper.NewTracesExporter(ctx, set, oCfg,
 		e.Unwrap().pushTraces,
+		exporterhelper.WithStart(e.Start),
+		exporterhelper.WithShutdown(e.Shutdown),
+	)
+}
+
+func createMetrics(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+	oCfg := cfg.(*Config)
+
+	e, err := exporters.LoadOrStore(
+		oCfg,
+		func() (*tuiExporter, error) {
+			return newTuiExporter(oCfg), nil
+		},
+		&set.TelemetrySettings,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(ctx, set, oCfg,
+		e.Unwrap().pushMetrics,
 		exporterhelper.WithStart(e.Start),
 		exporterhelper.WithShutdown(e.Shutdown),
 	)
