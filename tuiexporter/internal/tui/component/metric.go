@@ -617,6 +617,7 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 		count++
 	}
 	// Replace null value with appropriate value for smooth line
+	// ex: [1.2 1.3 1.45 1.6 1.1 1.56 2.02 2.5]
 	for i := range d {
 		for c, pmap := range locatedposmap[i] {
 			// Fill after the last element
