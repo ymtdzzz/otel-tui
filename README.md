@@ -1,12 +1,13 @@
 # otel-tui
 
-🚧 This project is under construction 🚧
-
 A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer/tree/main)
 
 Traces
 ![Traces](./docs/traces.png)
 ![Spans](./docs/spans.png)
+
+Metrics
+![Metrics](./docs/metrics.png)
 
 Logs
 ![Logs](./docs/logs.png)
@@ -97,7 +98,16 @@ There're a lot of things to do. Here are some of them:
   - [x] Show trace information
   - [ ] ...
 - Metrics
-  - [ ] Display metrics
+  - [x] Metric stream
+    - [x] Display metric stream
+    - [x] Filter metrics
+    - [x] Show metric information
+    - [x] Display basic chart of the selected metric
+  - [ ] Metric list
+    - [ ] Display metric stream
+    - [ ] Flexible chart (query, selectable dimensions, etc.)
+  - [ ] Auto refresh chart
+  - [ ] Asynchronous chart rendering
   - [ ] ...
 - Logs
   - [x] Display logs
