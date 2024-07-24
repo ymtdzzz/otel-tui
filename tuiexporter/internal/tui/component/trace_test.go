@@ -54,7 +54,7 @@ func TestSpanDataForTable(t *testing.T) {
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
-		assert.Equal(t, 3, sdftable.GetColumnCount())
+		assert.Equal(t, 4, sdftable.GetColumnCount())
 	})
 
 	t.Run("GetCell", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestSpanDataForTable(t *testing.T) {
 			{
 				name:   "invalid column",
 				row:    0,
-				column: 3,
+				column: 4,
 				want:   "N/A",
 			},
 			{
@@ -93,6 +93,12 @@ func TestSpanDataForTable(t *testing.T) {
 				row:    2,
 				column: 2,
 				want:   receivedAt.Local().Format("2006-01-02 15:04:05"),
+			},
+			{
+				name:   "span name trace 2 span-1-1-1",
+				row:    2,
+				column: 3,
+				want:   "span-0-0-0",
 			},
 		}
 

@@ -38,7 +38,8 @@ func (s SpanDataForTable) GetColumnCount() int {
 	// 0: TraceID
 	// 1: ServiceName
 	// 2: ReceivedAt
-	return 3
+	// 3: SpanName
+	return 4
 }
 
 // getCellFromSpan returns a table cell for the given span and column.
@@ -54,6 +55,8 @@ func getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
 		}
 	case 2:
 		text = span.ReceivedAt.Local().Format("2006-01-02 15:04:05")
+	case 3:
+		text = span.Span.Name()
 	}
 
 	return tview.NewTableCell(text)
