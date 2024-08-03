@@ -6,6 +6,7 @@ import (
 
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // SpanDataForTable is a wrapper for spans to be displayed in a table.
@@ -88,7 +89,7 @@ func getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	resource.AddChild(rschema)
 
 	attrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(attrs, r.Attributes().AsRaw())
+	appendAttrsSorted(attrs, r.Attributes())
 	resource.AddChild(attrs)
 
 	// scope info
@@ -103,7 +104,7 @@ func getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", ss.Scope().DroppedAttributesCount())))
 
 		attrs := tview.NewTreeNode("Attributes")
-		appendAttrsSorted(attrs, ss.Scope().Attributes().AsRaw())
+		appendAttrsSorted(attrs, ss.Scope().Attributes())
 		scope.AddChild(attrs)
 
 		scopes.AddChild(scope)
@@ -119,15 +120,17 @@ func getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	return tree
 }
 
-func appendAttrsSorted(parent *tview.TreeNode, attrs map[string]any) {
-	keys := make([]string, 0, len(attrs))
-	for k := range attrs {
+func appendAttrsSorted(parent *tview.TreeNode, attrs pcommon.Map) {
+	keys := make([]string, 0, attrs.Len())
+	attrs.Range(func(k string, _ pcommon.Value) bool {
 		keys = append(keys, k)
-	}
+		return true
+	})
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, attrs[k]))
+		v, _ := attrs.Get(k)
+		attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v.AsString()))
 		parent.AddChild(attr)
 	}
 }

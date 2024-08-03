@@ -86,7 +86,7 @@ func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTime
 	resource.AddChild(rschema)
 
 	attrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(attrs, r.Attributes().AsRaw())
+	appendAttrsSorted(attrs, r.Attributes())
 	resource.AddChild(attrs)
 
 	// scope info
@@ -101,7 +101,7 @@ func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTime
 	scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", s.DroppedAttributesCount())))
 
 	sattrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(sattrs, s.Attributes().AsRaw())
+	appendAttrsSorted(sattrs, s.Attributes())
 	scope.AddChild(sattrs)
 
 	scopes.AddChild(scope)
@@ -146,7 +146,7 @@ func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTime
 	record.AddChild(ldropped)
 
 	lattrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(lattrs, l.Log.Attributes().AsRaw())
+	appendAttrsSorted(lattrs, l.Log.Attributes())
 	record.AddChild(lattrs)
 
 	resource.AddChild(record)

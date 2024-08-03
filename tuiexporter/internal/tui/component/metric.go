@@ -109,7 +109,7 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 	resource.AddChild(rschema)
 
 	attrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(attrs, r.Attributes().AsRaw())
+	appendAttrsSorted(attrs, r.Attributes())
 	resource.AddChild(attrs)
 
 	// scope info
@@ -124,7 +124,7 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 	scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", s.DroppedAttributesCount())))
 
 	sattrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(sattrs, s.Attributes().AsRaw())
+	appendAttrsSorted(sattrs, s.Attributes())
 	scope.AddChild(sattrs)
 
 	scopes.AddChild(scope)
@@ -136,7 +136,7 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 	/// metadata
 	meta := tview.NewTreeNode("Metadata")
 	metr.AddChild(meta)
-	appendAttrsSorted(meta, m.Metric.Metadata().AsRaw())
+	appendAttrsSorted(meta, m.Metric.Metadata())
 
 	/// datapoints
 	dps := tview.NewTreeNode("Datapoints")
@@ -177,11 +177,11 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+				appendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			appendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -221,11 +221,11 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+				appendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			appendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -265,11 +265,11 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+				appendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			appendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -316,11 +316,11 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes().AsRaw())
+				appendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			appendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -350,7 +350,7 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 			dp.AddChild(flg)
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes().AsRaw())
+			appendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)

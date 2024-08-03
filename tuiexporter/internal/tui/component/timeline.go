@@ -431,10 +431,7 @@ func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
 	root.AddChild(droppedNode)
 
 	attrs := tview.NewTreeNode("Attributes")
-	for k, v := range span.Span.Attributes().AsRaw() {
-		attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v))
-		attrs.AddChild(attr)
-	}
+	appendAttrsSorted(attrs, span.Span.Attributes())
 	root.AddChild(attrs)
 
 	// events
@@ -453,10 +450,7 @@ func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
 		eventNode.AddChild(droppedNode)
 
 		attrs := tview.NewTreeNode("Attributes")
-		for k, v := range event.Attributes().AsRaw() {
-			attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v))
-			attrs.AddChild(attr)
-		}
+		appendAttrsSorted(attrs, event.Attributes())
 		eventNode.AddChild(attrs)
 
 		events.AddChild(eventNode)
@@ -490,10 +484,7 @@ func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
 		linkNode.AddChild(linkDroppedNode)
 
 		attrs := tview.NewTreeNode("Attributes")
-		for k, v := range link.Attributes().AsRaw() {
-			attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v))
-			attrs.AddChild(attr)
-		}
+		appendAttrsSorted(attrs, link.Attributes())
 		linkNode.AddChild(attrs)
 
 		links.AddChild(linkNode)
