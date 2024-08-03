@@ -194,7 +194,7 @@ func TestGetLogInfoTree(t *testing.T) {
    ├──schema url:                                      
    ├──Attributes                                       
    │  ├──resource attribute: resource attribute value  
-   │  ├──resource index: %!s(int64=0)                  
+   │  ├──resource index: 0                             
    │  └──service.name: test-service-1                  
    ├──Scopes                                           
    │  └──test-scope-1-1                                
@@ -202,7 +202,7 @@ func TestGetLogInfoTree(t *testing.T) {
    │     ├──version: v0.0.1                            
    │     ├──dropped attributes count: 2                
    │     └──Attributes                                 
-   │        └──scope index: %!s(int64=0)               
+   │        └──scope index: 0                          
    └──LogRecord                                        
       ├──trace id: 01000000000000000000000000000000    
       ├──span id: 0100000000000000                     
@@ -213,7 +213,7 @@ func TestGetLogInfoTree(t *testing.T) {
       ├──flags: 0                                      
       ├──dropped attributes count: 3                   
       └──Attributes                                    
-         └──span index: %!s(int64=0)                   
+         └──span index: 0                              
 `
 	assert.Equal(t, want, got.String())
 }

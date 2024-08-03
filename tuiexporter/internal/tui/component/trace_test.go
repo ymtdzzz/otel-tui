@@ -175,7 +175,7 @@ func TestGetTraceInfoTree(t *testing.T) {
    ├──schema url:                                      
    ├──Attributes                                       
    │  ├──resource attribute: resource attribute value  
-   │  ├──resource index: %!s(int64=0)                  
+   │  ├──resource index: 0                             
    │  └──service.name: test-service-1                  
    └──Scopes                                           
       ├──test-scope-1-1                                
@@ -183,7 +183,7 @@ func TestGetTraceInfoTree(t *testing.T) {
       │  ├──version: v0.0.1                            
       │  ├──dropped attributes count: 2                
       │  └──Attributes                                 
-      │     └──scope index: %!s(int64=0)               
+      │     └──scope index: 0                          
       └──test-scope-1-2                                
          ├──schema url:                                
          └──version: v0.0.1                            
