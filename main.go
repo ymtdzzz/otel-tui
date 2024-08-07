@@ -58,6 +58,8 @@ receivers:
         endpoint: ` + hostFlag + `:` + strconv.Itoa(httpPortFlag) + `
       grpc:
         endpoint: ` + hostFlag + `:` + strconv.Itoa(grpcPortFlag) + `
+  zipkin:
+    endpoint: 0.0.0.0:9411
 
 processors:
 
@@ -67,7 +69,7 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [otlp]
+      receivers: [otlp, zipkin]
       processors: []
       exporters: [tui]
     logs:
