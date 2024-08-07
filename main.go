@@ -60,6 +60,7 @@ receivers:
         endpoint: ` + hostFlag + `:` + strconv.Itoa(grpcPortFlag) + `
 
 processors:
+  lint:
 
 exporters:
   tui:
@@ -68,15 +69,15 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: []
+      processors: [lint]
       exporters: [tui]
     logs:
       receivers: [otlp]
-      processors: []
+      processors: [lint]
       exporters: [tui]
     metrics:
       receivers: [otlp]
-      processors: []
+      processors: [lint]
       exporters: [tui]
 `
 
