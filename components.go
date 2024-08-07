@@ -26,7 +26,7 @@ func components() (otelcol.Factories, error) {
 
 	factories.Receivers, err = receiver.MakeFactoryMap(
 		otlpreceiver.NewFactory(),
-    zipkinreceiver.NewFactory(),
+		zipkinreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
