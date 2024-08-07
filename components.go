@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+  lintprocessor "github.com/ymtdzzz/opentelemetry-collector-extra/processor/lintprocessor"
 )
 
 func components() (otelcol.Factories, error) {
@@ -38,7 +39,9 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Processors, err = processor.MakeFactoryMap()
+	factories.Processors, err = processor.MakeFactoryMap(
+    lintprocessor.NewFactory(),
+  )
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
