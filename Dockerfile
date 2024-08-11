@@ -9,7 +9,7 @@ WORKDIR /build
 
 COPY . .
 
-RUN go build -o main ./...
+RUN go build -o otel-tui ./...
 
 #
 # Deploy
@@ -18,8 +18,8 @@ FROM gcr.io/distroless/static-debian12:latest
 
 WORKDIR /
 
-COPY --from=builder /build/main /main
+COPY --from=builder /build/otel-tui /otel-tui
 
 USER nonroot
 
-CMD [ "/main" ]
+CMD [ "/otel-tui" ]
