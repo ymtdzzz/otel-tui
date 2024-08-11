@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"strconv"
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
@@ -44,41 +43,24 @@ func runInteractive(params otelcol.CollectorSettings) error {
 func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 	var httpPortFlag, grpcPortFlag int
 	var hostFlag string
+	var zipkinEnabledFlag bool
 
 	rootCmd := &cobra.Command{
 		Use:          params.BuildInfo.Command,
 		Version:      params.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			configContents := `yaml:
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: ` + hostFlag + `:` + strconv.Itoa(httpPortFlag) + `
-      grpc:
-        endpoint: ` + hostFlag + `:` + strconv.Itoa(grpcPortFlag) + `
+			cfg := &Config{
+				OTLPHost:     hostFlag,
+				OTLPHTTPPort: httpPortFlag,
+				OTLPGRPCPort: grpcPortFlag,
+				EnableZipkin: zipkinEnabledFlag,
+			}
 
-processors:
-
-exporters:
-  tui:
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: []
-      exporters: [tui]
-    logs:
-      receivers: [otlp]
-      processors: []
-      exporters: [tui]
-    metrics:
-      receivers: [otlp]
-      processors: []
-      exporters: [tui]
-`
+			configContents, err := cfg.RenderYml()
+			if err != nil {
+				return err
+			}
 
 			configProviderSettings := otelcol.ConfigProviderSettings{
 				ResolverSettings: confmap.ResolverSettings{
@@ -99,6 +81,7 @@ service:
 
 	rootCmd.Flags().IntVar(&httpPortFlag, "http", 4318, "The port number on which we listen for OTLP http payloads")
 	rootCmd.Flags().IntVar(&grpcPortFlag, "grpc", 4317, "The port number on which we listen for OTLP grpc payloads")
-	rootCmd.Flags().StringVar(&hostFlag, "host", "0.0.0.0", "The host where we expose our all endpoints (OTLP receivers and browser)")
+	rootCmd.Flags().StringVar(&hostFlag, "host", "0.0.0.0", "The host where we expose our OTLP endpoints")
+	rootCmd.Flags().BoolVar(&zipkinEnabledFlag, "enable-zipkin", false, "Enable the zipkin receiver")
 	return rootCmd
 }

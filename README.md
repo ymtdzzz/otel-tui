@@ -1,6 +1,8 @@
 # otel-tui
 
-A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer/tree/main)
+A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer/tree/main).
+
+This tool currently supports OpenTelemetry and Zipkin formats.
 
 Traces
 ![Traces](./docs/traces.png)
@@ -13,7 +15,25 @@ Logs
 ![Logs](./docs/logs.png)
 
 ## Getting Started
-Currently, this tool exposes port 4317 to receive OpenTelemetry signals.
+Currently, this tool exposes the ports:
+- `4317` to receive OpenTelemetry signals (gRPC)
+- `4318` to receive OpenTelemetry signals (HTTP)
+- `9411` to receive Zipkin traces (enabled by `--enable-zipkin` option)
+
+Options:
+
+```
+Usage:
+  otel-tui [flags]
+
+Flags:
+      --enable-zipkin   Enable the zipkin receiver
+      --grpc int        The port number on which we listen for OTLP grpc payloads (default 4317)
+  -h, --help            help for otel-tui
+      --host string     The host where we expose our OTLP endpoints (default "0.0.0.0")
+      --http int        The port number on which we listen for OTLP http payloads (default 4318)
+  -v, --version         version for otel-tui
+```
 
 ### Homebrew
 
@@ -37,6 +57,8 @@ $ docker run --rm -dit --name otel-tui ymtdzzz/otel-tui:latest
 
 # Show TUI in your current terminal session
 $ docker attach otel-tui
+
+# Detach by pressing Ctrl+p -> Ctrl+q
 ```
 
 ### Docker Compose
@@ -49,6 +71,8 @@ First, add service to your manifest (`docker-compose.yaml`) for the instrumanted
     container_name: otel-tui
     stdin_open: true
     tty: true
+    # Override entrypoint if you want use options
+    entrypoint: ["/otel-tui", "--enable-zipkin"]
 ```
 
 Modify configuration for otelcol
@@ -73,6 +97,8 @@ $ docker compose up -d
 
 # Show TUI in your current terminal session
 $ docker compose attach oteltui
+
+# Detach by pressing Ctrl+p -> Ctrl+q
 ```
 
 
