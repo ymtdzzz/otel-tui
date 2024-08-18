@@ -40,8 +40,9 @@ func (l LogDataForTable) GetColumnCount() int {
 	// 1: ServiceName
 	// 2: Timestamp
 	// 3: Severity
-	// 4: RawData
-	return 5
+	// 4: EventName
+	// 5: RawData
+	return 6
 }
 
 // getCellFromLog returns a table cell for the given log and column.
@@ -59,6 +60,13 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 	case 3:
 		text = log.Log.SeverityText()
 	case 4:
+		// see: https://github.com/open-telemetry/semantic-conventions/blob/a4fc971e0c7ffa4b9572654f075d3cb8560db770/docs/general/events.md#event-definition
+		if ename, ok := log.Log.Attributes().Get("event.name"); ok {
+			text = ename.AsString()
+		} else {
+			text = "N/A<Event Name>"
+		}
+	case 5:
 		text = log.Log.Body().AsString()
 	}
 
