@@ -38,6 +38,7 @@ func TestLogDataForTable(t *testing.T) {
 	//        └- log: log-1-1-1-2
 	_, testdata1 := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	_, testdata2 := test.GenerateOTLPLogsPayload(t, 2, 1, []int{1}, [][]int{{1}})
+	testdata1.Logs[0].Attributes().PutStr("event.name", "device.app.lifecycle")
 	logs := &[]*telemetry.LogData{
 		{
 			Log:         testdata1.Logs[0],
@@ -87,7 +88,7 @@ func TestLogDataForTable(t *testing.T) {
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
-		assert.Equal(t, 5, ldftable.GetColumnCount())
+		assert.Equal(t, 6, ldftable.GetColumnCount())
 	})
 
 	t.Run("GetCell", func(t *testing.T) {
@@ -106,7 +107,7 @@ func TestLogDataForTable(t *testing.T) {
 			{
 				name:   "invalid column",
 				row:    0,
-				column: 5,
+				column: 6,
 				want:   "N/A",
 			},
 			{
@@ -114,6 +115,12 @@ func TestLogDataForTable(t *testing.T) {
 				row:    0,
 				column: 0,
 				want:   "01000000000000000000000000000000",
+			},
+			{
+				name:   "event name trace 1 span-1-1-1",
+				row:    0,
+				column: 4,
+				want:   "device.app.lifecycle",
 			},
 			{
 				name:   "service name trace 1 span-2-1-1",
@@ -134,9 +141,15 @@ func TestLogDataForTable(t *testing.T) {
 				want:   "INFO",
 			},
 			{
-				name:   "raw data trace 2 span-1-1-1",
+				name:   "event name trace 2 span-1-1-1",
 				row:    8,
 				column: 4,
+				want:   "N/A<Event Name>",
+			},
+			{
+				name:   "raw data trace 2 span-1-1-1",
+				row:    8,
+				column: 5,
 				want:   "log body 0-0-0-0",
 			},
 		}
