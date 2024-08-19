@@ -12,10 +12,12 @@ import (
 )
 
 const (
-	TIMELINE_DETAILS_IDX               = 1 // index of details in the base flex container
-	TIMELINE_TREE_TITLE                = "Details (d)"
-	SPAN_NAME_COLUMN_WIDTH_RESIZE_UNIT = 5
-	SPAN_NAME_COLUMN_WIDTH_DEFAULT     = 30
+	TIMELINE_DETAILS_IDX                = 1 // index of details in the base flex container
+	TIMELINE_TREE_TITLE                 = "Details (d)"
+	SPAN_NAME_COLUMN_WIDTH_RESIZE_UNIT  = 5
+	SPAN_NAME_COLUMN_WIDTH_DEFAULT      = 30
+	DEFAULT_PROPORTION_TIMELINE_DETAILS = 21
+	DEFAULT_PROPORTION_TIMELINE_GRID    = 29
 )
 
 var colors = []tcell.Color{
@@ -98,6 +100,10 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 
 	// details
 	details := getSpanInfoTree(nodes[0].span, TIMELINE_TREE_TITLE)
+	detailspro := DEFAULT_PROPORTION_TIMELINE_DETAILS
+	gridpro := DEFAULT_PROPORTION_TIMELINE_GRID
+
+	details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 
 	rows := make([]int, totalRow+2)
 	for i := 0; i < totalRow+1; i++ {
@@ -126,7 +132,8 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
 					traceContainer.RemoveItem(oldDetails)
 					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
-					traceContainer.AddItem(details, 0, 3, false)
+					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
+					traceContainer.AddItem(details, 0, detailspro, false)
 				}
 				return nil
 			case tcell.KeyUp:
@@ -139,7 +146,8 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
 					traceContainer.RemoveItem(oldDetails)
 					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
-					traceContainer.AddItem(details, 0, 3, false)
+					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
+					traceContainer.AddItem(details, 0, detailspro, false)
 				}
 				return nil
 			case tcell.KeyCtrlL:
@@ -165,8 +173,8 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 		logs.SetContent(NewLogDataForTable(&lds))
 	}
 
-	traceContainer.AddItem(grid, 0, 7, true).
-		AddItem(details, 0, 3, false)
+	traceContainer.AddItem(grid, 0, DEFAULT_PROPORTION_TIMELINE_GRID, true).
+		AddItem(details, 0, DEFAULT_PROPORTION_TIMELINE_DETAILS, false)
 	base.AddItem(traceContainer, 0, 1, true).
 		AddItem(logs, 10, 1, false)
 
@@ -199,11 +207,11 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 		},
 		&KeyMap{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "Widen side col",
+			description: "(timeline or detail) Resize side col",
 		},
 		&KeyMap{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "Narrow side col",
+			description: "(timeline or detail) Resize side col",
 		},
 	}
 }
@@ -220,6 +228,36 @@ func widenInLimit(step, curr, limit int) int {
 		return curr + step
 	}
 	return curr
+}
+
+func detailsInputFunc(traceContainer *tview.Flex, grid *tview.Grid, details *tview.TreeView, gridpro, detailspro *int) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlL:
+			if *detailspro <= 1 {
+				return nil
+			}
+			*gridpro++
+			*detailspro--
+			gridFocus := grid.HasFocus()
+			detailsFocus := details.HasFocus()
+			traceContainer.Clear().AddItem(grid, 0, *gridpro, gridFocus).
+				AddItem(details, 0, *detailspro, detailsFocus)
+			return nil
+		case tcell.KeyCtrlH:
+			if *gridpro <= 1 {
+				return nil
+			}
+			*gridpro--
+			*detailspro++
+			gridFocus := grid.HasFocus()
+			detailsFocus := details.HasFocus()
+			traceContainer.Clear().AddItem(grid, 0, *gridpro, gridFocus).
+				AddItem(details, 0, *detailspro, detailsFocus)
+			return nil
+		}
+		return event
+	}
 }
 
 func calculateTimelineUnit(duration time.Duration) (unit time.Duration, count int) {
