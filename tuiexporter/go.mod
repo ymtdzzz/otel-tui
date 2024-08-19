@@ -7,9 +7,9 @@ require (
 	github.com/navidys/tvxwidgets v0.7.0
 	github.com/rivo/tview v0.0.0-20240616192244-23476fa0bab2
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.106.1
-	go.opentelemetry.io/collector/exporter v0.106.1
-	go.opentelemetry.io/collector/pdata v1.12.0
+	go.opentelemetry.io/collector/component v0.107.0
+	go.opentelemetry.io/collector/exporter v0.107.0
+	go.opentelemetry.io/collector/pdata v1.13.0
 	golang.design/x/clipboard v0.7.0
 )
 
@@ -43,14 +43,16 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	go.opentelemetry.io/collector v0.106.1 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.106.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.106.1 // indirect
-	go.opentelemetry.io/collector/consumer v0.106.1 // indirect
-	go.opentelemetry.io/collector/extension v0.106.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
-	go.opentelemetry.io/collector/internal/globalgates v0.106.1 // indirect
+	go.opentelemetry.io/collector v0.107.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.13.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.107.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.107.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.107.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.107.0 // indirect
+	go.opentelemetry.io/collector/extension v0.107.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.13.0 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.107.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.107.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
@@ -63,7 +65,7 @@ require (
 	golang.org/x/image v0.6.0 // indirect
 	golang.org/x/mobile v0.0.0-20230301163155-e0f57694e12c // indirect
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
