@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
@@ -79,7 +80,7 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
+func getLogInfoTree(commands *tview.TextView, l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
 	if l == nil {
 		return tview.NewTreeView()
 	}
@@ -165,6 +166,21 @@ func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTime
 
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
+	})
+
+	registerCommandList(commands, tree, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Reduce the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			description: "Expand the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Toggle folding the child nodes",
+		},
 	})
 
 	return tree

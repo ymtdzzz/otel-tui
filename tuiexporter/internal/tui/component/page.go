@@ -1,9 +1,7 @@
 package component
 
 import (
-	"fmt"
 	"log"
-	"regexp"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -27,15 +25,6 @@ const (
 	DEFAULT_PROPORTION_LOG_TABLE     = 30
 )
 
-var keyMapRegex = regexp.MustCompile(`Rune|\[|\]`)
-
-type KeyMap struct {
-	key         *tcell.EventKey
-	description string
-}
-
-type KeyMaps []*KeyMap
-
 type TUIPages struct {
 	pages      *tview.Pages
 	traces     *tview.Flex
@@ -45,6 +34,8 @@ type TUIPages struct {
 	debuglog   *tview.Flex
 	current    string
 	setFocusFn func(p tview.Primitive)
+	// This is used when other components trigger to draw the timeline
+	commandsTimeline *tview.TextView
 }
 
 func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TUIPages {
@@ -119,6 +110,7 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 }
 
 func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
+	commands := newCommandList()
 	basePage := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -172,6 +164,16 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		}
 		return event
 	})
+	registerCommandList(commands, table, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search traces",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Clear all data",
+		},
+	})
 
 	input := ""
 	inputConfirmed := ""
@@ -196,13 +198,23 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		}
 		p.setFocusFn(table)
 	})
+	registerCommandList(commands, search, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Cancel",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Confirm",
+		},
+	})
 
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		if row == 0 {
 			return
 		}
 		details.Clear()
-		details.AddItem(getTraceInfoTree(store.GetFilteredServiceSpansByIdx(row-1)), 0, 1, true)
+		details.AddItem(getTraceInfoTree(commands, store.GetFilteredServiceSpansByIdx(row-1)), 0, 1, true)
 		log.Printf("selected row(original): %d", row)
 	})
 	tableContainer.
@@ -235,39 +247,8 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 
 		return event
 	})
-	page := attatchCommandList(basePage, KeyMaps{
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(traces) Clear all data",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
-			description: "Search traces",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "(search) Cancel",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "(search) Confirm",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "(detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
-			description: "(debug) Toggle Log",
-		},
-	})
-	page = attatchTab(page, PAGE_TRACES)
 
-	return page
+	return attatchTab(attatchCommandList(commands, basePage), PAGE_TRACES)
 }
 
 func (p *TUIPages) createTimelinePage() *tview.Flex {
@@ -280,6 +261,9 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 		}
 		return event
 	})
+
+	// set TextView to draw the keymaps
+	p.commandsTimeline = newCommandList()
 
 	return page
 }
@@ -300,12 +284,8 @@ func (p *TUIPages) showTimelineByRow(store *telemetry.Store, row int) {
 func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(pr tview.Primitive)) {
 	p.timeline.Clear()
 	timeline := tview.NewFlex().SetDirection(tview.FlexRow)
-	var (
-		keymaps KeyMaps
-		tl      tview.Primitive
-	)
-
-	tl, keymaps = DrawTimeline(
+	tl := DrawTimeline(
+		p.commandsTimeline,
 		traceID,
 		tcache,
 		lcache,
@@ -313,21 +293,14 @@ func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lc
 	)
 	timeline.AddItem(tl, 0, 1, true)
 
-	keymaps = append(keymaps, &KeyMap{
-		key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
-		description: "Toggle Log",
-	})
-	keymaps = append(keymaps, &KeyMap{
-		key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-		description: "Back to Traces",
-	})
-	timeline = attatchCommandList(timeline, keymaps)
+	timeline = attatchCommandList(p.commandsTimeline, timeline)
 
 	p.timeline.AddItem(timeline, 0, 1, true)
 	p.switchToPage(PAGE_TIMELINE)
 }
 
 func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
+	commands := newCommandList()
 	basePage := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -385,6 +358,16 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		}
 		return event
 	})
+	registerCommandList(commands, table, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search metrics",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Clear all data",
+		},
+	})
 
 	input := ""
 	inputConfirmed := ""
@@ -408,6 +391,16 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		}
 		p.setFocusFn(table)
 	})
+	registerCommandList(commands, search, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Cancel",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Confirm",
+		},
+	})
 
 	table.SetSelectionChangedFunc(func(row, _ int) {
 		if row == 0 {
@@ -415,10 +408,10 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		}
 		selected := store.GetFilteredMetricByIdx(row - 1)
 		details.Clear()
-		details.AddItem(getMetricInfoTree(selected), 0, 1, true)
+		details.AddItem(getMetricInfoTree(commands, selected), 0, 1, true)
 		// TODO: async rendering with spinner
 		chart.Clear()
-		chart.AddItem(drawMetricChartByRow(store, row-1), 0, 1, true)
+		chart.AddItem(drawMetricChartByRow(commands, store, row-1), 0, 1, true)
 	})
 
 	tableContainer.
@@ -454,42 +447,12 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 
 		return event
 	})
-	page := attatchCommandList(basePage, KeyMaps{
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(metrics) Clear all data",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
-			description: "Search Metrics",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "(search) Cancel",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "(search) Confirm",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "(detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
-			description: "(debug) Toggle Log",
-		},
-	})
-	page = attatchTab(page, PAGE_METRICS)
 
-	return page
+	return attatchTab(attatchCommandList(commands, basePage), PAGE_METRICS)
 }
 
 func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
+	commands := newCommandList()
 	pageContainer := tview.NewFlex().SetDirection(tview.FlexRow)
 	page := tview.NewFlex().SetDirection(tview.FlexColumn)
 
@@ -530,6 +493,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 
 	body := tview.NewTextView()
 	body.SetBorder(true).SetTitle("Body (b)")
+	registerCommandList(commands, body, nil, KeyMaps{})
 
 	tableContainer.SetTitle("Logs (o)").SetBorder(true)
 	table := tview.NewTable().
@@ -544,6 +508,20 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}
 
 		return event
+	})
+	registerCommandList(commands, table, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search logs",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone),
+			description: "Copy Log to clipboard",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Clear all data",
+		},
 	})
 
 	input := ""
@@ -568,6 +546,16 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}
 		p.setFocusFn(table)
 	})
+	registerCommandList(commands, search, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Cancel",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Confirm",
+		},
+	})
 
 	resolved := ""
 	table.SetSelectionChangedFunc(func(row, _ int) {
@@ -576,7 +564,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}
 		selected := store.GetFilteredLogByIdx(row - 1)
 		details.Clear()
-		details.AddItem(getLogInfoTree(selected, store.GetTraceCache(), func(traceID string) {
+		details.AddItem(getLogInfoTree(commands, selected, store.GetTraceCache(), func(traceID string) {
 			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), func(pr tview.Primitive) {
 				p.setFocusFn(pr)
 			})
@@ -628,43 +616,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 	pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
-	pageContainer = attatchCommandList(pageContainer, KeyMaps{
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(logs) Clear all data",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone),
-			description: "Copy Log to clipboard",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
-			description: "Search Logs",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "(search) Cancel",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "(search) Confirm",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "(detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyF12, ' ', tcell.ModNone),
-			description: "(debug) Toggle Log",
-		},
-	})
-	pageContainer = attatchTab(pageContainer, PAGE_LOGS)
 
-	return pageContainer
+	return attatchTab(attatchCommandList(commands, pageContainer), PAGE_LOGS)
 }
 
 func (p *TUIPages) createDebugLogPage() *tview.Flex {
@@ -700,26 +653,6 @@ func attatchTab(p tview.Primitive, name string) *tview.Flex {
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
 	base.AddItem(tabs, 1, 1, false).
 		AddItem(p, 0, 1, true)
-
-	return base
-}
-
-func attatchCommandList(p tview.Primitive, keys KeyMaps) *tview.Flex {
-	keytexts := []string{}
-	for _, v := range keys {
-		keytexts = append(keytexts, fmt.Sprintf("[yellow]%s[white]: %s",
-			keyMapRegex.ReplaceAllString(v.key.Name(), ""),
-			v.description,
-		))
-	}
-
-	command := tview.NewTextView().
-		SetDynamicColors(true).
-		SetText(strings.Join(keytexts, " | "))
-
-	base := tview.NewFlex().SetDirection(tview.FlexRow)
-	base.AddItem(p, 0, 1, true).
-		AddItem(command, 1, 1, false)
 
 	return base
 }

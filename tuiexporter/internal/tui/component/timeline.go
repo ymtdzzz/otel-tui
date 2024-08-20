@@ -41,13 +41,13 @@ type spanTreeNode struct {
 	children []*spanTreeNode
 }
 
-func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) (tview.Primitive, KeyMaps) {
+func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) tview.Primitive {
 	if traceID == "" || tcache == nil {
-		return newTextView("No spans found"), KeyMaps{}
+		return newTextView(commands, "No spans found")
 	}
 	_, ok := tcache.GetSpansByTraceID(traceID)
 	if !ok {
-		return newTextView("No spans found"), KeyMaps{}
+		return newTextView(commands, "No spans found")
 	}
 
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -88,6 +88,28 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 		AddItem(title, 0, 0, 1, 1, 0, 0, false).
 		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
 	grid.SetTitle("Trace Timeline (t)").SetBorder(true)
+	registerCommandList(commands, grid, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
+			description: "Move up",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
+			description: "Move down",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Expand the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			description: "Reduce the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Back to Traces",
+		},
+	})
 
 	var (
 		tvs   []*tview.TextView
@@ -95,11 +117,11 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 	)
 	totalRow := 0
 	for _, n := range tree {
-		totalRow = placeSpan(grid, n, totalRow, 0, &tvs, &nodes)
+		totalRow = placeSpan(commands, grid, n, totalRow, 0, &tvs, &nodes)
 	}
 
 	// details
-	details := getSpanInfoTree(nodes[0].span, TIMELINE_TREE_TITLE)
+	details := getSpanInfoTree(commands, nodes[0].span, TIMELINE_TREE_TITLE)
 	detailspro := DEFAULT_PROPORTION_TIMELINE_DETAILS
 	gridpro := DEFAULT_PROPORTION_TIMELINE_GRID
 
@@ -131,7 +153,7 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 					// update details
 					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
 					traceContainer.RemoveItem(oldDetails)
-					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
+					details := getSpanInfoTree(commands, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 					traceContainer.AddItem(details, 0, detailspro, false)
 				}
@@ -140,12 +162,12 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 				if currentRow > 0 {
 					currentRow--
 					setFocusFn(tvs[currentRow])
-					details = getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
+					details = getSpanInfoTree(commands, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 
 					// update details
 					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
 					traceContainer.RemoveItem(oldDetails)
-					details := getSpanInfoTree(nodes[currentRow].span, TIMELINE_TREE_TITLE)
+					details := getSpanInfoTree(commands, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 					traceContainer.AddItem(details, 0, detailspro, false)
 				}
@@ -172,6 +194,12 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 	if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
 		logs.SetContent(NewLogDataForTable(&lds))
 	}
+	registerCommandList(commands, logs, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Back to Traces",
+		},
+	})
 
 	traceContainer.AddItem(grid, 0, DEFAULT_PROPORTION_TIMELINE_GRID, true).
 		AddItem(details, 0, DEFAULT_PROPORTION_TIMELINE_DETAILS, false)
@@ -196,24 +224,7 @@ func DrawTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetr
 		return event
 	})
 
-	return base, KeyMaps{
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
-			description: "Move up",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
-			description: "Move down",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "(timeline or detail) Resize side col",
-		},
-		&KeyMap{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "(timeline or detail) Resize side col",
-		},
-	}
+	return base
 }
 
 func narrowInLimit(step, curr, limit int) int {
@@ -282,7 +293,7 @@ func roundDownDuration(d time.Duration) time.Duration {
 	return d
 }
 
-func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tview.TextView, nodes *[]*spanTreeNode) int {
+func placeSpan(commands *tview.TextView, grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tview.TextView, nodes *[]*spanTreeNode) int {
 	row++
 	label := node.label
 	prefix := ""
@@ -293,7 +304,7 @@ func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tvi
 		}
 		prefix = prefix + " "
 	}
-	tv := newTextView(prefix + label)
+	tv := newTextView(commands, prefix+label)
 	*tvs = append(*tvs, tv)
 	*nodes = append(*nodes, node)
 	grid.AddItem(tv, row, 0, 1, 1, 0, 0, false)
@@ -304,7 +315,7 @@ func placeSpan(grid *tview.Grid, node *spanTreeNode, row, depth int, tvs *[]*tvi
 		)
 	})
 	for _, child := range node.children {
-		row = placeSpan(grid, child, row, depth+1, tvs, nodes)
+		row = placeSpan(commands, grid, child, row, depth+1, tvs, nodes)
 	}
 	return row
 }
@@ -369,14 +380,37 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 	return rootNodes, duration
 }
 
-func newTextView(text string) *tview.TextView {
+func newTextView(commands *tview.TextView, text string) *tview.TextView {
 	tv := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
 		SetText(text).
 		SetWordWrap(false)
-	tv.SetFocusFunc(func() {
+		// FIXME: The parent component Grid does not trigger FocusFunc so set it on child tvs
+		//   But this is redundant. Is there any better ways?
+	registerCommandList(commands, tv, func() {
 		tv.SetBackgroundColor(tcell.ColorWhite)
 		tv.SetTextColor(tcell.ColorBlack)
+	}, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
+			description: "Move up",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
+			description: "Move down",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Expand the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			description: "Reduce the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Back to Traces",
+		},
 	})
 	tv.SetBlurFunc(func() {
 		tv.SetBackgroundColor(tcell.ColorNone)
@@ -412,7 +446,7 @@ func createSpan(color tcell.Color, total, start, end time.Duration) (span *tview
 		})
 }
 
-func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
+func getSpanInfoTree(commands *tview.TextView, span *telemetry.SpanData, title string) *tview.TreeView {
 	traceID := span.Span.TraceID().String()
 	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
@@ -531,6 +565,25 @@ func getSpanInfoTree(span *telemetry.SpanData, title string) *tview.TreeView {
 
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
+	})
+
+	registerCommandList(commands, tree, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Reduce the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			description: "Expand the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Toggle folding the child nodes",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Back to Traces",
+		},
 	})
 
 	return tree

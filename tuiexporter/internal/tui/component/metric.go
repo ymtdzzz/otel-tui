@@ -88,7 +88,7 @@ func getCellFromMetrics(metric *telemetry.MetricData, column int) *tview.TableCe
 	return tview.NewTableCell(text)
 }
 
-func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
+func getMetricInfoTree(commands *tview.TextView, m *telemetry.MetricData) *tview.TreeView {
 	if m == nil {
 		return nil
 	}
@@ -369,6 +369,21 @@ func getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 		node.SetExpanded(!node.IsExpanded())
 	})
 
+	registerCommandList(commands, tree, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			description: "Reduce the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			description: "Expand the width",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Toggle folding the child nodes",
+		},
+	})
+
 	return tree
 }
 
@@ -380,7 +395,7 @@ func (a ByTimestamp) Less(i, j int) bool {
 	return a[i].Timestamp().AsTime().Before(a[j].Timestamp().AsTime())
 }
 
-func drawMetricChartByRow(store *telemetry.Store, row int) tview.Primitive {
+func drawMetricChartByRow(commands *tview.TextView, store *telemetry.Store, row int) tview.Primitive {
 	m := store.GetFilteredMetricByIdx(row)
 	mcache := store.GetMetricCache()
 	sname := "N/A"
@@ -541,6 +556,8 @@ func drawMetricChartByRow(store *telemetry.Store, row int) tview.Primitive {
 	})
 
 	chart.AddItem(ch, 0, 7, true).AddItem(legend, 0, 3, false)
+
+	registerCommandList(commands, ch, nil, KeyMaps{})
 
 	return chart
 }
