@@ -140,8 +140,8 @@ func (s *Store) UpdatedAt() time.Time {
 	return s.updatedAt
 }
 
-// ApplyFilterService applies a filter to the traces
-func (s *Store) ApplyFilterService(svc string) {
+// ApplyFilterTraces applies a filter to the traces
+func (s *Store) ApplyFilterTraces(svc string) {
 	s.filterSvc = svc
 	s.svcspansFiltered = []*SpanData{}
 
@@ -151,15 +151,19 @@ func (s *Store) ApplyFilterService(svc string) {
 	}
 
 	for _, span := range s.svcspans {
-		sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
-		if strings.Contains(sname.AsString(), svc) {
+		sname := ""
+		if snameattr, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
+			sname = snameattr.AsString()
+		}
+		target := sname + " " + span.Span.Name()
+		if strings.Contains(target, svc) {
 			s.svcspansFiltered = append(s.svcspansFiltered, span)
 		}
 	}
 }
 
 func (s *Store) updateFilterService() {
-	s.ApplyFilterService(s.filterSvc)
+	s.ApplyFilterTraces(s.filterSvc)
 }
 
 // ApplyFilterMetrics applies a filter to the metrics

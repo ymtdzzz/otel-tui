@@ -68,10 +68,21 @@ func TestStoreSpanFilters(t *testing.T) {
 	traceID := testdata.Spans[0].TraceID().String()
 	store.AddSpan(&payload)
 
-	store.ApplyFilterService("service-2")
+	store.ApplyFilterTraces("0-0")
+	assert.Equal(t, 2, len(store.svcspansFiltered))
+	assert.Equal(t, traceID, store.GetTraceIDByFilteredIdx(0))
+	assert.Equal(t, traceID, store.GetTraceIDByFilteredIdx(1))
+	assert.Equal(t, "", store.GetTraceIDByFilteredIdx(2))
+	// spans in test-service-1
+	assert.Equal(t, "span-0-0-0", store.GetFilteredServiceSpansByIdx(0)[0].Span.Name())
+	assert.Equal(t, "span-0-0-1", store.GetFilteredServiceSpansByIdx(0)[1].Span.Name())
+	// spans in test-service-2
+	assert.Equal(t, "span-1-0-0", store.GetFilteredServiceSpansByIdx(1)[0].Span.Name())
+	store.ApplyFilterTraces("service-2")
 	assert.Equal(t, 1, len(store.svcspansFiltered))
 	assert.Equal(t, traceID, store.GetTraceIDByFilteredIdx(0))
 	assert.Equal(t, "", store.GetTraceIDByFilteredIdx(1))
+	assert.Equal(t, "span-1-0-0", store.GetFilteredServiceSpansByIdx(0)[0].Span.Name())
 
 	tests := []struct {
 		name string
