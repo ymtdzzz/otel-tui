@@ -50,7 +50,7 @@ func TestSpanDataForTable(t *testing.T) {
 	sdftable := NewSpanDataForTable(svcspans)
 
 	t.Run("GetRowCount", func(t *testing.T) {
-		assert.Equal(t, 3, sdftable.GetRowCount())
+		assert.Equal(t, 4, sdftable.GetRowCount()) // including header row
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestSpanDataForTable(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.want, sdftable.GetCell(tt.row, tt.column).Text)
+				assert.Equal(t, tt.want, sdftable.GetCell(tt.row+1, tt.column).Text)
 			})
 		}
 	})
@@ -192,5 +192,5 @@ func TestGetTraceInfoTree(t *testing.T) {
 }
 
 func TestGetTraceInfoTreeNoSpans(t *testing.T) {
-	assert.Nil(t, getTraceInfoTree(nil))
+	assert.Nil(t, getTraceInfoTree(nil).GetRoot())
 }

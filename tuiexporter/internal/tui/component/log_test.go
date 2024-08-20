@@ -84,7 +84,7 @@ func TestLogDataForTable(t *testing.T) {
 	ldftable := NewLogDataForTable(logs)
 
 	t.Run("GetRowCount", func(t *testing.T) {
-		assert.Equal(t, 10, ldftable.GetRowCount())
+		assert.Equal(t, 11, ldftable.GetRowCount()) // including header row
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestLogDataForTable(t *testing.T) {
 				name:   "event name trace 2 span-1-1-1",
 				row:    8,
 				column: 4,
-				want:   "N/A<Event Name>",
+				want:   "N/A",
 			},
 			{
 				name:   "raw data trace 2 span-1-1-1",
@@ -156,7 +156,7 @@ func TestLogDataForTable(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.want, ldftable.GetCell(tt.row, tt.column).Text)
+				assert.Equal(t, tt.want, ldftable.GetCell(tt.row+1, tt.column).Text)
 			})
 		}
 	})
