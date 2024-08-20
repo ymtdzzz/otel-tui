@@ -4,10 +4,18 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+var spanTableHeader = [4]string{
+	"Trace ID",
+	"Service Name",
+	"Received At",
+	"Span Name",
+}
 
 // SpanDataForTable is a wrapper for spans to be displayed in a table.
 type SpanDataForTable struct {
@@ -25,22 +33,33 @@ func NewSpanDataForTable(spans *telemetry.SvcSpans) SpanDataForTable {
 // implementations for tview Virtual Table
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (s SpanDataForTable) GetCell(row, column int) *tview.TableCell {
-	if row >= 0 && row < len(*s.spans) {
-		return getCellFromSpan((*s.spans)[row], column)
+	if row == 0 {
+		return getHeaderCell(spanTableHeader[:], column)
+	}
+	if row > 0 && row <= len(*s.spans) {
+		return getCellFromSpan((*s.spans)[row-1], column)
 	}
 	return tview.NewTableCell("N/A")
 }
 
 func (s SpanDataForTable) GetRowCount() int {
-	return len(*s.spans)
+	return len(*s.spans) + 1
 }
 
 func (s SpanDataForTable) GetColumnCount() int {
-	// 0: TraceID
-	// 1: ServiceName
-	// 2: ReceivedAt
-	// 3: SpanName
-	return 4
+	return len(spanTableHeader)
+}
+
+func getHeaderCell(header []string, column int) *tview.TableCell {
+	cell := tview.NewTableCell("N/A").
+		SetSelectable(false).
+		SetTextColor(tcell.ColorYellow)
+	if column >= len(header) {
+		return cell
+	}
+	cell.SetText(header[column])
+
+	return cell
 }
 
 // getCellFromSpan returns a table cell for the given span and column.
@@ -65,7 +84,7 @@ func getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
 
 func getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	if len(spans) == 0 {
-		return nil
+		return tview.NewTreeView()
 	}
 	traceID := spans[0].Span.TraceID().String()
 	sname, _ := spans[0].ResourceSpan.Resource().Attributes().Get("service.name")

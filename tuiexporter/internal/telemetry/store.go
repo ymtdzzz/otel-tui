@@ -225,7 +225,7 @@ func (s *Store) GetTraceIDByFilteredIdx(idx int) string {
 // GetFilteredServiceSpansByIdx returns the spans for a given service at the given index
 func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 	if idx < 0 || idx >= len(s.svcspansFiltered) {
-		return nil
+		return []*SpanData{}
 	}
 	span := s.svcspansFiltered[idx]
 	traceID := span.Span.TraceID().String()

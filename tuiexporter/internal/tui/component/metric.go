@@ -15,6 +15,13 @@ import (
 
 const NULL_VALUE_FLOAT64 = math.MaxFloat64
 
+var metricTableHeader = [4]string{
+	"Service Name",
+	"Metric Name",
+	"Metric Type",
+	"Data Point Count",
+}
+
 type MetricDataForTable struct {
 	tview.TableContentReadOnly
 	metrics *[]*telemetry.MetricData
@@ -29,22 +36,21 @@ func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable 
 // implementations for tview Virtual Table
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (m MetricDataForTable) GetCell(row, column int) *tview.TableCell {
-	if row >= 0 && row < len(*m.metrics) {
-		return getCellFromMetrics((*m.metrics)[row], column)
+	if row == 0 {
+		return getHeaderCell(metricTableHeader[:], column)
+	}
+	if row > 0 && row <= len(*m.metrics) {
+		return getCellFromMetrics((*m.metrics)[row-1], column)
 	}
 	return tview.NewTableCell("N/A")
 }
 
 func (m MetricDataForTable) GetRowCount() int {
-	return len(*m.metrics)
+	return len(*m.metrics) + 1
 }
 
 func (m MetricDataForTable) GetColumnCount() int {
-	// 0: ServiceName
-	// 1: MetricName
-	// 2: MetricType
-	// 3: MetricDataPointCount
-	return 4
+	return len(metricTableHeader)
 }
 
 // getCellFromLog returns a table cell for the given log and column.

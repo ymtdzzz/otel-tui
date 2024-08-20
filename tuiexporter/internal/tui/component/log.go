@@ -2,11 +2,19 @@ package component
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
+
+var logTableHeader = [6]string{
+	"Trace ID",
+	"Service Name",
+	"Timestamp",
+	"Severity",
+	"Event Name",
+	"RawData",
+}
 
 // LogDataForTable is a wrapper for logs to be displayed in a table
 type LogDataForTable struct {
@@ -24,25 +32,21 @@ func NewLogDataForTable(logs *[]*telemetry.LogData) LogDataForTable {
 // implementations for tview Virtual Table
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (l LogDataForTable) GetCell(row, column int) *tview.TableCell {
-	if row >= 0 && row < len(*l.logs) {
-		return getCellFromLog((*l.logs)[row], column)
+	if row == 0 {
+		return getHeaderCell(logTableHeader[:], column)
+	}
+	if row > 0 && row <= len(*l.logs) {
+		return getCellFromLog((*l.logs)[row-1], column)
 	}
 	return tview.NewTableCell("N/A")
 }
 
 func (l LogDataForTable) GetRowCount() int {
-	log.Printf("len(*l.logs): %d", len(*l.logs))
-	return len(*l.logs)
+	return len(*l.logs) + 1
 }
 
 func (l LogDataForTable) GetColumnCount() int {
-	// 0: TraceID
-	// 1: ServiceName
-	// 2: Timestamp
-	// 3: Severity
-	// 4: EventName
-	// 5: RawData
-	return 6
+	return len(logTableHeader)
 }
 
 // getCellFromLog returns a table cell for the given log and column.
@@ -63,8 +67,6 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 		// see: https://github.com/open-telemetry/semantic-conventions/blob/a4fc971e0c7ffa4b9572654f075d3cb8560db770/docs/general/events.md#event-definition
 		if ename, ok := log.Log.Attributes().Get("event.name"); ok {
 			text = ename.AsString()
-		} else {
-			text = "N/A<Event Name>"
 		}
 	case 5:
 		text = log.Log.Body().AsString()
@@ -79,7 +81,7 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 
 func getLogInfoTree(l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
 	if l == nil {
-		return nil
+		return tview.NewTreeView()
 	}
 	root := tview.NewTreeNode("Log")
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
