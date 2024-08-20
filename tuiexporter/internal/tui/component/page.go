@@ -176,7 +176,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	input := ""
 	inputConfirmed := ""
 	search := tview.NewInputField().
-		SetLabel("Service Name (/): ").
+		SetLabel("Filter by service or span name (/): ").
 		SetFieldWidth(20)
 	search.SetChangedFunc(func(text string) {
 		// remove the suffix '/' from input because it is passed from SetInputCapture()
@@ -190,7 +190,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		if key == tcell.KeyEnter {
 			inputConfirmed = input
 			log.Println("search service name: ", inputConfirmed)
-			store.ApplyFilterService(inputConfirmed)
+			store.ApplyFilterTraces(inputConfirmed)
 		} else if key == tcell.KeyEsc {
 			search.SetText(inputConfirmed)
 		}
