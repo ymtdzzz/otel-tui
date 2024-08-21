@@ -148,7 +148,7 @@ func TestGetTraceInfoTree(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	gottree := getTraceInfoTree(spans)
+	gottree := getTraceInfoTree(nil, spans)
 	gottree.SetRect(0, 0, sw, sh)
 	gottree.Draw(screen)
 	screen.Sync()
@@ -192,5 +192,5 @@ func TestGetTraceInfoTree(t *testing.T) {
 }
 
 func TestGetTraceInfoTreeNoSpans(t *testing.T) {
-	assert.Nil(t, getTraceInfoTree(nil).GetRoot())
+	assert.Nil(t, getTraceInfoTree(nil, nil).GetRoot())
 }
