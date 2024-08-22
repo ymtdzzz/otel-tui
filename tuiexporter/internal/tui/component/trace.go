@@ -115,7 +115,6 @@ func getTraceInfoTree(ctx context.Context, commands *tview.TextView, spans []*te
 			}
 			rootSpanID.SetText(fmt.Sprintf("root span id: %s", rootSpan.Span.SpanID().String()))
 			rootSpanName.SetText(fmt.Sprintf("root span name: %s", rootSpan.Span.Name()))
-			return
 		}(ctx, rootServiceName, rootSpanID, rootSpanName, tcache)
 	}
 
