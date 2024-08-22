@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"log"
 	"strings"
 
@@ -209,13 +210,18 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		},
 	})
 
+	// context for searching the root span in details pane
+	rootSpanCtx, cancel := context.WithCancel(context.Background())
+
 	table.SetSelectionChangedFunc(func(row, _ int) {
+		cancel()
 		if row == 0 {
 			return
 		}
 		details.Clear()
-		details.AddItem(getTraceInfoTree(commands, store.GetFilteredServiceSpansByIdx(row-1)), 0, 1, true)
-		log.Printf("selected row(original): %d", row)
+		rootSpanCtx, cancel = context.WithCancel(context.Background())
+		details.AddItem(getTraceInfoTree(rootSpanCtx, commands, store.GetFilteredServiceSpansByIdx(row-1), store.GetTraceCache()), 0, 1, true)
+		//log.Printf("selected row(original): %d", row)
 	})
 	tableContainer.
 		AddItem(search, 1, 0, false).

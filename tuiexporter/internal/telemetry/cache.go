@@ -1,5 +1,9 @@
 package telemetry
 
+import (
+	"context"
+)
+
 // SpanDataMap is a map of span id to span data
 // This is used to quickly look up a span by its id
 type SpanDataMap map[string]*SpanData
@@ -90,6 +94,26 @@ func (c *TraceCache) GetSpansByTraceIDAndSvc(traceID, svc string) ([]*SpanData, 
 // GetSpanByID returns a span by its id
 func (c *TraceCache) GetSpanByID(spanID string) (*SpanData, bool) {
 	span, ok := c.spanid2span[spanID]
+	return span, ok
+}
+
+func (c *TraceCache) GetRootSpanByID(ctx context.Context, spanID string) (*SpanData, bool) {
+	select {
+	case <-ctx.Done():
+		// context canceled
+		return nil, false
+	default:
+	}
+	span, ok := c.GetSpanByID(spanID)
+	if !ok {
+		// invalid span ID or orphan span
+		// TODO: orphan span should be marked to notify the users of that
+		return nil, false
+	}
+	if !span.Span.ParentSpanID().IsEmpty() {
+		return c.GetRootSpanByID(ctx, span.Span.ParentSpanID().String())
+	}
+	// This is the root span
 	return span, ok
 }
 

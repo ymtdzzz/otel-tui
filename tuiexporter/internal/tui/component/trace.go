@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -82,7 +83,7 @@ func getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func getTraceInfoTree(commands *tview.TextView, spans []*telemetry.SpanData) *tview.TreeView {
+func getTraceInfoTree(ctx context.Context, commands *tview.TextView, spans []*telemetry.SpanData, tcache *telemetry.TraceCache) *tview.TreeView {
 	if len(spans) == 0 {
 		return tview.NewTreeView()
 	}
@@ -90,6 +91,35 @@ func getTraceInfoTree(commands *tview.TextView, spans []*telemetry.SpanData) *tv
 	sname, _ := spans[0].ResourceSpan.Resource().Attributes().Get("service.name")
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
+
+	// root span info
+	rootSpan := tview.NewTreeNode("Root Span")
+	rootServiceName := tview.NewTreeNode("[ Searching... ]")
+	rootSpanID := tview.NewTreeNode("[ Searching... ]")
+	rootSpanName := tview.NewTreeNode("[ Searching... ]")
+	rootSpan.AddChild(rootServiceName).AddChild(rootSpanID).AddChild(rootSpanName)
+
+	if tcache != nil {
+		go func(ctx context.Context, rootServiceName, rootSpanID, rootSpanName *tview.TreeNode, tcache *telemetry.TraceCache) {
+			rootSpan, ok := tcache.GetRootSpanByID(ctx, spans[0].Span.SpanID().String())
+			if !ok {
+				rootServiceName.SetText("root service name: N/A")
+				rootSpanID.SetText("root span id: N/A")
+				rootSpanName.SetText("root span name: N/A")
+				return
+			}
+			if sname, ok := rootSpan.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
+				rootServiceName.SetText(fmt.Sprintf("root service name: %s", sname.AsString()))
+			} else {
+				rootServiceName.SetText("root service name: N/A")
+			}
+			rootSpanID.SetText(fmt.Sprintf("root span id: %s", rootSpan.Span.SpanID().String()))
+			rootSpanName.SetText(fmt.Sprintf("root span name: %s", rootSpan.Span.Name()))
+			return
+		}(ctx, rootServiceName, rootSpanID, rootSpanName, tcache)
+	}
+
+	root.AddChild(rootSpan)
 
 	// statistics
 	statistics := tview.NewTreeNode("Statistics")

@@ -2,6 +2,7 @@ package component
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -143,12 +144,12 @@ func TestGetTraceInfoTree(t *testing.T) {
 		ResourceSpan: testdata.RSpans[1],
 		ScopeSpans:   testdata.SSpans[2],
 	})
-	sw, sh := 55, 20
+	sw, sh := 55, 24
 	screen := tcell.NewSimulationScreen("")
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	gottree := getTraceInfoTree(nil, spans)
+	gottree := getTraceInfoTree(context.Background(), nil, spans, nil)
 	gottree.SetRect(0, 0, sw, sh)
 	gottree.Draw(screen)
 	screen.Sync()
@@ -168,6 +169,10 @@ func TestGetTraceInfoTree(t *testing.T) {
 	}
 
 	want := `test-service-1 (01000000000000000000000000000000)      
+├──Root Span                                           
+│  ├──[ Searching... ]                                 
+│  ├──[ Searching... ]                                 
+│  └──[ Searching... ]                                 
 ├──Statistics                                          
 │  └──span count: 4                                    
 └──Resource                                            
@@ -192,5 +197,5 @@ func TestGetTraceInfoTree(t *testing.T) {
 }
 
 func TestGetTraceInfoTreeNoSpans(t *testing.T) {
-	assert.Nil(t, getTraceInfoTree(nil, nil).GetRoot())
+	assert.Nil(t, getTraceInfoTree(context.Background(), nil, nil, nil).GetRoot())
 }
