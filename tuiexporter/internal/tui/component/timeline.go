@@ -190,10 +190,12 @@ func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.Tr
 
 	// logs
 	logs := tview.NewTable().SetBorders(false).SetSelectable(true, false)
-	logs.SetBorder(true).SetTitle("Logs (l)")
+	logCount := 0
 	if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
+		logCount = len(lds)
 		logs.SetContent(NewLogDataForTable(&lds))
 	}
+	logs.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L to toggle collapse)", logCount))
 	registerCommandList(commands, logs, nil, KeyMaps{
 		{
 			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
@@ -201,10 +203,11 @@ func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.Tr
 		},
 	})
 
+	isCollapse := true
 	traceContainer.AddItem(grid, 0, DEFAULT_PROPORTION_TIMELINE_GRID, true).
 		AddItem(details, 0, DEFAULT_PROPORTION_TIMELINE_DETAILS, false)
 	base.AddItem(traceContainer, 0, 1, true).
-		AddItem(logs, 10, 1, false)
+		AddItem(logs, 2, 1, false)
 
 	base.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
@@ -219,6 +222,17 @@ func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.Tr
 		case 'l':
 			log.Printf("l key pressed")
 			setFocusFn(logs)
+			return nil
+		case 'L':
+			log.Printf("L key pressed")
+			isCollapse = !isCollapse
+			logHeight := 10
+			if isCollapse {
+				logHeight = 2
+			}
+			base.Clear().AddItem(traceContainer, 0, 1, traceContainer.HasFocus()).
+				AddItem(logs, logHeight, 1, logs.HasFocus())
+
 			return nil
 		}
 		return event
