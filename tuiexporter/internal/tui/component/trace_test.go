@@ -10,51 +10,69 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestSpanDataForTable(t *testing.T) {
 	// traceid: 1
 	//  └- resource: test-service-1
 	//  | └- scope: test-scope-1-1
-	//  | | └- span: span-1-1-1
+	//  | | └- span: span-1-1-1 (code: Error)
 	//  | | └- span: span-1-1-2
 	//  | └- scope: test-scope-1-2
 	//  |   └- span: span-1-2-3
 	//  └- resource: test-service-2
 	//    └- scope: test-scope-2-1
-	//      └- span: span-2-1-1
+	//      └- span: span-2-1-1 (code: OK)
 	// traceid: 2
 	//  └- resource: test-service-1
 	//    └- scope: test-scope-1-1
-	//      └- span: span-1-1-1
+	//      └- span: span-1-1-1 (code: Unset)
 	_, testdata1 := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	_, testdata2 := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
 	receivedAt := time.Date(2024, 3, 30, 12, 30, 15, 0, time.UTC)
-	svcspans := &telemetry.SvcSpans{
-		&telemetry.SpanData{
+	testdata1.Spans[0].Status().SetCode(ptrace.StatusCodeError)
+	testdata1.Spans[3].Status().SetCode(ptrace.StatusCodeOk)
+	testdata2.Spans[0].Status().SetCode(ptrace.StatusCodeUnset)
+	svc1sds := []*telemetry.SpanData{
+		{
 			Span:         testdata1.Spans[0],
 			ResourceSpan: testdata1.RSpans[0],
 			ReceivedAt:   receivedAt,
 		}, // trace 1, span-1-1-1
-		&telemetry.SpanData{
+		{
 			Span:         testdata1.Spans[3],
 			ResourceSpan: testdata1.RSpans[1],
 			ReceivedAt:   receivedAt,
 		}, // trace 1, span-2-1-1
-		&telemetry.SpanData{
+	}
+	svc2sds := []*telemetry.SpanData{
+		{
 			Span:         testdata2.Spans[0],
 			ResourceSpan: testdata2.RSpans[0],
 			ReceivedAt:   receivedAt,
 		}, // trace 2, span-1-1-1
 	}
-	sdftable := NewSpanDataForTable(svcspans)
+	svcspans := &telemetry.SvcSpans{
+		svc1sds[0],
+		svc1sds[1],
+		svc2sds[0],
+	}
+	tcache := telemetry.NewTraceCache()
+	for _, sd := range svc1sds {
+		tcache.UpdateCache("test-service-1", sd)
+	}
+	for _, sd := range svc2sds {
+		tcache.UpdateCache("test-service-2", sd)
+	}
+	sdftable := NewSpanDataForTable(tcache, svcspans)
 
 	t.Run("GetRowCount", func(t *testing.T) {
 		assert.Equal(t, 4, sdftable.GetRowCount()) // including header row
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
-		assert.Equal(t, 4, sdftable.GetColumnCount())
+		assert.Equal(t, 5, sdftable.GetColumnCount())
 	})
 
 	t.Run("GetCell", func(t *testing.T) {
@@ -67,37 +85,55 @@ func TestSpanDataForTable(t *testing.T) {
 			{
 				name:   "invalid row",
 				row:    3,
-				column: 0,
+				column: 1,
 				want:   "N/A",
 			},
 			{
 				name:   "invalid column",
 				row:    0,
-				column: 4,
+				column: 5,
 				want:   "N/A",
+			},
+			{
+				name:   "has error trace 1 span-1-1-1",
+				row:    0,
+				column: 0,
+				want:   "[!]",
+			},
+			{
+				name:   "has no errors (OK) trace 1 span-2-1-1",
+				row:    1,
+				column: 0,
+				want:   "",
+			},
+			{
+				name:   "has no errors (Unset) trace 2 span-1-1-1",
+				row:    2,
+				column: 0,
+				want:   "",
 			},
 			{
 				name:   "trace ID trace 1 span-1-1-1",
 				row:    0,
-				column: 0,
+				column: 1,
 				want:   "01000000000000000000000000000000",
 			},
 			{
 				name:   "service name trace 1 span-2-1-1",
 				row:    1,
-				column: 1,
+				column: 2,
 				want:   "test-service-2",
 			},
 			{
 				name:   "received at trace 2 span-1-1-1",
 				row:    2,
-				column: 2,
+				column: 3,
 				want:   receivedAt.Local().Format("2006-01-02 15:04:05"),
 			},
 			{
 				name:   "span name trace 2 span-1-1-1",
 				row:    2,
-				column: 3,
+				column: 4,
 				want:   "span-0-0-0",
 			},
 		}

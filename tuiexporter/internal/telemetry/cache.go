@@ -1,5 +1,7 @@
 package telemetry
 
+import "go.opentelemetry.io/collector/pdata/ptrace"
+
 // SpanDataMap is a map of span id to span data
 // This is used to quickly look up a span by its id
 type SpanDataMap map[string]*SpanData
@@ -12,19 +14,25 @@ type TraceSpanDataMap map[string][]*SpanData
 // This is used to quickly look up all spans in a trace for a service
 type TraceServiceSpanDataMap map[string]map[string][]*SpanData
 
+// TraceServiceHasErrorMap is a map of trace id and service name to a flag whether
+// the spans have any error status
+type TraceServiceHasErrorMap map[string]map[string]bool
+
 // TraceCache is a cache of trace spans
 type TraceCache struct {
-	spanid2span    SpanDataMap
-	traceid2spans  TraceSpanDataMap
-	tracesvc2spans TraceServiceSpanDataMap
+	spanid2span       SpanDataMap
+	traceid2spans     TraceSpanDataMap
+	tracesvc2spans    TraceServiceSpanDataMap
+	tracesvc2haserror TraceServiceHasErrorMap
 }
 
 // NewTraceCache returns a new trace cache
 func NewTraceCache() *TraceCache {
 	return &TraceCache{
-		spanid2span:    SpanDataMap{},
-		traceid2spans:  TraceSpanDataMap{},
-		tracesvc2spans: TraceServiceSpanDataMap{},
+		spanid2span:       SpanDataMap{},
+		traceid2spans:     TraceSpanDataMap{},
+		tracesvc2spans:    TraceServiceSpanDataMap{},
+		tracesvc2haserror: TraceServiceHasErrorMap{},
 	}
 }
 
@@ -32,17 +40,23 @@ func NewTraceCache() *TraceCache {
 func (c *TraceCache) UpdateCache(sname string, data *SpanData) (newtracesvc bool) {
 	c.spanid2span[data.Span.SpanID().String()] = data
 	traceID := data.Span.TraceID().String()
+	hasError := spanHasError(data.Span)
 	if ts, ok := c.traceid2spans[traceID]; ok {
 		c.traceid2spans[traceID] = append(ts, data)
 		if _, ok := c.tracesvc2spans[traceID][sname]; ok {
 			c.tracesvc2spans[traceID][sname] = append(c.tracesvc2spans[traceID][sname], data)
+			if hasError {
+				c.tracesvc2haserror[traceID][sname] = hasError
+			}
 		} else {
 			c.tracesvc2spans[traceID][sname] = []*SpanData{data}
+			c.tracesvc2haserror[traceID][sname] = hasError
 			newtracesvc = true
 		}
 	} else {
 		c.traceid2spans[traceID] = []*SpanData{data}
 		c.tracesvc2spans[traceID] = map[string][]*SpanData{sname: {data}}
+		c.tracesvc2haserror[traceID] = map[string]bool{sname: hasError}
 		newtracesvc = true
 	}
 
@@ -62,8 +76,10 @@ func (c *TraceCache) DeleteCache(serviceSpans []*SpanData) {
 			}
 		}
 		delete(c.tracesvc2spans[traceID], sname.AsString())
+		delete(c.tracesvc2haserror[traceID], sname.AsString())
 		if len(c.tracesvc2spans[traceID]) == 0 {
 			delete(c.tracesvc2spans, traceID)
+			delete(c.tracesvc2haserror, traceID)
 			// delete spans in traceid2spans only if there are no spans left in tracesvc2spans
 			// for better performance
 			delete(c.traceid2spans, traceID)
@@ -87,6 +103,16 @@ func (c *TraceCache) GetSpansByTraceIDAndSvc(traceID, svc string) ([]*SpanData, 
 	return nil, false
 }
 
+// HasErrorByTraceIDAndSvc returns the flag whether the spans have any errors
+func (c *TraceCache) HasErrorByTraceIDAndSvc(traceID, svc string) (bool, bool) {
+	if spans, ok := c.tracesvc2haserror[traceID]; ok {
+		if haserr, ok := spans[svc]; ok {
+			return haserr, ok
+		}
+	}
+	return false, false
+}
+
 // GetSpanByID returns a span by its id
 func (c *TraceCache) GetSpanByID(spanID string) (*SpanData, bool) {
 	span, ok := c.spanid2span[spanID]
@@ -97,6 +123,10 @@ func (c *TraceCache) flush() {
 	c.spanid2span = SpanDataMap{}
 	c.traceid2spans = TraceSpanDataMap{}
 	c.tracesvc2spans = TraceServiceSpanDataMap{}
+}
+
+func spanHasError(span *ptrace.Span) bool {
+	return span.Status().Code() == ptrace.StatusCodeError
 }
 
 // TraceLogDataMap is a map of trace id to a slice of logs

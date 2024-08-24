@@ -10,7 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var spanTableHeader = [4]string{
+var spanTableHeader = [5]string{
+	" ", // Error indicator
 	"Trace ID",
 	"Service Name",
 	"Received At",
@@ -20,13 +21,15 @@ var spanTableHeader = [4]string{
 // SpanDataForTable is a wrapper for spans to be displayed in a table.
 type SpanDataForTable struct {
 	tview.TableContentReadOnly
-	spans *telemetry.SvcSpans
+	tcache *telemetry.TraceCache
+	spans  *telemetry.SvcSpans
 }
 
 // NewSpanDataForTable creates a new SpanDataForTable.
-func NewSpanDataForTable(spans *telemetry.SvcSpans) SpanDataForTable {
+func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans) SpanDataForTable {
 	return SpanDataForTable{
-		spans: spans,
+		tcache: tcache,
+		spans:  spans,
 	}
 }
 
@@ -37,7 +40,7 @@ func (s SpanDataForTable) GetCell(row, column int) *tview.TableCell {
 		return getHeaderCell(spanTableHeader[:], column)
 	}
 	if row > 0 && row <= len(*s.spans) {
-		return getCellFromSpan((*s.spans)[row-1], column)
+		return s.getCellFromSpan((*s.spans)[row-1], column)
 	}
 	return tview.NewTableCell("N/A")
 }
@@ -50,6 +53,36 @@ func (s SpanDataForTable) GetColumnCount() int {
 	return len(spanTableHeader)
 }
 
+// getCellFromSpan returns a table cell for the given span and column.
+func (s SpanDataForTable) getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
+	text := "N/A"
+
+	switch column {
+	case 0:
+		if s.tcache == nil {
+			return tview.NewTableCell("")
+		}
+		text = ""
+		if sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
+			if haserr, ok := s.tcache.HasErrorByTraceIDAndSvc(span.Span.TraceID().String(), sname.AsString()); ok && haserr {
+				text = "[!]"
+			}
+		}
+	case 1:
+		text = span.Span.TraceID().String()
+	case 2:
+		if sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
+			text = sname.AsString()
+		}
+	case 3:
+		text = span.ReceivedAt.Local().Format("2006-01-02 15:04:05")
+	case 4:
+		text = span.Span.Name()
+	}
+
+	return tview.NewTableCell(text)
+}
+
 func getHeaderCell(header []string, column int) *tview.TableCell {
 	cell := tview.NewTableCell("N/A").
 		SetSelectable(false).
@@ -60,26 +93,6 @@ func getHeaderCell(header []string, column int) *tview.TableCell {
 	cell.SetText(header[column])
 
 	return cell
-}
-
-// getCellFromSpan returns a table cell for the given span and column.
-func getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
-	text := "N/A"
-
-	switch column {
-	case 0:
-		text = span.Span.TraceID().String()
-	case 1:
-		if serviceName, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
-			text = serviceName.AsString()
-		}
-	case 2:
-		text = span.ReceivedAt.Local().Format("2006-01-02 15:04:05")
-	case 3:
-		text = span.Span.Name()
-	}
-
-	return tview.NewTableCell(text)
 }
 
 func getTraceInfoTree(commands *tview.TextView, spans []*telemetry.SpanData) *tview.TreeView {

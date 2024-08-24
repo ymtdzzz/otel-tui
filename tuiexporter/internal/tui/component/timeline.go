@@ -9,6 +9,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
@@ -372,7 +373,11 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 		st, en := span.Span.StartTimestamp().AsTime().Sub(start), span.Span.EndTimestamp().AsTime().Sub(start)
 		d := en - st
 		node.box = createSpan(colorMemo[sname.AsString()], duration, st, en)
-		node.label = fmt.Sprintf("%s %s", span.Span.Name(), d.String())
+		if span.Span.Status().Code() == ptrace.StatusCodeError {
+			node.label = fmt.Sprintf("[!] %s %s", span.Span.Name(), d.String())
+		} else {
+			node.label = fmt.Sprintf("%s %s", span.Span.Name(), d.String())
+		}
 
 		parent := span.Span.ParentSpanID().String()
 		_, parentExists := cache.GetSpanByID(parent)
@@ -484,7 +489,13 @@ func getSpanInfoTree(commands *tview.TextView, span *telemetry.SpanData, title s
 	smessageNode := tview.NewTreeNode(fmt.Sprintf("message: %s", smessage))
 	status.AddChild(smessageNode)
 	scode := span.Span.Status().Code()
-	scodeNode := tview.NewTreeNode(fmt.Sprintf("code: %s", scode))
+	scodeText := ""
+	if scode == ptrace.StatusCodeError {
+		scodeText = fmt.Sprintf("code: %s ⚠️", scode)
+	} else {
+		scodeText = fmt.Sprintf("code: %s", scode)
+	}
+	scodeNode := tview.NewTreeNode(scodeText)
 	status.AddChild(scodeNode)
 	root.AddChild(status)
 
