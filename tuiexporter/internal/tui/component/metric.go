@@ -10,6 +10,7 @@ import (
 	"github.com/navidys/tvxwidgets"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -243,8 +244,8 @@ func getMetricInfoTree(commands *tview.TextView, m *telemetry.MetricData) *tview
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts: %v", d.BucketCounts().AsRaw())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("explicit bounds: %v", d.ExplicitBounds().AsRaw())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts (%d): %v", d.BucketCounts().Len(), d.BucketCounts().AsRaw())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("explicit bounds (%d): %v", d.ExplicitBounds().Len(), d.ExplicitBounds().AsRaw())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("max: %f", d.Max())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("min: %f", d.Min())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("sum: %f", d.Sum())))
@@ -397,11 +398,94 @@ func (a ByTimestamp) Less(i, j int) bool {
 
 func drawMetricChartByRow(commands *tview.TextView, store *telemetry.Store, row int) tview.Primitive {
 	m := store.GetFilteredMetricByIdx(row)
-	mcache := store.GetMetricCache()
+	switch m.Metric.Type() {
+	case pmetric.MetricTypeGauge:
+		return drawMetricNumberChart(commands, store, m)
+	case pmetric.MetricTypeSum:
+		return drawMetricNumberChart(commands, store, m)
+	case pmetric.MetricTypeHistogram:
+		return drawMetricHistogramChart(commands, m)
+	case pmetric.MetricTypeExponentialHistogram:
+		return drawMetricNumberChart(commands, store, m)
+	case pmetric.MetricTypeSummary:
+		return drawMetricNumberChart(commands, store, m)
+	}
+	return nil
+}
+
+func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData) tview.Primitive {
+	dpcount := m.Metric.Histogram().DataPoints().Len()
+	chs := make([]*tvxwidgets.BarChart, dpcount)
+	sides := make([]*tview.Flex, dpcount)
+	for dpi := 0; dpi < dpcount; dpi++ {
+		dp := m.Metric.Histogram().DataPoints().At(dpi)
+		ch := tvxwidgets.NewBarChart()
+		ch.SetBorder(true)
+		ch.SetTitle(fmt.Sprintf("Data point [%d / %d] ( <- | -> )", dpi+1, dpcount))
+		side := tview.NewFlex().SetDirection(tview.FlexRow)
+		sts := tview.NewFlex().SetDirection(tview.FlexRow)
+		sts.SetBorder(true).SetTitle("Statistics")
+		txt := tview.NewFlex().SetDirection(tview.FlexRow)
+		txt.SetBorder(true).SetTitle("Attributes")
+		for bci := 0; bci < dp.BucketCounts().Len(); bci++ {
+			if bci == dp.BucketCounts().Len()-1 {
+				ch.AddBar(fmt.Sprintf("%.1f~", dp.ExplicitBounds().At(bci-1)), int(dp.BucketCounts().At(bci)), tcell.ColorYellow)
+			} else {
+				ch.AddBar(fmt.Sprintf("%.1f", dp.ExplicitBounds().At(bci)), int(dp.BucketCounts().At(bci)), tcell.ColorYellow)
+			}
+		}
+		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● max: %.1f", dp.Max())), 1, 1, false)
+		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● min: %.1f", dp.Min())), 1, 1, false)
+		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● sum: %.1f", dp.Sum())), 1, 1, false)
+		dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+			txt.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● %s: %s", k, v.Str())), 2, 1, false)
+			return true
+		})
+		side.AddItem(sts, 5, 1, false).AddItem(txt, 0, 1, false)
+		chs[dpi] = ch
+		sides[dpi] = side
+	}
+
+	chart := tview.NewFlex().SetDirection(tview.FlexColumn)
+	if dpcount == 0 {
+		return chart
+	}
+	idx := 0
+	chart.AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+
+	chart.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyRight:
+			if idx < dpcount-1 {
+				idx++
+			} else {
+				idx = 0
+			}
+			chart.Clear().AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+			return nil
+		case tcell.KeyLeft:
+			if idx > 0 {
+				idx--
+			} else {
+				idx = dpcount - 1
+			}
+			chart.Clear().AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+			return nil
+		}
+		return event
+	})
+
+  registerCommandList(commands, chart, nil, KeyMaps{})
+
+	return chart
+}
+
+func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *telemetry.MetricData) tview.Primitive {
 	sname := "N/A"
 	if snameattr, ok := m.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
 		sname = snameattr.AsString()
 	}
+	mcache := store.GetMetricCache()
 	ms, ok := mcache.GetMetricsBySvcAndMetricName(sname, m.Metric.Name())
 	if !ok {
 		return nil
@@ -445,11 +529,7 @@ func drawMetricChartByRow(commands *tview.TextView, store *telemetry.Store, row 
 					end = dpts
 				}
 			}
-		case pmetric.MetricTypeHistogram:
-			support = false
-		case pmetric.MetricTypeExponentialHistogram:
-			support = false
-		case pmetric.MetricTypeSummary:
+		default:
 			support = false
 		}
 		if !support {
@@ -495,6 +575,7 @@ func drawMetricChartByRow(commands *tview.TextView, store *telemetry.Store, row 
 
 	chart := tview.NewFlex().SetDirection(tview.FlexColumn)
 
+	// TODO: Delete it after implementing drawMetric* for all types
 	if !support {
 		txt := tview.NewTextView().SetText("This metric type is not supported")
 		chart.AddItem(txt, 0, 1, false)

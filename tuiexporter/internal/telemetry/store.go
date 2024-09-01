@@ -42,6 +42,11 @@ type MetricData struct {
 	ReceivedAt     time.Time
 }
 
+// HasNumberDatapoints returns whether it has number datapoints
+func (md *MetricData) HasNumberDatapoints() bool {
+	return md.Metric.Type() == pmetric.MetricTypeGauge || md.Metric.Type() == pmetric.MetricTypeSum
+}
+
 // LogData is a struct to represent a log
 type LogData struct {
 	Log         *plog.LogRecord
