@@ -475,7 +475,7 @@ func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData)
 		return event
 	})
 
-  registerCommandList(commands, chart, nil, KeyMaps{})
+	registerCommandList(commands, chart, nil, KeyMaps{})
 
 	return chart
 }
