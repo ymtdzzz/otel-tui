@@ -41,9 +41,13 @@ func runInteractive(params otelcol.CollectorSettings) error {
 }
 
 func newCommand(params otelcol.CollectorSettings) *cobra.Command {
-	var httpPortFlag, grpcPortFlag int
-	var hostFlag string
-	var zipkinEnabledFlag bool
+	var (
+		httpPortFlag, grpcPortFlag int
+		hostFlag                   string
+		zipkinEnabledFlag          bool
+		promEnabledFlag            bool
+		promTargetFlag             []string
+	)
 
 	rootCmd := &cobra.Command{
 		Use:          params.BuildInfo.Command,
@@ -55,6 +59,12 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 				OTLPHTTPPort: httpPortFlag,
 				OTLPGRPCPort: grpcPortFlag,
 				EnableZipkin: zipkinEnabledFlag,
+				EnableProm:   promEnabledFlag,
+				PromTarget:   promTargetFlag,
+			}
+
+			if err := cfg.Validate(); err != nil {
+				return err
 			}
 
 			configContents, err := cfg.RenderYml()
@@ -83,5 +93,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 	rootCmd.Flags().IntVar(&grpcPortFlag, "grpc", 4317, "The port number on which we listen for OTLP grpc payloads")
 	rootCmd.Flags().StringVar(&hostFlag, "host", "0.0.0.0", "The host where we expose our OTLP endpoints")
 	rootCmd.Flags().BoolVar(&zipkinEnabledFlag, "enable-zipkin", false, "Enable the zipkin receiver")
+	rootCmd.Flags().BoolVar(&promEnabledFlag, "enable-prom", false, "Enable the prometheus receiver")
+	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "other-host:9000")`)
 	return rootCmd
 }

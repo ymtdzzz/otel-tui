@@ -13,7 +13,7 @@ import (
 
 const (
 	MAX_SERVICE_SPAN_COUNT = 1000
-	MAX_METRIC_COUNT       = 1000
+	MAX_METRIC_COUNT       = 3000
 	MAX_LOG_COUNT          = 1000
 )
 

@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"html/template"
 	"strings"
 )
@@ -15,6 +16,8 @@ type Config struct {
 	OTLPHTTPPort int
 	OTLPGRPCPort int
 	EnableZipkin bool
+	EnableProm   bool
+	PromTarget   []string
 }
 
 func (c *Config) RenderYml() (string, error) {
@@ -50,4 +53,13 @@ func structToMap(s interface{}) (map[string]any, error) {
 	}
 
 	return result, nil
+}
+
+// Validate checks if the otel-tui configuration is valid
+func (cfg *Config) Validate() error {
+	if cfg.EnableProm && len(cfg.PromTarget) == 0 {
+		return errors.New("the target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled")
+	}
+
+	return nil
 }
