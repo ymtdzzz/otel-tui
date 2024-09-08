@@ -148,7 +148,7 @@ func TestValidate(t *testing.T) {
 				OTLPGRPCPort: 4317,
 				EnableProm:   true,
 			},
-			want: errors.New("The target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled"),
+			want: errors.New("the target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled"),
 		},
 	}
 

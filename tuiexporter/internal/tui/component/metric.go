@@ -429,9 +429,9 @@ func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData)
 		txt.SetBorder(true).SetTitle("Attributes")
 		for bci := 0; bci < dp.BucketCounts().Len(); bci++ {
 			if bci == dp.BucketCounts().Len()-1 {
-				ch.AddBar(fmt.Sprintf("%.1f~", dp.ExplicitBounds().At(bci-1)), int(dp.BucketCounts().At(bci)), tcell.ColorYellow)
+				ch.AddBar(fmt.Sprintf("%.1f~", dp.ExplicitBounds().At(bci-1)), uint64ToInt(dp.BucketCounts().At(bci)), tcell.ColorYellow)
 			} else {
-				ch.AddBar(fmt.Sprintf("%.1f", dp.ExplicitBounds().At(bci)), int(dp.BucketCounts().At(bci)), tcell.ColorYellow)
+				ch.AddBar(fmt.Sprintf("%.1f", dp.ExplicitBounds().At(bci)), uint64ToInt(dp.BucketCounts().At(bci)), tcell.ColorYellow)
 			}
 		}
 		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● max: %.1f", dp.Max())), 1, 1, false)
@@ -748,4 +748,12 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 		}
 	}
 	return d, txts
+}
+
+// uint64ToInt converts uint64 into int. When the input is larger than math.MaxInt, it returns math.MaxInt.
+func uint64ToInt(u uint64) int {
+	if u >= math.MaxInt {
+		return math.MaxInt
+	}
+	return int(u)
 }
