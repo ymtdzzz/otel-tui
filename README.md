@@ -2,7 +2,7 @@
 
 A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer/tree/main).
 
-This tool currently supports OpenTelemetry and Zipkin formats.
+This tool currently supports OpenTelemetry, Zipkin (Traces) and Prometheus (Metrics) formats.
 
 Traces
 ![Traces](./docs/traces.png)
@@ -27,12 +27,14 @@ Usage:
   otel-tui [flags]
 
 Flags:
-      --enable-zipkin   Enable the zipkin receiver
-      --grpc int        The port number on which we listen for OTLP grpc payloads (default 4317)
-  -h, --help            help for otel-tui
-      --host string     The host where we expose our OTLP endpoints (default "0.0.0.0")
-      --http int        The port number on which we listen for OTLP http payloads (default 4318)
-  -v, --version         version for otel-tui
+      --enable-prom               Enable the prometheus receiver
+      --enable-zipkin             Enable the zipkin receiver
+      --grpc int                  The port number on which we listen for OTLP grpc payloads (default 4317)
+  -h, --help                      help for otel-tui
+      --host string               The host where we expose our OTLP endpoints (default "0.0.0.0")
+      --http int                  The port number on which we listen for OTLP http payloads (default 4318)
+      --prom-target stringArray   The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "other-host:9000")
+  -v, --version                   version for otel-tui
 ```
 
 ### Homebrew
@@ -131,7 +133,7 @@ There're a lot of things to do. Here are some of them:
     - [ ] Display basic chart of the selected metric
       - [x] Gauge
       - [x] Sum
-      - [ ] Histogram
+      - [x] Histogram
       - [ ] ExponentialHistogram
       - [ ] Summary
   - [ ] Metric list
@@ -155,7 +157,7 @@ There're a lot of things to do. Here are some of them:
   - [x] Data rotation (current buffer size: 1000 service root spans and logs)
   - [ ] ...
 - Configurations
-  - [ ] Port
+  - [x] Port
   - [ ] Refresh interval
   - [ ] Buffer size
   - [ ] ...
