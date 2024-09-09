@@ -113,16 +113,16 @@ func TestSpanDataForTable(t *testing.T) {
 				want:   "",
 			},
 			{
-				name:   "trace ID trace 1 span-1-1-1",
-				row:    0,
-				column: 1,
-				want:   "01000000000000000000000000000000",
-			},
-			{
 				name:   "service name trace 1 span-2-1-1",
 				row:    1,
-				column: 2,
+				column: 1,
 				want:   "test-service-2",
+			},
+			{
+				name:   "latency span-1-1-1",
+				row:    0,
+				column: 2,
+				want:   "200ms",
 			},
 			{
 				name:   "received at trace 2 span-1-1-1",
