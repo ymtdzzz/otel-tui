@@ -12,8 +12,8 @@ import (
 
 var spanTableHeader = [5]string{
 	" ", // Error indicator
-	"Trace ID",
 	"Service Name",
+	"Latency",
 	"Received At",
 	"Span Name",
 }
@@ -69,11 +69,12 @@ func (s SpanDataForTable) getCellFromSpan(span *telemetry.SpanData, column int) 
 			}
 		}
 	case 1:
-		text = span.Span.TraceID().String()
-	case 2:
 		if sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
 			text = sname.AsString()
 		}
+	case 2:
+		duration := span.Span.EndTimestamp().AsTime().Sub(span.Span.StartTimestamp().AsTime())
+		text = duration.String()
 	case 3:
 		text = span.ReceivedAt.Local().Format("2006-01-02 15:04:05")
 	case 4:
