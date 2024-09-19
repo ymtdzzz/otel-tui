@@ -65,7 +65,8 @@ func TestSpanDataForTable(t *testing.T) {
 	for _, sd := range svc2sds {
 		tcache.UpdateCache("test-service-2", sd)
 	}
-	sdftable := NewSpanDataForTable(tcache, svcspans)
+	sortType := telemetry.SORT_TYPE_NONE
+	sdftable := NewSpanDataForTable(tcache, svcspans, &sortType)
 
 	t.Run("GetRowCount", func(t *testing.T) {
 		assert.Equal(t, 4, sdftable.GetRowCount()) // including header row
@@ -75,7 +76,54 @@ func TestSpanDataForTable(t *testing.T) {
 		assert.Equal(t, 5, sdftable.GetColumnCount())
 	})
 
-	t.Run("GetCell", func(t *testing.T) {
+	t.Run("GetCell_Header", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			sortType telemetry.SortType
+			column   int
+			want     string
+		}{
+			{
+				name:     "N/A",
+				sortType: telemetry.SORT_TYPE_NONE,
+				column:   5,
+				want:     "N/A",
+			},
+			{
+				name:     "Latency None",
+				sortType: telemetry.SORT_TYPE_NONE,
+				column:   2,
+				want:     "Latency",
+			},
+			{
+				name:     "Latency Desc",
+				sortType: telemetry.SORT_TYPE_LATENCY_DESC,
+				column:   2,
+				want:     "Latency ▼",
+			},
+			{
+				name:     "Latency Asc",
+				sortType: telemetry.SORT_TYPE_LATENCY_ASC,
+				column:   2,
+				want:     "Latency ▲",
+			},
+			{
+				name:     "Service Name no effect",
+				sortType: telemetry.SORT_TYPE_LATENCY_DESC,
+				column:   1,
+				want:     "Service Name",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				sortType = tt.sortType
+				assert.Equal(t, tt.want, sdftable.GetCell(0, tt.column).Text)
+			})
+		}
+	})
+
+	t.Run("GetCell_Body", func(t *testing.T) {
 		tests := []struct {
 			name   string
 			row    int

@@ -115,3 +115,16 @@ func fillSpan(t *testing.T, span ptrace.Span, traceID, resourceIndex, scopeIndex
 	status.SetCode(ptrace.StatusCodeOk)
 	status.SetMessage("status ok")
 }
+
+// GenerateSpanWithDuration returns a span with specified span name and duration.
+func GenerateSpanWithDuration(t *testing.T, spanName string, duration time.Duration) *ptrace.Span {
+	t.Helper()
+
+	span := ptrace.NewSpan()
+	span.SetName(spanName)
+	endTimeStamp := pcommon.NewTimestampFromTime(spanStartTimestamp.AsTime().Add(duration))
+	span.SetStartTimestamp(spanStartTimestamp)
+	span.SetEndTimestamp(endTimeStamp)
+
+	return &span
+}

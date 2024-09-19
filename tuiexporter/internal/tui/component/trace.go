@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/icza/gox/timex"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,15 +22,17 @@ var spanTableHeader = [5]string{
 // SpanDataForTable is a wrapper for spans to be displayed in a table.
 type SpanDataForTable struct {
 	tview.TableContentReadOnly
-	tcache *telemetry.TraceCache
-	spans  *telemetry.SvcSpans
+	tcache   *telemetry.TraceCache
+	spans    *telemetry.SvcSpans
+	sortType *telemetry.SortType
 }
 
 // NewSpanDataForTable creates a new SpanDataForTable.
-func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans) SpanDataForTable {
+func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans, sortType *telemetry.SortType) SpanDataForTable {
 	return SpanDataForTable{
-		tcache: tcache,
-		spans:  spans,
+		tcache:   tcache,
+		spans:    spans,
+		sortType: sortType,
 	}
 }
 
@@ -37,7 +40,7 @@ func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (s SpanDataForTable) GetCell(row, column int) *tview.TableCell {
 	if row == 0 {
-		return getHeaderCell(spanTableHeader[:], column)
+		return getHeaderCell(spanTableHeader[:], column, s.sortType)
 	}
 	if row > 0 && row <= len(*s.spans) {
 		return s.getCellFromSpan((*s.spans)[row-1], column)
@@ -74,7 +77,7 @@ func (s SpanDataForTable) getCellFromSpan(span *telemetry.SpanData, column int) 
 		}
 	case 2:
 		duration := span.Span.EndTimestamp().AsTime().Sub(span.Span.StartTimestamp().AsTime())
-		text = duration.String()
+		text = timex.Round(duration, 2).String()
 	case 3:
 		text = span.ReceivedAt.Local().Format("2006-01-02 15:04:05")
 	case 4:
@@ -84,14 +87,22 @@ func (s SpanDataForTable) getCellFromSpan(span *telemetry.SpanData, column int) 
 	return tview.NewTableCell(text)
 }
 
-func getHeaderCell(header []string, column int) *tview.TableCell {
+func getHeaderCell(header []string, column int, sortType *telemetry.SortType) *tview.TableCell {
 	cell := tview.NewTableCell("N/A").
 		SetSelectable(false).
 		SetTextColor(tcell.ColorYellow)
 	if column >= len(header) {
 		return cell
 	}
-	cell.SetText(header[column])
+	h := header[column]
+	if !sortType.IsNone() && sortType.GetHeaderLabel() == h {
+		if sortType.IsDesc() {
+			h = h + " ▼"
+		} else {
+			h = h + " ▲"
+		}
+	}
+	cell.SetText(h)
 
 	return cell
 }
