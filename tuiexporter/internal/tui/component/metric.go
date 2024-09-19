@@ -38,7 +38,8 @@ func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable 
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (m MetricDataForTable) GetCell(row, column int) *tview.TableCell {
 	if row == 0 {
-		return getHeaderCell(metricTableHeader[:], column)
+		sortType := telemetry.SORT_TYPE_NONE
+		return getHeaderCell(metricTableHeader[:], column, &sortType)
 	}
 	if row > 0 && row <= len(*m.metrics) {
 		return getCellFromMetrics((*m.metrics)[row-1], column)

@@ -71,6 +71,7 @@ type Store struct {
 	filterSvc           string
 	filterMetric        string
 	filterLog           string
+	sortTrace           SortType
 	svcspans            SvcSpans
 	svcspansFiltered    SvcSpans
 	tracecache          *TraceCache
@@ -145,13 +146,15 @@ func (s *Store) UpdatedAt() time.Time {
 	return s.updatedAt
 }
 
-// ApplyFilterTraces applies a filter to the traces
-func (s *Store) ApplyFilterTraces(svc string) {
+// ApplyFilterTraces applies a filter and sort to the traces
+func (s *Store) ApplyFilterTraces(svc string, sortType SortType) {
 	s.filterSvc = svc
+	s.sortTrace = sortType
 	s.svcspansFiltered = []*SpanData{}
 
 	if svc == "" {
 		s.svcspansFiltered = s.svcspans
+		sortSvcSpans(s.svcspansFiltered, sortType)
 		return
 	}
 
@@ -165,10 +168,12 @@ func (s *Store) ApplyFilterTraces(svc string) {
 			s.svcspansFiltered = append(s.svcspansFiltered, span)
 		}
 	}
+
+	sortSvcSpans(s.svcspansFiltered, sortType)
 }
 
 func (s *Store) updateFilterService() {
-	s.ApplyFilterTraces(s.filterSvc)
+	s.ApplyFilterTraces(s.filterSvc, s.sortTrace)
 }
 
 // ApplyFilterMetrics applies a filter to the metrics

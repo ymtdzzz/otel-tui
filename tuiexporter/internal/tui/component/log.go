@@ -34,7 +34,8 @@ func NewLogDataForTable(logs *[]*telemetry.LogData) LogDataForTable {
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (l LogDataForTable) GetCell(row, column int) *tview.TableCell {
 	if row == 0 {
-		return getHeaderCell(logTableHeader[:], column)
+		sortType := telemetry.SORT_TYPE_NONE
+		return getHeaderCell(logTableHeader[:], column, &sortType)
 	}
 	if row > 0 && row <= len(*l.logs) {
 		return getCellFromLog((*l.logs)[row-1], column)

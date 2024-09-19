@@ -148,11 +148,14 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
+	input := ""
+	inputConfirmed := ""
+	sortType := telemetry.SORT_TYPE_NONE
 	tableContainer.SetTitle("Traces (t)").SetBorder(true)
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false).
-		SetContent(NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans())).
+		SetContent(NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), &sortType)).
 		SetSelectedFunc(func(row, _ int) {
 			p.showTimelineByRow(store, row-1)
 		}).
@@ -160,6 +163,17 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
 			store.Flush()
+			return nil
+		} else if event.Key() == tcell.KeyCtrlS {
+			if sortType == telemetry.SORT_TYPE_NONE {
+				sortType = telemetry.SORT_TYPE_LATENCY_DESC
+			} else if sortType == telemetry.SORT_TYPE_LATENCY_DESC {
+				sortType = telemetry.SORT_TYPE_LATENCY_ASC
+			} else {
+				sortType = telemetry.SORT_TYPE_NONE
+			}
+			log.Printf("sortType: %s", sortType)
+			store.ApplyFilterTraces(inputConfirmed, sortType)
 			return nil
 		}
 		return event
@@ -170,13 +184,15 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			description: "Search traces",
 		},
 		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'S', tcell.ModCtrl),
+			description: "Toggle sort (Latency)",
+		},
+		{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
 			description: "Clear all data",
 		},
 	})
 
-	input := ""
-	inputConfirmed := ""
 	search := tview.NewInputField().
 		SetLabel("Filter by service or span name (/): ").
 		SetFieldWidth(20)
@@ -192,7 +208,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		if key == tcell.KeyEnter {
 			inputConfirmed = input
 			log.Println("search service name: ", inputConfirmed)
-			store.ApplyFilterTraces(inputConfirmed)
+			store.ApplyFilterTraces(inputConfirmed, sortType)
 		} else if key == tcell.KeyEsc {
 			search.SetText(inputConfirmed)
 		}
