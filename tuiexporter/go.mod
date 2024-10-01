@@ -1,6 +1,7 @@
 module github.com/ymtdzzz/otel-tui/tuiexporter
 
-go 1.22.1
+go 1.22.7
+
 toolchain go1.22.7
 
 require (
