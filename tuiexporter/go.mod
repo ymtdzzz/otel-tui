@@ -2,18 +2,16 @@ module github.com/ymtdzzz/otel-tui/tuiexporter
 
 go 1.22.7
 
-toolchain go1.22.7
-
 require (
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/icza/gox v0.0.0-20240920045124-7ada7ebfce63
 	github.com/navidys/tvxwidgets v0.8.0
 	github.com/rivo/tview v0.0.0-20240616192244-23476fa0bab2
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.110.0
-	go.opentelemetry.io/collector/component/componentstatus v0.110.0
-	go.opentelemetry.io/collector/exporter v0.110.0
-	go.opentelemetry.io/collector/pdata v1.16.0
+	go.opentelemetry.io/collector/component v0.111.0
+	go.opentelemetry.io/collector/component/componentstatus v0.111.0
+	go.opentelemetry.io/collector/exporter v0.111.0
+	go.opentelemetry.io/collector/pdata v1.17.0
 	golang.design/x/clipboard v0.7.0
 )
 
@@ -33,15 +31,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.16.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.110.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.110.0 // indirect
-	go.opentelemetry.io/collector/extension v0.110.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.110.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.110.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.110.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.17.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.111.0 // indirect
+	go.opentelemetry.io/collector/extension v0.111.0 // indirect
+	go.opentelemetry.io/collector/extension/experimental/storage v0.111.0 // indirect
+	go.opentelemetry.io/collector/internal/globalsignal v0.111.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.111.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
@@ -57,7 +53,7 @@ require (
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.66.2 // indirect
+	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
