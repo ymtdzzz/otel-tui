@@ -4,8 +4,8 @@ go 1.22.7
 
 require (
 	github.com/gdamore/tcell/v2 v2.7.4
-	github.com/icza/gox v0.0.0-20240920045124-7ada7ebfce63
-	github.com/navidys/tvxwidgets v0.8.0
+	github.com/icza/gox v0.2.0
+	github.com/navidys/tvxwidgets v0.9.0
 	github.com/rivo/tview v0.0.0-20240616192244-23476fa0bab2
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
