@@ -276,11 +276,6 @@ func (s *Store) RecalculateServiceRootSpanByIdx(idx int) {
 		return
 	}
 
-	type spanTreeNode struct {
-		span     *SpanData
-		children []*spanTreeNode
-	}
-
 	spans := s.tracecache.tracesvc2spans[traceID][sname.AsString()]
 	spanMemo := make(map[string]bool)
 	for _, span := range spans {
