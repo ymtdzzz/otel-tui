@@ -42,7 +42,7 @@ func createTraces(ctx context.Context, set exporter.Settings, cfg component.Conf
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(ctx, set, oCfg,
+	return exporterhelper.NewTraces(ctx, set, oCfg,
 		e.Unwrap().pushTraces,
 		exporterhelper.WithStart(e.Start),
 		exporterhelper.WithShutdown(e.Shutdown),
@@ -63,7 +63,7 @@ func createMetrics(ctx context.Context, set exporter.Settings, cfg component.Con
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(ctx, set, oCfg,
+	return exporterhelper.NewMetrics(ctx, set, oCfg,
 		e.Unwrap().pushMetrics,
 		exporterhelper.WithStart(e.Start),
 		exporterhelper.WithShutdown(e.Shutdown),
@@ -84,7 +84,7 @@ func createLogs(ctx context.Context, set exporter.Settings, cfg component.Config
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(ctx, set, oCfg,
+	return exporterhelper.NewLogs(ctx, set, oCfg,
 		e.Unwrap().pushLogs,
 		exporterhelper.WithStart(e.Start),
 		exporterhelper.WithShutdown(e.Shutdown),
