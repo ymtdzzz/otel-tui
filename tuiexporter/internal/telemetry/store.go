@@ -34,6 +34,15 @@ func (sd *SpanData) IsRoot() bool {
 // This is a slice of one span of a single service
 type SvcSpans []*SpanData
 
+func (ss *SvcSpans) replaceBySpanID(replaceSpanID string, data *SpanData) {
+	for i, s := range *ss {
+		if s.Span.SpanID().String() == replaceSpanID {
+			(*ss)[i] = data
+			return
+		}
+	}
+}
+
 // MetricData is a struct to represent a metric
 type MetricData struct {
 	Metric         *pmetric.Metric
@@ -249,6 +258,41 @@ func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 	return spans
 }
 
+// RecalculateServiceRootSpanByIdx recalculates service root span of the specified index
+func (s *Store) RecalculateServiceRootSpanByIdx(idx int) {
+	s.mut.Lock()
+	defer func() {
+		s.updatedAt = time.Now()
+		s.mut.Unlock()
+	}()
+
+	if idx < 0 || idx >= len(s.svcspansFiltered) {
+		return
+	}
+	traceID := s.svcspansFiltered[idx].Span.TraceID().String()
+	currentSpanID := s.svcspansFiltered[idx].Span.SpanID().String()
+	sname, ok := s.svcspansFiltered[idx].ResourceSpan.Resource().Attributes().Get("service.name")
+	if !ok {
+		return
+	}
+
+	spans := s.tracecache.tracesvc2spans[traceID][sname.AsString()]
+	spanMemo := make(map[string]bool)
+	for _, span := range spans {
+		spanMemo[span.Span.SpanID().String()] = true
+	}
+	for _, span := range spans {
+		parentSpanID := span.Span.ParentSpanID().String()
+		spanID := span.Span.SpanID().String()
+		if _, ok := spanMemo[parentSpanID]; !ok {
+			// TODO: Condider orphan span?
+			sd := s.tracecache.spanid2span[spanID]
+			s.svcspansFiltered[idx] = sd
+			s.svcspans.replaceBySpanID(currentSpanID, sd)
+		}
+	}
+}
+
 // GetFilteredMetricByIdx returns the metric at the given index
 func (s *Store) GetFilteredMetricByIdx(idx int) *MetricData {
 	if idx < 0 || idx >= len(s.metricsFiltered) {
@@ -291,9 +335,12 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 					ScopeSpans:   &ss,
 					ReceivedAt:   time.Now(),
 				}
-				newtracesvc := s.tracecache.UpdateCache(sname.AsString(), sd)
+				newtracesvc, replaceSpanID := s.tracecache.UpdateCache(sname.AsString(), sd)
 				if newtracesvc {
 					s.svcspans = append(s.svcspans, sd)
+				} else if len(replaceSpanID) > 0 {
+					// FIXME: More efficient logic is needed
+					s.svcspans.replaceBySpanID(replaceSpanID, sd)
 				}
 			}
 		}
