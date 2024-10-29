@@ -175,6 +175,14 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			log.Printf("sortType: %s", sortType)
 			store.ApplyFilterTraces(inputConfirmed, sortType)
 			return nil
+		} else if event.Rune() == 'r' {
+			row, _ := table.GetSelection()
+			if row == 0 {
+				return nil
+			}
+			store.RecalculateServiceRootSpanByIdx(row - 1)
+
+			return nil
 		}
 		return event
 	})
@@ -186,6 +194,10 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'S', tcell.ModCtrl),
 			description: "Toggle sort (Latency)",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'R', tcell.ModNone),
+			description: "Recalculate service root span",
 		},
 		{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
