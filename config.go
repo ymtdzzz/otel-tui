@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
+	"os"
 	"strings"
 )
 
@@ -17,6 +18,7 @@ type Config struct {
 	OTLPGRPCPort int
 	EnableZipkin bool
 	EnableProm   bool
+	FromJSONFile string
 	PromTarget   []string
 }
 
@@ -59,6 +61,9 @@ func structToMap(s interface{}) (map[string]any, error) {
 func (cfg *Config) Validate() error {
 	if cfg.EnableProm && len(cfg.PromTarget) == 0 {
 		return errors.New("the target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled")
+	}
+	if _, err := os.Stat(cfg.FromJSONFile); len(cfg.FromJSONFile) > 0 && err != nil {
+		return errors.New("the initial data JSON file does not exist")
 	}
 
 	return nil

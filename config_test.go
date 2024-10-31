@@ -14,6 +14,7 @@ func TestConfigRenderYml(t *testing.T) {
 		OTLPGRPCPort: 4317,
 		EnableZipkin: true,
 		EnableProm:   true,
+		FromJSONFile: "./path/to/init.json",
 		PromTarget: []string{
 			"localhost:9000",
 			"other-host:9000",
@@ -38,6 +39,10 @@ receivers:
             - targets:
               - 'localhost:9000'
               - 'other-host:9000'
+  otlpjsonfile:
+    include:
+      - './path/to/init.json'
+    start_at: beginning
 processors:
 exporters:
   tui:
@@ -47,12 +52,14 @@ service:
       receivers: 
         - otlp
         - zipkin
+        - otlpjsonfile
       processors:
       exporters:
         - tui
     logs:
       receivers:
         - otlp
+        - otlpjsonfile
       processors:
       exporters:
         - tui
@@ -60,6 +67,7 @@ service:
       receivers:
         - otlp
         - prometheus
+        - otlpjsonfile
       processors:
       exporters:
         - tui
@@ -133,6 +141,7 @@ func TestValidate(t *testing.T) {
 				OTLPGRPCPort: 4317,
 				EnableZipkin: true,
 				EnableProm:   true,
+				FromJSONFile: "./main.go",
 				PromTarget: []string{
 					"localhost:9000",
 					"other-host:9000",
@@ -149,6 +158,13 @@ func TestValidate(t *testing.T) {
 				EnableProm:   true,
 			},
 			want: errors.New("the target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled"),
+		},
+		{
+			name: "NG_JSON_File",
+			cfg: &Config{
+				FromJSONFile: "/this/path/does/not/exist",
+			},
+			want: errors.New("the initial data JSON file does not exist"),
 		},
 	}
 

@@ -31,3 +31,10 @@ test-coverage: ## Run test with coverage
 
 test-coverage-exporter: ## Run test with coverage for exporter
 	$(MAKE) test-coverage DIR="./tuiexporter/..."
+
+update-screenshot: ## Update screenshot for docs
+	@command -v vhs > /dev/null || (echo "vhs is needed. see: https://github.com/charmbracelet/vhs?tab=readme-ov-file#installation" && exit 1)
+	go build -o otel-tui
+	vhs screenshot.tape
+	rm ./out.gif
+	rm ./otel-tui
