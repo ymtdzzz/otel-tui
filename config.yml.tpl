@@ -22,6 +22,12 @@ receivers:
               - '{{ $target -}}'
 {{- end}}
 {{- end}}
+{{- if gt (len .FromJSONFile) 0}}
+  otlpjsonfile:
+    include:
+      - '{{ .FromJSONFile -}}'
+    start_at: beginning
+{{- end}}
 processors:
 exporters:
   tui:
@@ -33,12 +39,18 @@ service:
 {{- if .EnableZipkin}}
         - zipkin
 {{- end}}
+{{- if gt (len .FromJSONFile) 0}}
+        - otlpjsonfile
+{{- end}}
       processors:
       exporters:
         - tui
     logs:
       receivers:
         - otlp
+{{- if gt (len .FromJSONFile) 0}}
+        - otlpjsonfile
+{{- end}}
       processors:
       exporters:
         - tui
@@ -47,6 +59,9 @@ service:
         - otlp
 {{- if .EnableProm}}
         - prometheus
+{{- end}}
+{{- if gt (len .FromJSONFile) 0}}
+        - otlpjsonfile
 {{- end}}
       processors:
       exporters:

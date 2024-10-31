@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	tuiexporter "github.com/ymtdzzz/otel-tui/tuiexporter"
@@ -29,6 +30,7 @@ func components() (otelcol.Factories, error) {
 		otlpreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
+		otlpjsonfilereceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
