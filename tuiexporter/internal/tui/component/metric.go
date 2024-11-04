@@ -90,7 +90,7 @@ func getCellFromMetrics(metric *telemetry.MetricData, column int) *tview.TableCe
 	return tview.NewTableCell(text)
 }
 
-func getMetricInfoTree(commands *tview.TextView, m *telemetry.MetricData) *tview.TreeView {
+func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, m *telemetry.MetricData) *tview.TreeView {
 	if m == nil {
 		return nil
 	}
@@ -370,6 +370,8 @@ func getMetricInfoTree(commands *tview.TextView, m *telemetry.MetricData) *tview
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
 	})
+
+	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
 
 	registerCommandList(commands, tree, nil, KeyMaps{
 		{

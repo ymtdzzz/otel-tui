@@ -7,11 +7,18 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+var noopShowModalFn showModalFunc = func(p tview.Primitive, s string) *tview.TextView {
+	return tview.NewTextView()
+}
+
+var noopHideModalFn hideModalFunc = func(p tview.Primitive) {}
 
 func TestSpanDataForTable(t *testing.T) {
 	// traceid: 1
@@ -232,7 +239,7 @@ func TestGetTraceInfoTree(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	gottree := getTraceInfoTree(nil, spans)
+	gottree := getTraceInfoTree(nil, noopShowModalFn, noopHideModalFn, spans)
 	gottree.SetRect(0, 0, sw, sh)
 	gottree.Draw(screen)
 	screen.Sync()
@@ -276,5 +283,5 @@ func TestGetTraceInfoTree(t *testing.T) {
 }
 
 func TestGetTraceInfoTreeNoSpans(t *testing.T) {
-	assert.Nil(t, getTraceInfoTree(nil, nil).GetRoot())
+	assert.Nil(t, getTraceInfoTree(nil, noopShowModalFn, noopHideModalFn, nil).GetRoot())
 }
