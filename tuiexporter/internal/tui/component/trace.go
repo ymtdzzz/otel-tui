@@ -107,7 +107,7 @@ func getHeaderCell(header []string, column int, sortType *telemetry.SortType) *t
 	return cell
 }
 
-func getTraceInfoTree(commands *tview.TextView, spans []*telemetry.SpanData) *tview.TreeView {
+func getTraceInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, spans []*telemetry.SpanData) *tview.TreeView {
 	if len(spans) == 0 {
 		return tview.NewTreeView()
 	}
@@ -157,9 +157,7 @@ func getTraceInfoTree(commands *tview.TextView, spans []*telemetry.SpanData) *tv
 
 	root.AddChild(resource)
 
-	tree.SetSelectedFunc(func(node *tview.TreeNode) {
-		node.SetExpanded(!node.IsExpanded())
-	})
+	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
 
 	registerCommandList(commands, tree, nil, KeyMaps{
 		{
@@ -172,7 +170,7 @@ func getTraceInfoTree(commands *tview.TextView, spans []*telemetry.SpanData) *tv
 		},
 		{
 			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "Toggle folding the child nodes",
+			description: "Toggle folding (parent), Show full text (child)",
 		},
 	})
 

@@ -182,7 +182,7 @@ func TestGetLogInfoTree(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	gottree := getLogInfoTree(nil, logs[0], nil, nil)
+	gottree := getLogInfoTree(nil, noopShowModalFn, noopHideModalFn, logs[0], nil, nil)
 	gottree.SetRect(0, 0, sw, sh)
 	gottree.Draw(screen)
 	screen.Sync()

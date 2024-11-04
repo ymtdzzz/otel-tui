@@ -81,7 +81,7 @@ func getCellFromLog(log *telemetry.LogData, column int) *tview.TableCell {
 	return tview.NewTableCell(text)
 }
 
-func getLogInfoTree(commands *tview.TextView, l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
+func getLogInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
 	if l == nil {
 		return tview.NewTreeView()
 	}
@@ -168,6 +168,8 @@ func getLogInfoTree(commands *tview.TextView, l *telemetry.LogData, tcache *tele
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
 	})
+
+	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
 
 	registerCommandList(commands, tree, nil, KeyMaps{
 		{

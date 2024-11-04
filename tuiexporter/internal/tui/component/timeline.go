@@ -42,7 +42,7 @@ type spanTreeNode struct {
 	children []*spanTreeNode
 }
 
-func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) tview.Primitive {
+func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) tview.Primitive {
 	if traceID == "" || tcache == nil {
 		return newTextView(commands, "No spans found")
 	}
@@ -122,7 +122,7 @@ func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.Tr
 	}
 
 	// details
-	details := getSpanInfoTree(commands, nodes[0].span, TIMELINE_TREE_TITLE)
+	details := getSpanInfoTree(commands, showModalFn, hideModalFn, nodes[0].span, TIMELINE_TREE_TITLE)
 	detailspro := DEFAULT_PROPORTION_TIMELINE_DETAILS
 	gridpro := DEFAULT_PROPORTION_TIMELINE_GRID
 
@@ -154,7 +154,7 @@ func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.Tr
 					// update details
 					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
 					traceContainer.RemoveItem(oldDetails)
-					details := getSpanInfoTree(commands, nodes[currentRow].span, TIMELINE_TREE_TITLE)
+					details := getSpanInfoTree(commands, showModalFn, hideModalFn, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 					traceContainer.AddItem(details, 0, detailspro, false)
 				}
@@ -163,12 +163,12 @@ func DrawTimeline(commands *tview.TextView, traceID string, tcache *telemetry.Tr
 				if currentRow > 0 {
 					currentRow--
 					setFocusFn(tvs[currentRow])
-					details = getSpanInfoTree(commands, nodes[currentRow].span, TIMELINE_TREE_TITLE)
+					details = getSpanInfoTree(commands, showModalFn, hideModalFn, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 
 					// update details
 					oldDetails := traceContainer.GetItem(TIMELINE_DETAILS_IDX)
 					traceContainer.RemoveItem(oldDetails)
-					details := getSpanInfoTree(commands, nodes[currentRow].span, TIMELINE_TREE_TITLE)
+					details := getSpanInfoTree(commands, showModalFn, hideModalFn, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 					traceContainer.AddItem(details, 0, detailspro, false)
 				}
@@ -465,7 +465,7 @@ func createSpan(color tcell.Color, total, start, end time.Duration) (span *tview
 		})
 }
 
-func getSpanInfoTree(commands *tview.TextView, span *telemetry.SpanData, title string) *tview.TreeView {
+func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, span *telemetry.SpanData, title string) *tview.TreeView {
 	traceID := span.Span.TraceID().String()
 	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
@@ -591,6 +591,8 @@ func getSpanInfoTree(commands *tview.TextView, span *telemetry.SpanData, title s
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
 	})
+
+	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
 
 	registerCommandList(commands, tree, nil, KeyMaps{
 		{

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -16,6 +17,7 @@ const (
 	PAGE_LOGS      = "Logs"
 	PAGE_DEBUG_LOG = "DebugLog"
 	PAGE_METRICS   = "Metrics"
+	PAGE_MODAL     = "Modal"
 
 	DEFAULT_PROPORTION_TRACE_DETAILS = 20
 	DEFAULT_PROPORTION_TRACE_TABLE   = 30
@@ -32,6 +34,7 @@ type TUIPages struct {
 	metrics    *tview.Flex
 	logs       *tview.Flex
 	debuglog   *tview.Flex
+	modal      *tview.Flex
 	current    string
 	setFocusFn func(p tview.Primitive)
 	// This is used when other components trigger to draw the timeline
@@ -71,6 +74,20 @@ func (p *TUIPages) ToggleLog() {
 	}
 }
 
+func (p *TUIPages) showModal(current tview.Primitive, text string) *tview.TextView {
+	textView := p.updateModelPage(text)
+	p.pages.ShowPage(PAGE_MODAL)
+	p.pages.SendToFront(PAGE_MODAL)
+	p.setFocusFn(current)
+	return textView
+}
+
+func (p *TUIPages) hideModal(current tview.Primitive) {
+	p.pages.SendToBack(PAGE_MODAL)
+	p.pages.HidePage(PAGE_MODAL)
+	p.setFocusFn(current)
+}
+
 // TogglePage toggles Traces & Logs page.
 func (p *TUIPages) TogglePage() {
 	if p.current == PAGE_TRACES {
@@ -88,6 +105,10 @@ func (p *TUIPages) switchToPage(name string) {
 }
 
 func (p *TUIPages) registerPages(store *telemetry.Store) {
+	modal, _ := p.createModalPage("")
+	p.modal = modal
+	p.pages.AddPage(PAGE_MODAL, modal, true, true)
+
 	logpage := p.createDebugLogPage()
 	p.debuglog = logpage
 	p.pages.AddPage(PAGE_DEBUG_LOG, logpage, true, true)
@@ -230,7 +251,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			return
 		}
 		details.Clear()
-		details.AddItem(getTraceInfoTree(commands, store.GetFilteredServiceSpansByIdx(row-1)), 0, 1, true)
+		details.AddItem(getTraceInfoTree(commands, p.showModal, p.hideModal, store.GetFilteredServiceSpansByIdx(row-1)), 0, 1, true)
 		log.Printf("selected row(original): %d", row)
 	})
 	tableContainer.
@@ -284,6 +305,26 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 	return page
 }
 
+func (p *TUIPages) createModalPage(text string) (*tview.Flex, *tview.TextView) {
+	textView := tview.NewTextView()
+	textView.SetBorder(true)
+	fmt.Fprint(textView, text)
+	return tview.NewFlex().SetDirection(tview.FlexColumn).
+		AddItem(nil, 0, 2, false).
+		AddItem(nil, 0, 2, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 2, false).
+			AddItem(nil, 0, 1, false).
+			AddItem(textView, 0, 1, false), 0, 3, false), textView
+}
+
+func (p *TUIPages) updateModelPage(text string) *tview.TextView {
+	modal, textView := p.createModalPage(text)
+	p.modal = modal
+	p.pages.AddPage(PAGE_MODAL, modal, true, false)
+	return textView
+}
+
 func (p *TUIPages) showTimelineByRow(store *telemetry.Store, row int) {
 	if store == nil {
 		return
@@ -302,6 +343,8 @@ func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lc
 	timeline := tview.NewFlex().SetDirection(tview.FlexRow)
 	tl := DrawTimeline(
 		p.commandsTimeline,
+		p.showModal,
+		p.hideModal,
 		traceID,
 		tcache,
 		lcache,
@@ -424,7 +467,7 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		}
 		selected := store.GetFilteredMetricByIdx(row - 1)
 		details.Clear()
-		details.AddItem(getMetricInfoTree(commands, selected), 0, 1, true)
+		details.AddItem(getMetricInfoTree(commands, p.showModal, p.hideModal, selected), 0, 1, true)
 		// TODO: async rendering with spinner
 		chart.Clear()
 		chart.AddItem(drawMetricChartByRow(commands, store, row-1), 0, 1, true)
@@ -580,7 +623,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}
 		selected := store.GetFilteredLogByIdx(row - 1)
 		details.Clear()
-		details.AddItem(getLogInfoTree(commands, selected, store.GetTraceCache(), func(traceID string) {
+		details.AddItem(getLogInfoTree(commands, p.showModal, p.hideModal, selected, store.GetTraceCache(), func(traceID string) {
 			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), func(pr tview.Primitive) {
 				p.setFocusFn(pr)
 			})
