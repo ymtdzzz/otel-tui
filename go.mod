@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.114.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.10.0
-	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0
+	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20241125015642-228b60606412
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
 	go.opentelemetry.io/collector/confmap v1.20.0
@@ -250,7 +250,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.design/x/clipboard v0.7.0 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/exp/shiny v0.0.0-20240613232115-7f521ea00fb8 // indirect
 	golang.org/x/image v0.14.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
@@ -282,5 +282,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/ymtdzzz/otel-tui/tuiexporter => ./tuiexporter
