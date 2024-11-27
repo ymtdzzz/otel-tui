@@ -43,6 +43,12 @@ Flags:
 $ brew install ymtdzzz/tap/otel-tui
 ```
 
+### go install
+
+```sh
+$ go install github.com/ymtdzzz/otel-tui@latest
+```
+
 ### Docker
 
 Run in the container simply:
