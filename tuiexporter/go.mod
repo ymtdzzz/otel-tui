@@ -9,7 +9,7 @@ require (
 	github.com/rivo/tview v0.0.0-20240616192244-23476fa0bab2
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.0
-	go.opentelemetry.io/collector/component/componentstatus v0.114.0
+	go.opentelemetry.io/collector/component/componentstatus v0.115.0
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/exporter v0.115.0
 	go.opentelemetry.io/collector/pdata v1.21.0
