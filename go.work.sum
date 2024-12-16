@@ -232,6 +232,7 @@ cloud.google.com/go/workflows v1.12.8/go.mod h1:b7akG38W6lHmyPc+WYJxIYl1rEv79bBM
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20221208032759-85de2813cf6b/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 git.sr.ht/~sbinet/gg v0.5.0/go.mod h1:G2C0eRESqlKhS7ErsNey6HHrqU1PwsnCQlekFi9Q2Oo=
+github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24/go.mod h1:8o94RPi1/7XTJvwPpRSzSUedZrtlirdB3r9Z20bi2f8=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/IBM/sarama v1.43.2/go.mod h1:Kyo4WkF24Z+1nz7xeVUFWIuKVV8RS3wM8mkvPKMdXFQ=
 github.com/IBM/sarama v1.43.3/go.mod h1:FVIRaLrhK3Cla/9FfRF5X9Zua2KpS3SYIXxhac1H+FQ=
@@ -261,8 +262,10 @@ github.com/cilium/ebpf v0.11.0/go.mod h1:WE7CZAnqOL2RouJ4f1uyNhqr2P4CCvXFIqdRDUg
 github.com/cncf/xds/go v0.0.0-20240318125728-8a4994d93e50/go.mod h1:5e1+Vvlzido69INQaVO6d87Qn543Xr6nooe9Kz7oBFM=
 github.com/containerd/cgroups/v3 v3.0.3/go.mod h1:8HBe7V3aWGLFPd/k03swSIsGjZhHI2WzJmticMgVuz0=
 github.com/containerd/containerd v1.7.15/go.mod h1:ISzRRTMF8EXNpJlTzyr2XMhN+j9K302C21/+cr3kUnY=
+github.com/containerd/platforms v0.2.1/go.mod h1:XHCb+2/hzowdiut9rkudds9bE5yJ7npe7dG/wG+uFPw=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/cpuguy83/dockercfg v0.3.1/go.mod h1:sugsbF4//dDlL/i+S+rtpIWp+5h0BHJHfjj5/jFyUJc=
+github.com/cpuguy83/dockercfg v0.3.2/go.mod h1:sugsbF4//dDlL/i+S+rtpIWp+5h0BHJHfjj5/jFyUJc=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crossdock/crossdock-go v0.0.0-20160816171116-049aabb0122b/go.mod h1:v9FBN7gdVTpiD/+LZ7Po0UKvROyT87uLVxTHVky/dlQ=
 github.com/cyphar/filepath-securejoin v0.2.5/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxGGx79pTxQpKOJNYHHl4=
@@ -352,6 +355,7 @@ github.com/moby/patternmatcher v0.6.0/go.mod h1:hDPoyOpDY7OrrMDLaYoY3hf52gNCR/YO
 github.com/moby/spdystream v0.2.0/go.mod h1:f7i0iNDQJ059oMTcWxx8MA/zKFIuD/lY+0GqbN2Wy8c=
 github.com/moby/sys/sequential v0.5.0/go.mod h1:tH2cOOs5V9MlPiXcQzRC+eEyab644PWKGRYaaV5ZZlo=
 github.com/moby/sys/user v0.1.0/go.mod h1:fKJhFOnsCN6xZ5gSfbM6zaHGgDJMrqt9/reuj4T7MmU=
+github.com/moby/sys/userns v0.1.0/go.mod h1:IHUYgu/kao6N8YZlp9Cf444ySSvCmDlmzUcYfDHOl28=
 github.com/montanaflynn/stats v0.7.0/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt6R8Bnaayow=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
 github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1/go.mod h1:mpRZBD8SJ55OIICQ3iWH0Yz3cjzA61JdqMLoWXeB2+8=
@@ -388,6 +392,7 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.108.0/go
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.109.0/go.mod h1:P7e6ch+uoSfxK+lMwfcndkHE6gWUqvWKpr7mD04KIAA=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.110.0/go.mod h1:eazQnU3D7Xwyctq8Yfig4ws5HcnD3G+ygWrG9H03JjE=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.112.0/go.mod h1:G4KniRkewEl7JaT1EVTczTWi1nfYk2bD5GAn4aqBh4o=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0/go.mod h1:mtxUxJEIQy27MaGR1yzcn/OK8NoddEgb7fumpEbKYss=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.111.0/go.mod h1:Lqc5Me0HU2a/DAESI//0UuKnGszTwuDnV+oVOLRkfio=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.111.0/go.mod h1:GQHN6IbBsaGmMJIOQcqA7RXiJi55rXldP3di5YJ1IYA=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.106.1/go.mod h1:St0VVFKzA0fNxo5RmzI4fg7ucGttd840OZ56a+ZECZs=
@@ -396,6 +401,7 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.108.0
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.109.0/go.mod h1:KvJWxR0bDk9Qh0ktw4gOFsd/ZrJ7p5KTAQueEJsaK9Q=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.110.0/go.mod h1:nn/ktwLdZ6O9mtnRuak8NQEfGRow3VI3l+YqAroJX7g=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.112.0/go.mod h1:dQCrspUDJRs7P6pXRALwj/yKIMzTYCvLa7XlzNycVFY=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0/go.mod h1:R8AkVWe9G5Q0oMOapvm9HNS076E3Min8SVlmhBL3QD0=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.106.1/go.mod h1:ehzaiDdkrww7l1Stvse5GCOAsAZOpFcgeIbB/2PqFs4=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.107.0/go.mod h1:/RtBag3LuHIkqN4bo8Erd3jCzA3gea70l9WyJ9TncXM=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.110.0 h1:KYBzbgQyCz4i5zjzs0iBOFuNh2vagaw2seqvZ7Lftxk=
@@ -463,6 +469,7 @@ github.com/spf13/cast v1.6.0/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cA
 github.com/spf13/viper v1.19.0/go.mod h1:GQUN9bilAbhU/jgc1bKs99f/suXKeUMct8Adx5+Ntkg=
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
 github.com/testcontainers/testcontainers-go v0.31.0/go.mod h1:D2lAoA0zUFiSY+eAflqK5mcUx/A5hrrORaEQrd0SefI=
+github.com/testcontainers/testcontainers-go v0.34.0/go.mod h1:6P/kMkQe8yqPHfPWNulFGdFHTD8HB2vLq/231xY2iPQ=
 github.com/tilinna/clock v1.1.0/go.mod h1:ZsP7BcY7sEEz7ktc0IVy8Us6boDrK8VradlKRUGfOao=
 github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6/go.mod h1:BUbeWZiieNxAuuADTBNb3/aeje6on3DhU3rpWsQSB1E=
 github.com/uber/jaeger-client-go v2.30.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
@@ -549,6 +556,7 @@ go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.106.1/go.mod h
 go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.111.0/go.mod h1:s42Gm7LMqietFs0Cpl+ma2sEYZP3RWHIlXlWimGW2cQ=
 go.opentelemetry.io/collector/receiver/otlpreceiver v0.110.0 h1:F1TsgyWimClOvAfP7nUbKChPfoNt8tThI64WNCutkAE=
 go.opentelemetry.io/collector/receiver/otlpreceiver v0.110.0/go.mod h1:MuLDagbS+v3iUwMSN/iJPWiDMLPEYxeYolzc+T2ElU0=
+go.opentelemetry.io/collector/scraper v0.115.0/go.mod h1:7YoCO6/4PeExLiX1FokcydJGCQUa7lUqZsqXokJ5VZ4=
 go.opentelemetry.io/collector/semconv v0.110.0 h1:KHQnOHe3gUz0zsxe8ph9kN5OTypCFD4V+06AiBTfeNk=
 go.opentelemetry.io/collector/semconv v0.110.0/go.mod h1:zCJ5njhWpejR+A40kiEoeFm1xq1uzyZwMnRNX6/D82A=
 go.opentelemetry.io/collector/service v0.110.0 h1:jeGdUi+5HQuH0Ho/Gd+VusY77MYJAUxUm0Vxh7aNbjQ=
@@ -595,8 +603,6 @@ golang.org/x/crypto v0.24.0/go.mod h1:Z1PMYSOR5nyMcyAVAIQSKCDwalqy85Aqn1x3Ws4L5D
 golang.org/x/crypto v0.25.0/go.mod h1:T+wALwcMOSE0kXgUAnPAHqTLW+XHgcELELW8VaDgm/M=
 golang.org/x/crypto v0.27.0 h1:GXm2NjJrPaiv/h1tb2UH8QfgC/hOf/+z0p6PT8o1w7A=
 golang.org/x/crypto v0.27.0/go.mod h1:1Xngt8kV6Dvbssa53Ziq6Eqn0HqbZi5Z6R0ZpwQzt70=
-golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 h1:2dVuKD2vS7b0QIHQbpyTISPd0LeHDbnYEryqj5Q1ug8=
-golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56/go.mod h1:M4RDyNAINzryxdtnbRXRL/OHtkFuWGRjvuhBJpk2IlY=
 golang.org/x/exp/shiny v0.0.0-20230817173708-d852ddb80c63/go.mod h1:UH99kUObWAZkDnWqppdQe5ZhPYESUw8I0zVV1uWBR+0=
 golang.org/x/mod v0.9.0/go.mod h1:iBbtSCu2XBx23ZKBPSOrRkjjQPZFPuis4dIYUhu/chs=
 golang.org/x/mod v0.14.0/go.mod h1:hTbmBsO62+eylJbnUtE2MGJUyE7QWk4xUqPFrRgJ+7c=
