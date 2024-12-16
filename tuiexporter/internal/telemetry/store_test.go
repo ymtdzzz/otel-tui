@@ -478,6 +478,11 @@ func TestStoreAddSpanServiceSpanCalculationLimitation(t *testing.T) {
 	// Finally, The service root span should be span-1-1-2
 	assert.Equal(t, 1, len(store.svcspans))
 	assert.Equal(t, "span-0-0-1", store.svcspans[0].Span.Name())
+
+	// By RecalculateServiceRootSpanByIdx, we can get span-1-1-1 as the root span
+	store.RecalculateServiceRootSpanByIdx(0)
+	assert.Equal(t, 1, len(store.svcspans))
+	assert.Equal(t, "span-0-0-0", store.svcspans[0].Span.Name())
 }
 
 func TestStoreAddMetricWithoutRotation(t *testing.T) {
