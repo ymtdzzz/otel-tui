@@ -35,6 +35,7 @@ type TUIPages struct {
 	logs       *tview.Flex
 	debuglog   *tview.Flex
 	modal      *tview.Flex
+	clearFns   []func()
 	current    string
 	setFocusFn func(p tview.Primitive)
 	// This is used when other components trigger to draw the timeline
@@ -104,6 +105,12 @@ func (p *TUIPages) switchToPage(name string) {
 	p.current = name
 }
 
+func (p *TUIPages) clearPanes() {
+	for _, fn := range p.clearFns {
+		fn()
+	}
+}
+
 func (p *TUIPages) registerPages(store *telemetry.Store) {
 	modal, _ := p.createModalPage("")
 	p.modal = modal
@@ -137,6 +144,9 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	details := tview.NewFlex().SetDirection(tview.FlexRow)
+	p.clearFns = append(p.clearFns, func() {
+		details.Clear()
+	})
 	details.SetTitle("Details (d)").SetBorder(true)
 	detailspro := DEFAULT_PROPORTION_TRACE_DETAILS
 	tablepro := DEFAULT_PROPORTION_TRACE_TABLE
@@ -184,6 +194,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
 			store.Flush()
+			p.clearPanes()
 			return nil
 		} else if event.Key() == tcell.KeyCtrlS {
 			if sortType == telemetry.SORT_TYPE_NONE {
@@ -378,6 +389,9 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 
 	side := tview.NewFlex().SetDirection(tview.FlexRow)
 	details := tview.NewFlex().SetDirection(tview.FlexRow)
+	p.clearFns = append(p.clearFns, func() {
+		details.Clear()
+	})
 	details.SetTitle("Details (d)").SetBorder(true)
 	sidepro := DEFAULT_PROPORTION_METRIC_SIDE
 	tablepro := DEFAULT_PROPORTION_METRIC_TABLE
@@ -411,6 +425,9 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 	})
 
 	chart := tview.NewFlex().SetDirection(tview.FlexRow)
+	p.clearFns = append(p.clearFns, func() {
+		chart.Clear()
+	})
 	chart.SetTitle("Chart (c)").SetBorder(true)
 
 	side.AddItem(details, 0, 5, false).
@@ -425,6 +442,7 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
 			store.Flush()
+			p.clearPanes()
 			return nil
 		}
 		return event
@@ -530,6 +548,9 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	details := tview.NewFlex().SetDirection(tview.FlexRow)
+	p.clearFns = append(p.clearFns, func() {
+		details.Clear()
+	})
 	details.SetTitle("Details (d)").SetBorder(true)
 	detailspro := DEFAULT_PROPORTION_LOG_DETAILS
 	tablepro := DEFAULT_PROPORTION_LOG_TABLE
@@ -563,6 +584,9 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	})
 
 	body := tview.NewTextView()
+	p.clearFns = append(p.clearFns, func() {
+		body.Clear()
+	})
 	body.SetBorder(true).SetTitle("Body (b)")
 	registerCommandList(commands, body, nil, KeyMaps{})
 
@@ -575,6 +599,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
 			store.Flush()
+			p.clearPanes()
 			return nil
 		}
 
