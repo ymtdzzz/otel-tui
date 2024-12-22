@@ -45,9 +45,9 @@ Sleep 1s
 Tab
 Type "/recommend"
 Enter
-Sleep 10ms
+Sleep 100ms
 Down
-Sleep 10ms
+Sleep 100ms
 Screenshot docs/logs.png
 Sleep 1s
 
