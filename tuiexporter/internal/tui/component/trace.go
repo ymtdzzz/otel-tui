@@ -5,18 +5,36 @@ import (
 	"sort"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/icza/gox/timex"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var spanTableHeader = [5]string{
-	" ", // Error indicator
-	"Service Name",
-	"Latency",
-	"Received At",
-	"Span Name",
+var defaultSpanCellMappers = cellMappers[telemetry.SpanData]{
+	1: {
+		header: "Service Name",
+		getTextRowFn: func(data *telemetry.SpanData) string {
+			return data.GetServiceName()
+		},
+	},
+	2: {
+		header: "Latency",
+		getTextRowFn: func(data *telemetry.SpanData) string {
+			return data.GetDurationText()
+		},
+	},
+	3: {
+		header: "Received At",
+		getTextRowFn: func(data *telemetry.SpanData) string {
+			return data.GetReceivedAtText()
+		},
+	},
+	4: {
+		header: "Span Name",
+		getTextRowFn: func(data *telemetry.SpanData) string {
+			return data.GetSpanName()
+		},
+	},
 }
 
 // SpanDataForTable is a wrapper for spans to be displayed in a table.
@@ -25,6 +43,7 @@ type SpanDataForTable struct {
 	tcache   *telemetry.TraceCache
 	spans    *telemetry.SvcSpans
 	sortType *telemetry.SortType
+	mapper   cellMappers[telemetry.SpanData]
 }
 
 // NewSpanDataForTable creates a new SpanDataForTable.
@@ -33,6 +52,7 @@ func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans
 		tcache:   tcache,
 		spans:    spans,
 		sortType: sortType,
+		mapper:   defaultSpanCellMappers,
 	}
 }
 
@@ -40,10 +60,14 @@ func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (s SpanDataForTable) GetCell(row, column int) *tview.TableCell {
 	if row == 0 {
-		return getHeaderCell(spanTableHeader[:], column, s.sortType)
+		return s.getHeaderCell(column, s.sortType)
 	}
 	if row > 0 && row <= len(*s.spans) {
-		return s.getCellFromSpan((*s.spans)[row-1], column)
+		sd := (*s.spans)[row-1]
+		if column == 0 {
+			return s.getErrorIndicator(sd)
+		}
+		return getCellFromData(s.mapper, sd, column)
 	}
 	return tview.NewTableCell("N/A")
 }
@@ -53,56 +77,42 @@ func (s SpanDataForTable) GetRowCount() int {
 }
 
 func (s SpanDataForTable) GetColumnCount() int {
-	return len(spanTableHeader)
+	return len(s.mapper) + 1 // including error indicator
 }
 
-// getCellFromSpan returns a table cell for the given span and column.
-func (s SpanDataForTable) getCellFromSpan(span *telemetry.SpanData, column int) *tview.TableCell {
-	text := "N/A"
-
-	switch column {
-	case 0:
-		if s.tcache == nil {
-			return tview.NewTableCell("")
-		}
-		text = ""
-		if sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
-			if haserr, ok := s.tcache.HasErrorByTraceIDAndSvc(span.Span.TraceID().String(), sname.AsString()); ok && haserr {
-				text = "[!]"
-			}
-		}
-	case 1:
-		if sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
-			text = sname.AsString()
-		}
-	case 2:
-		duration := span.Span.EndTimestamp().AsTime().Sub(span.Span.StartTimestamp().AsTime())
-		text = timex.Round(duration, 2).String()
-	case 3:
-		text = span.ReceivedAt.Local().Format("2006-01-02 15:04:05")
-	case 4:
-		text = span.Span.Name()
+func (s SpanDataForTable) getErrorIndicator(span *telemetry.SpanData) *tview.TableCell {
+	if s.tcache == nil {
+		return tview.NewTableCell("")
 	}
-
+	text := ""
+	if sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
+		if haserr, ok := s.tcache.HasErrorByTraceIDAndSvc(span.Span.TraceID().String(), sname.AsString()); ok && haserr {
+			text = "[!]"
+		}
+	}
 	return tview.NewTableCell(text)
 }
 
-func getHeaderCell(header []string, column int, sortType *telemetry.SortType) *tview.TableCell {
+func (s SpanDataForTable) getHeaderCell(column int, sortType *telemetry.SortType) *tview.TableCell {
 	cell := tview.NewTableCell("N/A").
 		SetSelectable(false).
 		SetTextColor(tcell.ColorYellow)
-	if column >= len(header) {
+	h, ok := s.mapper[column]
+	if !ok {
+		if column == 0 {
+			cell.SetText(" ") // Error indicator
+		}
 		return cell
 	}
-	h := header[column]
-	if !sortType.IsNone() && sortType.GetHeaderLabel() == h {
+	if !sortType.IsNone() && sortType.GetHeaderLabel() == h.header {
 		if sortType.IsDesc() {
-			h = h + " ▼"
+			cell.SetText(h.header + " ▼")
 		} else {
-			h = h + " ▲"
+			cell.SetText(h.header + " ▲")
 		}
+		return cell
 	}
-	cell.SetText(h)
+	cell.SetText(h.header)
 
 	return cell
 }
