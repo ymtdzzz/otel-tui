@@ -47,6 +47,39 @@ var defaultLogCellMappers = cellMappers[telemetry.LogData]{
 	},
 }
 
+var logCellMappersForTimeline = cellMappers[telemetry.LogData]{
+	0: {
+		header: "Service Name",
+		getTextRowFn: func(log *telemetry.LogData) string {
+			return log.GetServiceName()
+		},
+	},
+	1: {
+		header: "Timestamp",
+		getTextRowFn: func(log *telemetry.LogData) string {
+			return log.GetTimestampText()
+		},
+	},
+	2: {
+		header: "Severity",
+		getTextRowFn: func(log *telemetry.LogData) string {
+			return log.GetSeverity()
+		},
+	},
+	3: {
+		header: "Event Name",
+		getTextRowFn: func(log *telemetry.LogData) string {
+			return log.GetEventName()
+		},
+	},
+	4: {
+		header: "RawData",
+		getTextRowFn: func(log *telemetry.LogData) string {
+			return log.GetRawData()
+		},
+	},
+}
+
 // LogDataForTable is a wrapper for logs to be displayed in a table
 type LogDataForTable struct {
 	tview.TableContentReadOnly
@@ -59,6 +92,14 @@ func NewLogDataForTable(logs *[]*telemetry.LogData) LogDataForTable {
 	return LogDataForTable{
 		logs:   logs,
 		mapper: defaultLogCellMappers,
+	}
+}
+
+// NewLogDataForTableForTimeline creates a new LogDataForTable for timeline page.
+func NewLogDataForTableForTimeline(logs *[]*telemetry.LogData) LogDataForTable {
+	return LogDataForTable{
+		logs:   logs,
+		mapper: logCellMappersForTimeline,
 	}
 }
 
