@@ -1,10 +1,12 @@
 package telemetry
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/icza/gox/timex"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,6 +30,26 @@ type SpanData struct {
 // IsRoot returns true if the span is a root span
 func (sd *SpanData) IsRoot() bool {
 	return sd.Span.ParentSpanID().IsEmpty()
+}
+
+func (sd *SpanData) GetServiceName() string {
+	if sname, ok := sd.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
+		return sname.AsString()
+	}
+	return ""
+}
+
+func (sd *SpanData) GetDurationText() string {
+	duration := sd.Span.EndTimestamp().AsTime().Sub(sd.Span.StartTimestamp().AsTime())
+	return timex.Round(duration, 2).String()
+}
+
+func (sd *SpanData) GetReceivedAtText() string {
+	return sd.ReceivedAt.Local().Format("2006-01-02 15:04:05")
+}
+
+func (sd *SpanData) GetSpanName() string {
+	return sd.Span.Name()
 }
 
 // SvcSpans is a slice of service spans
@@ -56,6 +78,37 @@ func (md *MetricData) HasNumberDatapoints() bool {
 	return md.Metric.Type() == pmetric.MetricTypeGauge || md.Metric.Type() == pmetric.MetricTypeSum
 }
 
+func (md *MetricData) GetServiceName() string {
+	if sname, ok := md.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
+		return sname.AsString()
+	}
+	return ""
+}
+
+func (md *MetricData) GetMetricName() string {
+	return md.Metric.Name()
+}
+
+func (md *MetricData) GetMetricTypeText() string {
+	return md.Metric.Type().String()
+}
+
+func (md *MetricData) GetDataPointNum() string {
+	switch md.Metric.Type() {
+	case pmetric.MetricTypeGauge:
+		return fmt.Sprintf("%d", md.Metric.Gauge().DataPoints().Len())
+	case pmetric.MetricTypeSum:
+		return fmt.Sprintf("%d", md.Metric.Sum().DataPoints().Len())
+	case pmetric.MetricTypeHistogram:
+		return fmt.Sprintf("%d", md.Metric.Histogram().DataPoints().Len())
+	case pmetric.MetricTypeExponentialHistogram:
+		return fmt.Sprintf("%d", md.Metric.ExponentialHistogram().DataPoints().Len())
+	case pmetric.MetricTypeSummary:
+		return fmt.Sprintf("%d", md.Metric.Summary().DataPoints().Len())
+	}
+	return ""
+}
+
 // LogData is a struct to represent a log
 type LogData struct {
 	Log         *plog.LogRecord
@@ -72,6 +125,37 @@ func (l *LogData) GetResolvedBody() string {
 	})
 
 	return b
+}
+
+func (l *LogData) GetTraceID() string {
+	return l.Log.TraceID().String()
+}
+
+func (l *LogData) GetServiceName() string {
+	if sname, ok := l.ResourceLog.Resource().Attributes().Get("service.name"); ok {
+		return sname.AsString()
+	}
+	return ""
+}
+
+func (l *LogData) GetTimestampText() string {
+	return l.Log.Timestamp().AsTime().Format("2006/01/02 15:04:05")
+}
+
+func (l *LogData) GetSeverity() string {
+	return l.Log.SeverityText()
+}
+
+func (l *LogData) GetEventName() string {
+	// see: https://github.com/open-telemetry/semantic-conventions/blob/a4fc971e0c7ffa4b9572654f075d3cb8560db770/docs/general/events.md#event-definition
+	if sname, ok := l.Log.Attributes().Get("event.name"); ok {
+		return sname.AsString()
+	}
+	return ""
+}
+
+func (l *LogData) GetRawData() string {
+	return l.Log.Body().AsString()
 }
 
 // Store is a store of trace spans

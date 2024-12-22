@@ -16,21 +16,43 @@ import (
 
 const NULL_VALUE_FLOAT64 = math.MaxFloat64
 
-var metricTableHeader = [4]string{
-	"Service Name",
-	"Metric Name",
-	"Metric Type",
-	"Data Point Count",
+var defaultMetricCellMappers = cellMappers[telemetry.MetricData]{
+	0: {
+		header: "Service Name",
+		getTextRowFn: func(data *telemetry.MetricData) string {
+			return data.GetServiceName()
+		},
+	},
+	1: {
+		header: "Metric Name",
+		getTextRowFn: func(data *telemetry.MetricData) string {
+			return data.GetMetricName()
+		},
+	},
+	2: {
+		header: "Metric Type",
+		getTextRowFn: func(data *telemetry.MetricData) string {
+			return data.GetMetricTypeText()
+		},
+	},
+	3: {
+		header: "Data Point Count",
+		getTextRowFn: func(data *telemetry.MetricData) string {
+			return data.GetDataPointNum()
+		},
+	},
 }
 
 type MetricDataForTable struct {
 	tview.TableContentReadOnly
 	metrics *[]*telemetry.MetricData
+	mapper  cellMappers[telemetry.MetricData]
 }
 
 func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable {
 	return MetricDataForTable{
 		metrics: metrics,
+		mapper:  defaultMetricCellMappers,
 	}
 }
 
@@ -38,11 +60,10 @@ func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable 
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (m MetricDataForTable) GetCell(row, column int) *tview.TableCell {
 	if row == 0 {
-		sortType := telemetry.SORT_TYPE_NONE
-		return getHeaderCell(metricTableHeader[:], column, &sortType)
+		return m.getHeaderCell(column)
 	}
 	if row > 0 && row <= len(*m.metrics) {
-		return getCellFromMetrics((*m.metrics)[row-1], column)
+		return getCellFromData(m.mapper, (*m.metrics)[row-1], column)
 	}
 	return tview.NewTableCell("N/A")
 }
@@ -52,42 +73,20 @@ func (m MetricDataForTable) GetRowCount() int {
 }
 
 func (m MetricDataForTable) GetColumnCount() int {
-	return len(metricTableHeader)
+	return len(m.mapper)
 }
 
-// getCellFromLog returns a table cell for the given log and column.
-func getCellFromMetrics(metric *telemetry.MetricData, column int) *tview.TableCell {
-	text := "N/A"
-
-	switch column {
-	case 0:
-		if sname, ok := metric.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
-			text = sname.AsString()
-		}
-	case 1:
-		text = metric.Metric.Name()
-	case 2:
-		text = metric.Metric.Type().String()
-	case 3:
-		switch metric.Metric.Type() {
-		case pmetric.MetricTypeGauge:
-			text = fmt.Sprintf("%d", metric.Metric.Gauge().DataPoints().Len())
-		case pmetric.MetricTypeSum:
-			text = fmt.Sprintf("%d", metric.Metric.Sum().DataPoints().Len())
-		case pmetric.MetricTypeHistogram:
-			text = fmt.Sprintf("%d", metric.Metric.Histogram().DataPoints().Len())
-		case pmetric.MetricTypeExponentialHistogram:
-			text = fmt.Sprintf("%d", metric.Metric.ExponentialHistogram().DataPoints().Len())
-		case pmetric.MetricTypeSummary:
-			text = fmt.Sprintf("%d", metric.Metric.Summary().DataPoints().Len())
-		}
+func (m MetricDataForTable) getHeaderCell(column int) *tview.TableCell {
+	cell := tview.NewTableCell("N/A").
+		SetSelectable(false).
+		SetTextColor(tcell.ColorYellow)
+	h, ok := m.mapper[column]
+	if !ok {
+		return cell
 	}
+	cell.SetText(h.header)
 
-	if text == "" {
-		text = "N/A"
-	}
-
-	return tview.NewTableCell(text)
+	return cell
 }
 
 func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, m *telemetry.MetricData) *tview.TreeView {

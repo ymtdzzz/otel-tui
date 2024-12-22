@@ -194,7 +194,7 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	logCount := 0
 	if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
 		logCount = len(lds)
-		logData := NewLogDataForTable(&lds)
+		logData := NewLogDataForTableForTimeline(&lds)
 		logs.SetContent(&logData)
 		attachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
 	}

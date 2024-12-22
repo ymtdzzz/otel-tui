@@ -82,87 +82,168 @@ func TestLogDataForTable(t *testing.T) {
 		},
 	}
 	ldftable := NewLogDataForTable(logs)
+	ldftableForTL := NewLogDataForTableForTimeline(logs)
 
 	t.Run("GetRowCount", func(t *testing.T) {
-		assert.Equal(t, 11, ldftable.GetRowCount()) // including header row
+		t.Run("default", func(t *testing.T) {
+			assert.Equal(t, 11, ldftable.GetRowCount()) // including header row
+		})
+		t.Run("for timeline", func(t *testing.T) {
+			assert.Equal(t, 11, ldftableForTL.GetRowCount()) // including header row
+		})
 	})
 
 	t.Run("GetColumnCount", func(t *testing.T) {
-		assert.Equal(t, 6, ldftable.GetColumnCount())
+		t.Run("default", func(t *testing.T) {
+			assert.Equal(t, 6, ldftable.GetColumnCount())
+		})
+		t.Run("for timeline", func(t *testing.T) {
+			assert.Equal(t, 5, ldftableForTL.GetColumnCount())
+		})
 	})
 
 	t.Run("GetCell", func(t *testing.T) {
-		tests := []struct {
-			name   string
-			row    int
-			column int
-			want   string
-		}{
-			{
-				name:   "invalid row",
-				row:    10,
-				column: 0,
-				want:   "N/A",
-			},
-			{
-				name:   "invalid column",
-				row:    0,
-				column: 6,
-				want:   "N/A",
-			},
-			{
-				name:   "trace ID trace 1 span-1-1-1",
-				row:    0,
-				column: 0,
-				want:   "01000000000000000000000000000000",
-			},
-			{
-				name:   "event name trace 1 span-1-1-1",
-				row:    0,
-				column: 4,
-				want:   "device.app.lifecycle",
-			},
-			{
-				name:   "service name trace 1 span-2-1-1",
-				row:    6,
-				column: 1,
-				want:   "test-service-2",
-			},
-			{
-				name:   "timestamp trace 1 span-2-1-1",
-				row:    6,
-				column: 2,
-				want:   "2022/10/21 07:10:02",
-			},
-			{
-				name:   "serverity trace 1 span-2-1-1",
-				row:    6,
-				column: 3,
-				want:   "INFO",
-			},
-			{
-				name:   "event name trace 2 span-1-1-1",
-				row:    8,
-				column: 4,
-				want:   "N/A",
-			},
-			{
-				name:   "raw data trace 2 span-1-1-1",
-				row:    8,
-				column: 5,
-				want:   "log body 0-0-0-0",
-			},
-		}
+		t.Run("default", func(t *testing.T) {
+			tests := []struct {
+				name   string
+				row    int
+				column int
+				want   string
+			}{
+				{
+					name:   "invalid row",
+					row:    10,
+					column: 0,
+					want:   "N/A",
+				},
+				{
+					name:   "invalid column",
+					row:    0,
+					column: 6,
+					want:   "N/A",
+				},
+				{
+					name:   "trace ID trace 1 span-1-1-1",
+					row:    0,
+					column: 0,
+					want:   "01000000000000000000000000000000",
+				},
+				{
+					name:   "event name trace 1 span-1-1-1",
+					row:    0,
+					column: 4,
+					want:   "device.app.lifecycle",
+				},
+				{
+					name:   "service name trace 1 span-2-1-1",
+					row:    6,
+					column: 1,
+					want:   "test-service-2",
+				},
+				{
+					name:   "timestamp trace 1 span-2-1-1",
+					row:    6,
+					column: 2,
+					want:   "2022/10/21 07:10:02",
+				},
+				{
+					name:   "serverity trace 1 span-2-1-1",
+					row:    6,
+					column: 3,
+					want:   "INFO",
+				},
+				{
+					name:   "event name trace 2 span-1-1-1",
+					row:    8,
+					column: 4,
+					want:   "N/A",
+				},
+				{
+					name:   "raw data trace 2 span-1-1-1",
+					row:    8,
+					column: 5,
+					want:   "log body 0-0-0-0",
+				},
+			}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.want, ldftable.GetCell(tt.row+1, tt.column).Text)
-			})
-		}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					assert.Equal(t, tt.want, ldftable.GetCell(tt.row+1, tt.column).Text)
+				})
+			}
+		})
+		t.Run("for timeline", func(t *testing.T) {
+			tests := []struct {
+				name   string
+				row    int
+				column int
+				want   string
+			}{
+				{
+					name:   "invalid row",
+					row:    10,
+					column: 0,
+					want:   "N/A",
+				},
+				{
+					name:   "invalid column",
+					row:    0,
+					column: 5,
+					want:   "N/A",
+				},
+				{
+					name:   "event name trace 1 span-1-1-1",
+					row:    0,
+					column: 3,
+					want:   "device.app.lifecycle",
+				},
+				{
+					name:   "service name trace 1 span-2-1-1",
+					row:    6,
+					column: 0,
+					want:   "test-service-2",
+				},
+				{
+					name:   "timestamp trace 1 span-2-1-1",
+					row:    6,
+					column: 1,
+					want:   "2022/10/21 07:10:02",
+				},
+				{
+					name:   "serverity trace 1 span-2-1-1",
+					row:    6,
+					column: 2,
+					want:   "INFO",
+				},
+				{
+					name:   "event name trace 2 span-1-1-1",
+					row:    8,
+					column: 3,
+					want:   "N/A",
+				},
+				{
+					name:   "raw data trace 2 span-1-1-1",
+					row:    8,
+					column: 4,
+					want:   "log body 0-0-0-0",
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					assert.Equal(t, tt.want, ldftableForTL.GetCell(tt.row+1, tt.column).Text)
+				})
+			}
+		})
 	})
 
 	t.Run("tableModalMapper GetColumnIdx", func(t *testing.T) {
-		assert.Equal(t, "RawData", logTableHeader[ldftable.GetColumnIdx()])
+		t.Run("default", func(t *testing.T) {
+			assert.Equal(t, "RawData", ldftable.mapper[ldftable.GetColumnIdx()].header)
+		})
+		t.Run("for timeline", func(t *testing.T) {
+			assert.Equal(t, "RawData", ldftableForTL.mapper[ldftableForTL.GetColumnIdx()].header)
+		})
 	})
 }
 
