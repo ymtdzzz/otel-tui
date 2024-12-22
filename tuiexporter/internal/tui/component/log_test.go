@@ -160,6 +160,10 @@ func TestLogDataForTable(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("tableModalMapper GetColumnIdx", func(t *testing.T) {
+		assert.Equal(t, "RawData", logTableHeader[ldftable.GetColumnIdx()])
+	})
 }
 
 func TestGetLogInfoTree(t *testing.T) {

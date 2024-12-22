@@ -30,6 +30,11 @@ func NewLogDataForTable(logs *[]*telemetry.LogData) LogDataForTable {
 	}
 }
 
+// implementation for tableModalMapper interface
+func (l *LogDataForTable) GetColumnIdx() int {
+	return len(logTableHeader) - 1
+}
+
 // implementations for tview Virtual Table
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (l LogDataForTable) GetCell(row, column int) *tview.TableCell {

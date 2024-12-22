@@ -194,7 +194,9 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	logCount := 0
 	if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
 		logCount = len(lds)
-		logs.SetContent(NewLogDataForTable(&lds))
+		logData := NewLogDataForTable(&lds)
+		logs.SetContent(&logData)
+		attachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
 	}
 	logs.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L to toggle collapse)", logCount))
 	registerCommandList(commands, logs, nil, KeyMaps{
