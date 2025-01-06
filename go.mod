@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.116.0
 	go.opentelemetry.io/collector/receiver v0.116.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.116.0
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.29.0
 	google.golang.org/genproto v0.0.0-20240708141625-4ad9e859172b
 )
 
