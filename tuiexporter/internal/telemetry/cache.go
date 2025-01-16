@@ -138,6 +138,10 @@ func (c *TraceCache) GetSpanByID(spanID string) (*SpanData, bool) {
 	return span, ok
 }
 
+func (c *TraceCache) DrawSpanDependencies() (string, error) {
+	return c.spanid2span.getDependencyGraph()
+}
+
 func (c *TraceCache) flush() {
 	c.spanid2span = SpanDataMap{}
 	c.traceid2spans = TraceSpanDataMap{}

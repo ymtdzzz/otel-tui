@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	PAGE_TRACES    = "Traces"
-	PAGE_TIMELINE  = "Timeline"
-	PAGE_LOGS      = "Logs"
-	PAGE_DEBUG_LOG = "DebugLog"
-	PAGE_METRICS   = "Metrics"
-	PAGE_MODAL     = "Modal"
+	PAGE_TRACES         = "Traces"
+	PAGE_TIMELINE       = "Timeline"
+	PAGE_TRACE_TOPOLOGY = "TraceTopology"
+	PAGE_LOGS           = "Logs"
+	PAGE_DEBUG_LOG      = "DebugLog"
+	PAGE_METRICS        = "Metrics"
+	PAGE_MODAL          = "Modal"
 
 	DEFAULT_PROPORTION_TRACE_DETAILS = 20
 	DEFAULT_PROPORTION_TRACE_TABLE   = 30
@@ -28,16 +29,19 @@ const (
 )
 
 type TUIPages struct {
-	pages      *tview.Pages
-	traces     *tview.Flex
-	timeline   *tview.Flex
-	metrics    *tview.Flex
-	logs       *tview.Flex
-	debuglog   *tview.Flex
-	modal      *tview.Flex
-	clearFns   []func()
-	current    string
-	setFocusFn func(p tview.Primitive)
+	store             *telemetry.Store
+	pages             *tview.Pages
+	traces            *tview.Flex
+	timeline          *tview.Flex
+	topology          *tview.Flex
+	metrics           *tview.Flex
+	logs              *tview.Flex
+	debuglog          *tview.Flex
+	modal             *tview.Flex
+	clearFns          []func()
+	current           string
+	setFocusFn        func(p tview.Primitive)
+	setTextTopologyFn func(text string) *tview.TextView
 	// This is used when other components trigger to draw the timeline
 	commandsTimeline *tview.TextView
 }
@@ -45,6 +49,7 @@ type TUIPages struct {
 func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TUIPages {
 	pages := tview.NewPages()
 	tp := &TUIPages{
+		store:      store,
 		pages:      pages,
 		current:    PAGE_TRACES,
 		setFocusFn: setFocusFn,
@@ -95,6 +100,9 @@ func (p *TUIPages) TogglePage() {
 		p.switchToPage(PAGE_METRICS)
 	} else if p.current == PAGE_METRICS {
 		p.switchToPage(PAGE_LOGS)
+	} else if p.current == PAGE_LOGS {
+		p.switchToPage(PAGE_TRACE_TOPOLOGY)
+		p.updateTopology(p.store.GetTraceCache())
 	} else {
 		p.switchToPage(PAGE_TRACES)
 	}
@@ -127,6 +135,10 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	timeline := p.createTimelinePage()
 	p.timeline = timeline
 	p.pages.AddPage(PAGE_TIMELINE, timeline, true, false)
+
+	topology := p.createTraceTopologyPage(store.GetTraceCache())
+	p.topology = topology
+	p.pages.AddPage(PAGE_TRACE_TOPOLOGY, topology, true, false)
 
 	metrics := p.createMetricsPage(store)
 	p.metrics = metrics
@@ -326,6 +338,51 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 	p.commandsTimeline = newCommandList()
 
 	return page
+}
+
+func (p *TUIPages) createTraceTopologyPage(cache *telemetry.TraceCache) *tview.Flex {
+	commands := newCommandList()
+	page := tview.NewFlex().SetDirection(tview.FlexRow)
+	page.Box.SetBorder(false)
+
+	topo := tview.NewTextView()
+	topo.SetBorder(true).SetTitle("Topology")
+	topo.SetWrap(false)
+	page.AddItem(topo, 0, 1, true)
+
+	p.setTextTopologyFn = topo.SetText
+
+	topo.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlR {
+			p.updateTopology(cache)
+			return nil
+		}
+
+		return event
+	})
+	registerCommandList(commands, topo, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'R', tcell.ModCtrl),
+			description: "Reload",
+		},
+		{
+			arrow:       true,
+			description: "Scroll view",
+		},
+	})
+
+	return attatchTab(attatchCommandList(commands, page), PAGE_TRACE_TOPOLOGY)
+}
+
+func (p *TUIPages) updateTopology(cache *telemetry.TraceCache) {
+	p.setTextTopologyFn("Loading...")
+	graph, err := cache.DrawSpanDependencies()
+	if err != nil {
+		p.setTextTopologyFn(fmt.Sprintf("Failed to render the trace topology view"))
+		log.Printf("Failed to render the trace topology view: %v", err)
+		return
+	}
+	p.setTextTopologyFn(graph)
 }
 
 func (p *TUIPages) createModalPage(text string) (*tview.Flex, *tview.TextView) {
@@ -719,6 +776,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 func (p *TUIPages) createDebugLogPage() *tview.Flex {
 	logview := tview.NewTextView().SetDynamicColors(true)
 	logview.Box.SetTitle("Log").SetBorder(true)
+	// file, _ := os.OpenFile("log.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// log.SetOutput(file)
 	log.SetOutput(logview)
 
 	initClipboard()
@@ -734,11 +793,13 @@ func attatchTab(p tview.Primitive, name string) *tview.Flex {
 	var text string
 	switch name {
 	case PAGE_TRACES:
-		text = "< [yellow]Traces[white] | Metrics | Logs > (Tab to switch)"
+		text = "< [yellow]Traces[white] | Metrics | Logs | Topology (beta) > (Tab to switch)"
 	case PAGE_METRICS:
-		text = "< Traces | [yellow]Metrics[white] | Logs > (Tab to switch)"
+		text = "< Traces | [yellow]Metrics[white] | Logs | Topology (beta) > (Tab to switch)"
 	case PAGE_LOGS:
-		text = "< Traces | Metrics | [yellow]Logs[white] > (Tab to switch)"
+		text = "< Traces | Metrics | [yellow]Logs[white] | Topology (beta) > (Tab to switch)"
+	case PAGE_TRACE_TOPOLOGY:
+		text = "< Traces | Metrics | Logs | [yellow]Topology (beta)[white] > (Tab to switch)"
 	}
 
 	tabs := tview.NewTextView().
