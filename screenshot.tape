@@ -1,5 +1,5 @@
 Set Shell bash
-Set Width 3000
+Set Width 2500
 Set Height 1500
 Set FontSize 17
 
@@ -49,6 +49,11 @@ Sleep 100ms
 Down
 Sleep 100ms
 Screenshot docs/logs.png
+Sleep 1s
+
+Tab
+Sleep 100ms
+Screenshot docs/topology.png
 Sleep 1s
 
 Ctrl+C

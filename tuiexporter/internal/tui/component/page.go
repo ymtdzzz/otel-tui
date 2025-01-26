@@ -343,11 +343,13 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 func (p *TUIPages) createTraceTopologyPage(cache *telemetry.TraceCache) *tview.Flex {
 	commands := newCommandList()
 	page := tview.NewFlex().SetDirection(tview.FlexRow)
-	page.Box.SetBorder(false)
+	page.SetBorder(false)
 
-	topo := tview.NewTextView()
+	topo := tview.NewTextView().
+		SetWrap(false).
+		SetRegions(false).
+		SetDynamicColors(false)
 	topo.SetBorder(true).SetTitle("Topology")
-	topo.SetWrap(false)
 	page.AddItem(topo, 0, 1, true)
 
 	p.setTextTopologyFn = topo.SetText
@@ -380,6 +382,10 @@ func (p *TUIPages) updateTopology(cache *telemetry.TraceCache) {
 	if err != nil {
 		p.setTextTopologyFn("Failed to render the trace topology view")
 		log.Printf("Failed to render the trace topology view: %v", err)
+		return
+	}
+	if len(graph) <= 1 {
+		p.setTextTopologyFn("No data")
 		return
 	}
 	p.setTextTopologyFn(graph)
