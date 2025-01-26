@@ -320,7 +320,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
-	return attatchTab(attatchCommandList(commands, basePage), PAGE_TRACES)
+	return attachTab(attachCommandList(commands, basePage), PAGE_TRACES)
 }
 
 func (p *TUIPages) createTimelinePage() *tview.Flex {
@@ -371,7 +371,7 @@ func (p *TUIPages) createTraceTopologyPage(cache *telemetry.TraceCache) *tview.F
 		},
 	})
 
-	return attatchTab(attatchCommandList(commands, page), PAGE_TRACE_TOPOLOGY)
+	return attachTab(attachCommandList(commands, page), PAGE_TRACE_TOPOLOGY)
 }
 
 func (p *TUIPages) updateTopology(cache *telemetry.TraceCache) {
@@ -432,7 +432,7 @@ func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lc
 	)
 	timeline.AddItem(tl, 0, 1, true)
 
-	timeline = attatchCommandList(p.commandsTimeline, timeline)
+	timeline = attachCommandList(p.commandsTimeline, timeline)
 
 	p.timeline.AddItem(timeline, 0, 1, true)
 	p.switchToPage(PAGE_TIMELINE)
@@ -594,7 +594,7 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
-	return attatchTab(attatchCommandList(commands, basePage), PAGE_METRICS)
+	return attachTab(attachCommandList(commands, basePage), PAGE_METRICS)
 }
 
 func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
@@ -770,7 +770,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	})
 	pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
 
-	return attatchTab(attatchCommandList(commands, pageContainer), PAGE_LOGS)
+	return attachTab(attachCommandList(commands, pageContainer), PAGE_LOGS)
 }
 
 func (p *TUIPages) createDebugLogPage() *tview.Flex {
@@ -789,7 +789,7 @@ func (p *TUIPages) createDebugLogPage() *tview.Flex {
 	return page
 }
 
-func attatchTab(p tview.Primitive, name string) *tview.Flex {
+func attachTab(p tview.Primitive, name string) *tview.Flex {
 	var text string
 	switch name {
 	case PAGE_TRACES:

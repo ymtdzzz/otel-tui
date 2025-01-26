@@ -45,7 +45,7 @@ func newCommandList() *tview.TextView {
 		SetDynamicColors(true)
 }
 
-func attatchCommandList(commands *tview.TextView, p tview.Primitive) *tview.Flex {
+func attachCommandList(commands *tview.TextView, p tview.Primitive) *tview.Flex {
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	if commands == nil {
