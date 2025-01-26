@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -57,7 +58,18 @@ serviceA -->|3| serviceB
 		// Other
 		addSpan(t, sdm, 8, 16, "serviceX", "serviceY")
 
-		gotstr := sdm.getDependencies().getMermaid()
+		deps := sdm.getDependencies()
+		// sort to avoid flaky
+		for _, n := range deps.HeadNodes {
+			if n.Service == "serviceA" {
+				bn := n.Children[0]
+				bchild := bn.Children
+				sort.Slice(bchild, func(i, j int) bool {
+					return bchild[i].Service < bchild[j].Service
+				})
+			}
+		}
+		gotstr := deps.getMermaid()
 		wantstr := `graph LR
 serviceA -->|1| serviceB -->|3| serviceC -->|1| serviceD
 serviceB -->|1| serviceE
