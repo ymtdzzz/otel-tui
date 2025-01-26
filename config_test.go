@@ -46,6 +46,7 @@ receivers:
 processors:
 exporters:
   tui:
+    from_json_file: true
 service:
   pipelines:
     traces:
@@ -96,6 +97,7 @@ receivers:
 processors:
 exporters:
   tui:
+    from_json_file: false
 service:
   pipelines:
     traces:

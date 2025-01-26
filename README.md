@@ -7,6 +7,7 @@ This tool currently supports OpenTelemetry, Zipkin (Traces) and Prometheus (Metr
 Traces
 ![Traces](./docs/traces.png)
 ![Spans](./docs/spans.png)
+![Topologies](./docs/topology.png)
 
 Metrics
 ![Metrics](./docs/metrics.png)

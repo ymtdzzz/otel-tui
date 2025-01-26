@@ -13,6 +13,7 @@ var keyMapRegex = regexp.MustCompile(`Rune|\[|\]`)
 
 type KeyMap struct {
 	key         *tcell.EventKey
+	arrow       bool
 	description string
 }
 
@@ -21,8 +22,14 @@ type KeyMaps []*KeyMap
 func (m KeyMaps) keyTexts() string {
 	keytexts := []string{}
 	for _, v := range m {
+		key := ""
+		if v.arrow {
+			key = "→←↑↓"
+		} else {
+			key = keyMapRegex.ReplaceAllString(v.key.Name(), "")
+		}
 		keytexts = append(keytexts, fmt.Sprintf(" [yellow]%s[white]: %s",
-			keyMapRegex.ReplaceAllString(v.key.Name(), ""),
+			key,
 			v.description,
 		))
 	}
@@ -38,7 +45,7 @@ func newCommandList() *tview.TextView {
 		SetDynamicColors(true)
 }
 
-func attatchCommandList(commands *tview.TextView, p tview.Primitive) *tview.Flex {
+func attachCommandList(commands *tview.TextView, p tview.Primitive) *tview.Flex {
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	if commands == nil {

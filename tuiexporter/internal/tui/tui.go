@@ -13,23 +13,25 @@ const refreshInterval = 500 * time.Millisecond
 
 // TUIApp is the TUI application.
 type TUIApp struct {
-	app         *tview.Application
-	pages       *component.TUIPages
-	store       *telemetry.Store
-	refreshedAt time.Time
+	initialInterval time.Duration
+	app             *tview.Application
+	pages           *component.TUIPages
+	store           *telemetry.Store
+	refreshedAt     time.Time
 }
 
 // NewTUIApp creates a new TUI application.
-func NewTUIApp(store *telemetry.Store) *TUIApp {
+func NewTUIApp(store *telemetry.Store, initialInterval time.Duration) *TUIApp {
 	app := tview.NewApplication()
 	tpages := component.NewTUIPages(store, func(p tview.Primitive) {
 		app.SetFocus(p)
 	})
 	pages := tpages.GetPages()
 	tapp := &TUIApp{
-		app:   app,
-		pages: tpages,
-		store: store,
+		initialInterval: initialInterval,
+		app:             app,
+		pages:           tpages,
+		store:           store,
 	}
 
 	app.SetRoot(pages, true)
@@ -58,6 +60,7 @@ func (t *TUIApp) Store() *telemetry.Store {
 
 // Run starts the TUI application.
 func (t *TUIApp) Run() error {
+	time.Sleep(t.initialInterval)
 	go t.refresh()
 	return t.app.Run()
 }

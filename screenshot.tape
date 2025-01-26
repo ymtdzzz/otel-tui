@@ -1,11 +1,11 @@
 Set Shell bash
-Set Width 3000
+Set Width 2500
 Set Height 1500
 Set FontSize 17
 
 Type "./otel-tui --from-json-file ./test_data.json"
 Enter
-Sleep 1s
+Sleep 3s
 
 Type "/recommend"
 Enter
@@ -49,6 +49,11 @@ Sleep 100ms
 Down
 Sleep 100ms
 Screenshot docs/logs.png
+Sleep 1s
+
+Tab
+Sleep 100ms
+Screenshot docs/topology.png
 Sleep 1s
 
 Ctrl+C
