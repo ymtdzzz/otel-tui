@@ -378,7 +378,7 @@ func (p *TUIPages) updateTopology(cache *telemetry.TraceCache) {
 	p.setTextTopologyFn("Loading...")
 	graph, err := cache.DrawSpanDependencies()
 	if err != nil {
-		p.setTextTopologyFn(fmt.Sprintf("Failed to render the trace topology view"))
+		p.setTextTopologyFn("Failed to render the trace topology view")
 		log.Printf("Failed to render the trace topology view: %v", err)
 		return
 	}

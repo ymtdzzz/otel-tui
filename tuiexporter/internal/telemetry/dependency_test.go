@@ -133,6 +133,4 @@ func addSpan(t *testing.T, sdm SpanDataMap, traceID, spanID int, fromsn, tosn st
 		ReceivedAt:   time.Now(),
 	}
 	sdm[ts.SpanID().String()] = to
-
-	return
 }
