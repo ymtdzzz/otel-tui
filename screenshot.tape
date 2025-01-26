@@ -5,7 +5,7 @@ Set FontSize 17
 
 Type "./otel-tui --from-json-file ./test_data.json"
 Enter
-Sleep 1s
+Sleep 3s
 
 Type "/recommend"
 Enter

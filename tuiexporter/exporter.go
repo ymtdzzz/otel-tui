@@ -3,6 +3,7 @@ package tuiexporter
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui"
@@ -16,9 +17,15 @@ type tuiExporter struct {
 	app *tui.TUIApp
 }
 
-func newTuiExporter(_ *Config) *tuiExporter {
+func newTuiExporter(config *Config) *tuiExporter {
+	var initialInterval time.Duration
+	if config.FromJSONFile {
+		// FIXME: When reading telemetry from a JSON file on startup, the UI will break
+		//        if it runs at the same time as the UI drawing. As a workaround, wait for a second.
+		initialInterval = 1 * time.Second
+	}
 	return &tuiExporter{
-		app: tui.NewTUIApp(telemetry.NewStore()),
+		app: tui.NewTUIApp(telemetry.NewStore(), initialInterval),
 	}
 }
 

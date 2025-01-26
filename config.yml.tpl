@@ -31,6 +31,7 @@ receivers:
 processors:
 exporters:
   tui:
+    from_json_file: {{ if .FromJSONFile }}true{{else}}false{{end}}
 service:
   pipelines:
     traces:
