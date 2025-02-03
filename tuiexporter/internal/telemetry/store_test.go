@@ -61,18 +61,22 @@ func TestStoreSpanFilters(t *testing.T) {
 	//  | └- scope: test-scope-1-2
 	//  |   └- span: span-1-2-3
 	//  └- resource: test-service-2
-	//    └- scope: test-scope-2-1
-	//      └- span: span-2-1-1
+	//  | └- scope: test-scope-2-1
+	//  |   └- span: span-2-1-1
+	//  └- resource: N/A
+	//    └- scope: test-scope-3-1
+	//      └- span: span-3-1-1
 	store := NewStore()
-	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 3, []int{2, 1, 1}, [][]int{{2, 1}, {1}, {1}})
 	traceID := testdata.Spans[0].TraceID().String()
+	testdata.RSpans[2].Resource().Attributes().Clear()
 	store.AddSpan(&payload)
 
 	store.ApplyFilterTraces("0-0", SORT_TYPE_NONE)
-	assert.Equal(t, 2, len(store.svcspansFiltered))
+	assert.Equal(t, 3, len(store.svcspansFiltered))
 	assert.Equal(t, traceID, store.GetTraceIDByFilteredIdx(0))
 	assert.Equal(t, traceID, store.GetTraceIDByFilteredIdx(1))
-	assert.Equal(t, "", store.GetTraceIDByFilteredIdx(2))
+	assert.Equal(t, "", store.GetTraceIDByFilteredIdx(3))
 	// spans in test-service-1
 	assert.Equal(t, "span-0-0-0", store.GetFilteredServiceSpansByIdx(0)[0].Span.Name())
 	assert.Equal(t, "span-0-0-1", store.GetFilteredServiceSpansByIdx(0)[1].Span.Name())
@@ -91,7 +95,7 @@ func TestStoreSpanFilters(t *testing.T) {
 	}{
 		{
 			name: "invalid index",
-			idx:  1,
+			idx:  2,
 			want: nil,
 		},
 		{
@@ -118,6 +122,10 @@ func TestStoreSpanFilters(t *testing.T) {
 			}
 		})
 	}
+
+	// spans in N/A service
+	store.ApplyFilterTraces("N/A", SORT_TYPE_NONE)
+	assert.Equal(t, "span-2-0-0", store.GetFilteredServiceSpansByIdx(0)[0].Span.Name())
 }
 
 func TestStoreMetricFilters(t *testing.T) {

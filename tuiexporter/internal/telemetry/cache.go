@@ -1,6 +1,9 @@
 package telemetry
 
-import "go.opentelemetry.io/collector/pdata/ptrace"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
 
 // SpanDataMap is a map of span id to span data
 // This is used to quickly look up a span by its id
@@ -85,7 +88,10 @@ func (c *TraceCache) DeleteCache(serviceSpans []*SpanData) {
 	// FIXME: more efficient way ?
 	for _, ss := range serviceSpans {
 		traceID := ss.Span.TraceID().String()
-		sname, _ := ss.ResourceSpan.Resource().Attributes().Get("service.name")
+		sname, ok := ss.ResourceSpan.Resource().Attributes().Get("service.name")
+		if !ok {
+			sname = pcommon.NewValueStr("N/A")
+		}
 
 		if spans, ok := c.GetSpansByTraceIDAndSvc(ss.Span.TraceID().String(), sname.AsString()); ok {
 			for _, s := range spans {

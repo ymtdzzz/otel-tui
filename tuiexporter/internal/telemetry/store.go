@@ -252,7 +252,7 @@ func (s *Store) ApplyFilterTraces(svc string, sortType SortType) {
 	}
 
 	for _, span := range s.svcspans {
-		sname := ""
+		sname := "N/A"
 		if snameattr, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
 			sname = snameattr.AsString()
 		}
@@ -336,7 +336,10 @@ func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 	}
 	span := s.svcspansFiltered[idx]
 	traceID := span.Span.TraceID().String()
-	sname, _ := span.ResourceSpan.Resource().Attributes().Get("service.name")
+	sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name")
+	if !ok {
+		sname = pcommon.NewValueStr("N/A")
+	}
 	spans, _ := s.tracecache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
 
 	return spans
@@ -409,10 +412,14 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 
 			for si := 0; si < ss.Spans().Len(); si++ {
 				span := ss.Spans().At(si)
-				// attribute service.name is required
-				// see: https://opentelemetry.io/docs/specs/semconv/resource/#service
-				// TODO: set default value when service name is not set
-				sname, _ := rs.Resource().Attributes().Get("service.name")
+				// Attribute service.name is required. When service.name is not set, in otel-tui, it is treated
+				// as N/A to distinguish it from unknown, which is the fallback for the service name as defined
+				// in the semantic convention.
+				// See https://opentelemetry.io/docs/specs/semconv/resource/#service
+				sname, ok := rs.Resource().Attributes().Get("service.name")
+				if !ok {
+					sname = pcommon.NewValueStr("N/A")
+				}
 				sd := &SpanData{
 					Span:         &span,
 					ResourceSpan: &rs,

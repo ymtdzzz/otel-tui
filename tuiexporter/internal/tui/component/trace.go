@@ -122,7 +122,10 @@ func getTraceInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideM
 		return tview.NewTreeView()
 	}
 	traceID := spans[0].Span.TraceID().String()
-	sname, _ := spans[0].ResourceSpan.Resource().Attributes().Get("service.name")
+	sname, ok := spans[0].ResourceSpan.Resource().Attributes().Get("service.name")
+	if !ok {
+		sname = pcommon.NewValueStr("N/A")
+	}
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 
