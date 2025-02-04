@@ -55,7 +55,7 @@ func TestNewSpanTreeWithServiceName(t *testing.T) {
 
 func TestNewSpanTreeWithoutServiceName(t *testing.T) {
 	// traceid: 1
-	//  └- resource: N/A
+	//  └- resource: [Empty]
 	//    └- scope: test-scope-1-1
 	//      └- span: span-1-1-1 [root]
 	//        └- span: span-1-1-2

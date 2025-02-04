@@ -483,10 +483,7 @@ func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData)
 }
 
 func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *telemetry.MetricData) tview.Primitive {
-	sname := "N/A"
-	if snameattr, ok := m.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
-		sname = snameattr.AsString()
-	}
+	sname := telemetry.GetServiceNameFromResource(m.ResourceMetric.Resource())
 	mcache := store.GetMetricCache()
 	ms, ok := mcache.GetMetricsBySvcAndMetricName(sname, m.Metric.Name())
 	if !ok {

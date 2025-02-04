@@ -9,7 +9,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -361,12 +360,9 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 			end = span.Span.EndTimestamp().AsTime()
 		}
 		// color is assigned by the service name
-		sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name")
-		if !ok {
-			sname = pcommon.NewValueStr("N/A")
-		}
-		if _, ok := colorMemo[sname.AsString()]; !ok {
-			colorMemo[sname.AsString()] = colors[len(colorMemo)%len(colors)]
+		sname := telemetry.GetServiceNameFromResource(span.ResourceSpan.Resource())
+		if _, ok := colorMemo[sname]; !ok {
+			colorMemo[sname] = colors[len(colorMemo)%len(colors)]
 		}
 	}
 	duration = end.Sub(start)
@@ -375,13 +371,10 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 	for _, span := range spans {
 		current := span.Span.SpanID().String()
 		node := nodes[spanMemo[current]]
-		sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name")
-		if !ok {
-			sname = pcommon.NewValueStr("N/A")
-		}
+		sname := telemetry.GetServiceNameFromResource(span.ResourceSpan.Resource())
 		st, en := span.Span.StartTimestamp().AsTime().Sub(start), span.Span.EndTimestamp().AsTime().Sub(start)
 		d := en - st
-		node.box = createSpan(colorMemo[sname.AsString()], duration, st, en)
+		node.box = createSpan(colorMemo[sname], duration, st, en)
 		if span.Span.Status().Code() == ptrace.StatusCodeError {
 			node.label = fmt.Sprintf("[!] %s %s", span.Span.Name(), d.String())
 		} else {
@@ -476,11 +469,8 @@ func createSpan(color tcell.Color, total, start, end time.Duration) (span *tview
 
 func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, span *telemetry.SpanData, title string) *tview.TreeView {
 	traceID := span.Span.TraceID().String()
-	sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name")
-	if !ok {
-		sname = pcommon.NewValueStr("N/A")
-	}
-	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
+	sname := telemetry.GetServiceNameFromResource(span.ResourceSpan.Resource())
+	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname, traceID))
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 	tree.SetBorder(true).SetTitle(title)
 
