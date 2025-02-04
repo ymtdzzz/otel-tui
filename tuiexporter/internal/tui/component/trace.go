@@ -122,11 +122,8 @@ func getTraceInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideM
 		return tview.NewTreeView()
 	}
 	traceID := spans[0].Span.TraceID().String()
-	sname, ok := spans[0].ResourceSpan.Resource().Attributes().Get("service.name")
-	if !ok {
-		sname = pcommon.NewValueStr("N/A")
-	}
-	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname.AsString(), traceID))
+	sname := telemetry.GetServiceNameFromResource(spans[0].ResourceSpan.Resource())
+	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname, traceID))
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 
 	// statistics

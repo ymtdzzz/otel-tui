@@ -63,7 +63,7 @@ func TestStoreSpanFilters(t *testing.T) {
 	//  └- resource: test-service-2
 	//  | └- scope: test-scope-2-1
 	//  |   └- span: span-2-1-1
-	//  └- resource: N/A
+	//  └- resource: [Empty]
 	//    └- scope: test-scope-3-1
 	//      └- span: span-3-1-1
 	store := NewStore()
@@ -123,8 +123,8 @@ func TestStoreSpanFilters(t *testing.T) {
 		})
 	}
 
-	// spans in N/A service
-	store.ApplyFilterTraces("N/A", SORT_TYPE_NONE)
+	// spans in unknown service
+	store.ApplyFilterTraces("unknown", SORT_TYPE_NONE)
 	assert.Equal(t, "span-2-0-0", store.GetFilteredServiceSpansByIdx(0)[0].Span.Name())
 }
 

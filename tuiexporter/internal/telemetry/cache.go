@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -88,19 +87,16 @@ func (c *TraceCache) DeleteCache(serviceSpans []*SpanData) {
 	// FIXME: more efficient way ?
 	for _, ss := range serviceSpans {
 		traceID := ss.Span.TraceID().String()
-		sname, ok := ss.ResourceSpan.Resource().Attributes().Get("service.name")
-		if !ok {
-			sname = pcommon.NewValueStr("N/A")
-		}
+		sname := GetServiceNameFromResource(ss.ResourceSpan.Resource())
 
-		if spans, ok := c.GetSpansByTraceIDAndSvc(ss.Span.TraceID().String(), sname.AsString()); ok {
+		if spans, ok := c.GetSpansByTraceIDAndSvc(ss.Span.TraceID().String(), sname); ok {
 			for _, s := range spans {
 				delete(c.spanid2span, s.Span.SpanID().String())
 			}
 		}
-		delete(c.tracesvc2spans[traceID], sname.AsString())
-		delete(c.tracesvc2haserror[traceID], sname.AsString())
-		delete(c.tracesvc2parent[traceID], sname.AsString())
+		delete(c.tracesvc2spans[traceID], sname)
+		delete(c.tracesvc2haserror[traceID], sname)
+		delete(c.tracesvc2parent[traceID], sname)
 		if len(c.tracesvc2spans[traceID]) == 0 {
 			delete(c.tracesvc2spans, traceID)
 			delete(c.tracesvc2haserror, traceID)
@@ -242,10 +238,7 @@ func (c *MetricCache) UpdateCache(sname string, data *MetricData) {
 // DeleteCache deletes a list of metrics from the cache
 func (c *MetricCache) DeleteCache(metrics []*MetricData) {
 	for _, m := range metrics {
-		sname := "N/A"
-		if snameattr, ok := m.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
-			sname = snameattr.AsString()
-		}
+		sname := GetServiceNameFromResource(m.ResourceMetric.Resource())
 		mname := m.Metric.Name()
 		if _, ok := c.svcmetric2metrics[sname][mname]; ok {
 			for i, metric := range c.svcmetric2metrics[sname][mname] {

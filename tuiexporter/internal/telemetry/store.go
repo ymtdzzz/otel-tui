@@ -33,10 +33,7 @@ func (sd *SpanData) IsRoot() bool {
 }
 
 func (sd *SpanData) GetServiceName() string {
-	if sname, ok := sd.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
-		return sname.AsString()
-	}
-	return ""
+	return GetServiceNameFromResource(sd.ResourceSpan.Resource())
 }
 
 func (sd *SpanData) GetDurationText() string {
@@ -79,10 +76,7 @@ func (md *MetricData) HasNumberDatapoints() bool {
 }
 
 func (md *MetricData) GetServiceName() string {
-	if sname, ok := md.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
-		return sname.AsString()
-	}
-	return ""
+	return GetServiceNameFromResource(md.ResourceMetric.Resource())
 }
 
 func (md *MetricData) GetMetricName() string {
@@ -132,10 +126,7 @@ func (l *LogData) GetTraceID() string {
 }
 
 func (l *LogData) GetServiceName() string {
-	if sname, ok := l.ResourceLog.Resource().Attributes().Get("service.name"); ok {
-		return sname.AsString()
-	}
-	return ""
+	return GetServiceNameFromResource(l.ResourceLog.Resource())
 }
 
 func (l *LogData) GetTimestampText() string {
@@ -252,10 +243,7 @@ func (s *Store) ApplyFilterTraces(svc string, sortType SortType) {
 	}
 
 	for _, span := range s.svcspans {
-		sname := "N/A"
-		if snameattr, ok := span.ResourceSpan.Resource().Attributes().Get("service.name"); ok {
-			sname = snameattr.AsString()
-		}
+		sname := GetServiceNameFromResource(span.ResourceSpan.Resource())
 		target := sname + " " + span.Span.Name()
 		if strings.Contains(target, svc) {
 			s.svcspansFiltered = append(s.svcspansFiltered, span)
@@ -280,10 +268,7 @@ func (s *Store) ApplyFilterMetrics(filter string) {
 	}
 
 	for _, metric := range s.metrics {
-		sname := ""
-		if snameattr, ok := metric.ResourceMetric.Resource().Attributes().Get("service.name"); ok {
-			sname = snameattr.AsString()
-		}
+		sname := GetServiceNameFromResource(metric.ResourceMetric.Resource())
 		target := sname + " " + metric.Metric.Name()
 		if strings.Contains(target, filter) {
 			s.metricsFiltered = append(s.metricsFiltered, metric)
@@ -306,10 +291,7 @@ func (s *Store) ApplyFilterLogs(filter string) {
 	}
 
 	for _, log := range s.logs {
-		sname := ""
-		if snameattr, ok := log.ResourceLog.Resource().Attributes().Get("service.name"); ok {
-			sname = snameattr.AsString()
-		}
+		sname := GetServiceNameFromResource(log.ResourceLog.Resource())
 		target := sname + " " + log.Log.Body().AsString()
 		if strings.Contains(target, filter) {
 			s.logsFiltered = append(s.logsFiltered, log)
@@ -336,11 +318,8 @@ func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 	}
 	span := s.svcspansFiltered[idx]
 	traceID := span.Span.TraceID().String()
-	sname, ok := span.ResourceSpan.Resource().Attributes().Get("service.name")
-	if !ok {
-		sname = pcommon.NewValueStr("N/A")
-	}
-	spans, _ := s.tracecache.GetSpansByTraceIDAndSvc(traceID, sname.AsString())
+	sname := GetServiceNameFromResource(span.ResourceSpan.Resource())
+	spans, _ := s.tracecache.GetSpansByTraceIDAndSvc(traceID, sname)
 
 	return spans
 }
@@ -412,21 +391,14 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 
 			for si := 0; si < ss.Spans().Len(); si++ {
 				span := ss.Spans().At(si)
-				// Attribute service.name is required. When service.name is not set, in otel-tui, it is treated
-				// as N/A to distinguish it from unknown, which is the fallback for the service name as defined
-				// in the semantic convention.
-				// See https://opentelemetry.io/docs/specs/semconv/resource/#service
-				sname, ok := rs.Resource().Attributes().Get("service.name")
-				if !ok {
-					sname = pcommon.NewValueStr("N/A")
-				}
+				sname := GetServiceNameFromResource(rs.Resource())
 				sd := &SpanData{
 					Span:         &span,
 					ResourceSpan: &rs,
 					ScopeSpans:   &ss,
 					ReceivedAt:   time.Now(),
 				}
-				newtracesvc, replaceSpanID := s.tracecache.UpdateCache(sname.AsString(), sd)
+				newtracesvc, replaceSpanID := s.tracecache.UpdateCache(sname, sd)
 				if newtracesvc {
 					s.svcspans = append(s.svcspans, sd)
 				} else if len(replaceSpanID) > 0 {
@@ -464,10 +436,7 @@ func (s *Store) AddMetric(metrics *pmetric.Metrics) {
 			sm := rm.ScopeMetrics().At(smi)
 
 			for si := 0; si < sm.Metrics().Len(); si++ {
-				sname := "N/A"
-				if snameattr, ok := rm.Resource().Attributes().Get("service.name"); ok {
-					sname = snameattr.AsString()
-				}
+				sname := GetServiceNameFromResource(rm.Resource())
 				metric := sm.Metrics().At(si)
 				sd := &MetricData{
 					Metric:         &metric,
