@@ -55,6 +55,12 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 		Version:      params.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			// if a prom target is provided, enable the prom receiver anyway
+			if len(promTargetFlag) > 0 {
+				promEnabledFlag = true
+			}
+
 			cfg := &Config{
 				OTLPHost:     hostFlag,
 				OTLPHTTPPort: httpPortFlag,
