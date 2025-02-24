@@ -8,12 +8,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	tuiexporter "github.com/ymtdzzz/otel-tui/tuiexporter"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/exporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/receiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -21,12 +19,12 @@ func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 
-	factories.Extensions, err = extension.MakeFactoryMap()
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory]()
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap(
 		otlpreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
@@ -36,7 +34,7 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap(
 		otlpexporter.NewFactory(),
 		tuiexporter.NewFactory(),
 	)
@@ -44,12 +42,12 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Processors, err = processor.MakeFactoryMap()
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory]()
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Connectors, err = connector.MakeFactoryMap()
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory]()
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
