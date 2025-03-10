@@ -1,0 +1,35 @@
+{
+  config,
+  pkgs,
+  fetchFromGitHub,
+  ...
+}:
+
+let
+  otel-tui-version = "__VERSION__";
+in
+pkgs.buildGoModule {
+  pname = "otel-tui";
+  version = "${otel-tui-version}";
+  src = pkgs.fetchFromGitHub {
+    owner = "ymtdzzz";
+    repo = "otel-tui";
+    rev = "${otel-tui-version}";
+    hash = "";
+  };
+  overrideModAttrs = (
+    _: {
+      buildPhase = ''
+        go work vendor
+      '';
+    }
+  );
+  ldflags = [
+    "-X main.version=${otel-tui-version}"
+  ];
+  vendorHash = "";
+  subPackages = [ "." ];
+  buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
+    pkgs.xorg.libX11
+  ];
+}

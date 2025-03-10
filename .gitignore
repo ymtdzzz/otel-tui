@@ -3,3 +3,4 @@ otel-tui
 coverage.*
 
 dist/
+result
