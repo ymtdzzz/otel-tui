@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   # goreleaser:
@@ -47,12 +48,11 @@ jobs:
       - name: Update Flake
         run: ./update-nix.sh
         continue-on-error: true
-      - name: Commit and Push
-        run: |
-          git config --global user.name "Y.Matsuda"
-          git config --global user.email "ymatsuda.zck@gmail.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-          git checkout main
-          git add otel-tui.nix
-          git commit -m "[Automated]: Update Nix Flake"
-          git push
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          add-paths: "otel-tui.nix"
+          commit-message: "[Automated] Update Nix Flake"
+          branch: "automated/update-nix-flake"
+          branch-suffix: timestamp
+          reviewers: "ymtdzzz"
