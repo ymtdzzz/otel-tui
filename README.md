@@ -16,7 +16,9 @@ Logs
 ![Logs](./docs/logs.png)
 
 ## Getting Started
+
 Currently, this tool exposes the ports:
+
 - `4317` to receive OpenTelemetry signals (gRPC)
 - `4318` to receive OpenTelemetry signals (HTTP)
 - `9411` to receive Zipkin traces (enabled by `--enable-zipkin` option)
@@ -75,13 +77,13 @@ $ docker attach otel-tui
 First, add service to your manifest (`docker-compose.yaml`) for the instrumanted app
 
 ```yml
-  oteltui:
-    image: ymtdzzz/otel-tui:latest
-    container_name: otel-tui
-    stdin_open: true
-    tty: true
-    # Override entrypoint if you want use options
-    entrypoint: ["/otel-tui", "--enable-zipkin"]
+oteltui:
+  image: ymtdzzz/otel-tui:latest
+  container_name: otel-tui
+  stdin_open: true
+  tty: true
+  # Override entrypoint if you want use options
+  entrypoint: ["/otel-tui", "--enable-zipkin"]
 ```
 
 Modify configuration for otelcol
@@ -110,6 +112,11 @@ $ docker compose attach oteltui
 # Detach by pressing Ctrl+p -> Ctrl+q
 ```
 
+### Nix
+
+```
+nix develop github:ymtdzzz/otel-tui
+```
 
 ### Executable Binary from Github Release page
 
@@ -169,7 +176,7 @@ Contributions are always welcome! Whether it's reporting an issue, suggesting a 
 
 ### Creating a Pull Request
 
-####  Fork the Repository 
+#### Fork the Repository
 
 - Start by forking this repository to your GitHub account.
 
@@ -189,7 +196,7 @@ Contributions are always welcome! Whether it's reporting an issue, suggesting a 
 make lint
 make lint-exporter
 make test
-make test-exporter  
+make test-exporter
 ```
 
 #### Open a Pull Request
