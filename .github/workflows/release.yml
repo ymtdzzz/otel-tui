@@ -51,6 +51,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
+          base: main
           add-paths: "otel-tui.nix"
           commit-message: "[Automated] Update Nix Flake"
           branch: "automated/update-nix-flake"
