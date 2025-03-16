@@ -36,13 +36,13 @@ func attachModalForTreeAttributes(tree *tview.TreeView, showFn showModalFunc, hi
 			return
 		}
 		nodeText := node.GetText()
-		parts := strings.Split(nodeText, ": ")
-		if len(parts) == 2 {
+		parts := strings.SplitN(nodeText, ": ", 2)
+		if len(parts) >= 2 {
 			value := parts[1]
 			if json.Valid([]byte(value)) {
 				value = prettyJSON(value)
-				nodeText = parts[0] + ": " + value
 			}
+			nodeText = parts[0] + ": " + value
 		}
 		textView := showFn(tree, nodeText)
 		textView.SetTitle(MODAL_TITLE)
