@@ -1,6 +1,10 @@
-name:  lint-and-test
+name: lint-and-test
 
-on: push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   lint:
@@ -13,7 +17,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: './go.mod'
+          go-version-file: "./go.mod"
       - name: Run lint
         run: make install-lint-tools lint
   lint-exporter:
@@ -26,7 +30,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: './go.mod'
+          go-version-file: "./go.mod"
       - name: Run lint for exporter
         run: make install-lint-tools lint-exporter
 
@@ -40,7 +44,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: './go.mod'
+          go-version-file: "./go.mod"
       - name: Run test
         run: make test
   test-exporter:
@@ -53,6 +57,6 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: './go.mod'
+          go-version-file: "./go.mod"
       - name: Run test for exporter
         run: make test-exporter

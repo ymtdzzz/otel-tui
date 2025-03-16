@@ -1,0 +1,35 @@
+name: prepare-release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "./go.mod"
+      - name: Update otel-tui/tuiexporter version
+        run: |
+          LATEST_COMMIT=$(git rev-parse HEAD)
+          go mod edit -require=github.com/ymtdzzz/otel-tui/tuiexporter@${LATEST_COMMIT}
+          go mod tidy
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: main
+          title: "[Automated] Update otel-tui/tuiexporter version"
+          add-paths: "go.mod,go.sum"
+          commit-message: "[Automated] Update otel-tui/tuiexporter version"
+          branch: "automated/update-tuiexporter-version"
+          branch-suffix: timestamp
+          reviewers: "ymtdzzz"
