@@ -128,6 +128,38 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 
 	details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 
+	// logs
+	logs := tview.NewTable().SetBorders(false).SetSelectable(true, false)
+
+	updateLogTableFn := func(traceID, spanID string, all bool) {
+		logCount := 0
+		if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
+			if !all && spanID != "" {
+				flds := []*telemetry.LogData{}
+				for _, ld := range lds {
+					if ld.Log.SpanID().String() == spanID {
+						flds = append(flds, ld)
+					}
+				}
+				lds = flds
+			}
+			logCount = len(lds)
+			logData := NewLogDataForTableForTimeline(&lds)
+			logs.SetContent(&logData)
+			attachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
+		}
+		logs.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L: toggle collapse, A: toggle filter by span)", logCount))
+	}
+
+	allLogs := false
+	updateLogTableFn(traceID, nodes[0].span.Span.SpanID().String(), allLogs)
+	registerCommandList(commands, logs, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			description: "Back to Traces",
+		},
+	})
+
 	rows := make([]int, totalRow+2)
 	for i := 0; i < totalRow+1; i++ {
 		rows[i] = 1
@@ -138,8 +170,8 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	log.Printf("totalRow: %d, tviews: %+v", totalRow, tvs)
 
 	// set key handler to grid
+	currentRow := 0
 	if totalRow > 0 {
-		currentRow := 0
 		setFocusFn(tvs[currentRow])
 
 		grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -157,6 +189,9 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 					details := getSpanInfoTree(commands, showModalFn, hideModalFn, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 					traceContainer.AddItem(details, 0, detailspro, false)
+
+					// update log table
+					updateLogTableFn(traceID, nodes[currentRow].span.Span.SpanID().String(), allLogs)
 				}
 				return nil
 			case tcell.KeyUp:
@@ -171,6 +206,9 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 					details := getSpanInfoTree(commands, showModalFn, hideModalFn, nodes[currentRow].span, TIMELINE_TREE_TITLE)
 					details.SetInputCapture(detailsInputFunc(traceContainer, grid, details, &gridpro, &detailspro))
 					traceContainer.AddItem(details, 0, detailspro, false)
+
+					// update log table
+					updateLogTableFn(traceID, nodes[currentRow].span.Span.SpanID().String(), allLogs)
 				}
 				return nil
 			case tcell.KeyCtrlL:
@@ -188,23 +226,6 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	}
 
 	details.SetBorder(true).SetTitle("Details (d)")
-
-	// logs
-	logs := tview.NewTable().SetBorders(false).SetSelectable(true, false)
-	logCount := 0
-	if lds, ok := lcache.GetLogsByTraceID(traceID); ok {
-		logCount = len(lds)
-		logData := NewLogDataForTableForTimeline(&lds)
-		logs.SetContent(&logData)
-		attachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
-	}
-	logs.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L to toggle collapse)", logCount))
-	registerCommandList(commands, logs, nil, KeyMaps{
-		{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "Back to Traces",
-		},
-	})
 
 	isCollapse := true
 	traceContainer.AddItem(grid, 0, DEFAULT_PROPORTION_TIMELINE_GRID, true).
@@ -235,6 +256,12 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 			}
 			base.Clear().AddItem(traceContainer, 0, 1, traceContainer.HasFocus()).
 				AddItem(logs, logHeight, 1, logs.HasFocus())
+
+			return nil
+		case 'A':
+			log.Printf("A key pressed")
+			allLogs = !allLogs
+			updateLogTableFn(traceID, nodes[currentRow].span.Span.SpanID().String(), allLogs)
 
 			return nil
 		}
