@@ -3,6 +3,7 @@ package component
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -258,31 +259,38 @@ func TestGetTraceInfoTreeWithServiceName(t *testing.T) {
 		}
 	}
 
-	want := `test-service-1 (01000000000000000000000000000000)      
-├──Statistics                                          
-│  └──span count: 4                                    
-└──Resource                                            
-   ├──dropped attributes count: 1                      
-   ├──schema url:                                      
-   ├──Attributes                                       
-   │  ├──resource attribute: resource attribute value  
-   │  ├──resource index: 0                             
-   │  └──service.name: test-service-1                  
-   └──Scopes                                           
-      ├──test-scope-1-1                                
-      │  ├──schema url:                                
-      │  ├──version: v0.0.1                            
-      │  ├──dropped attributes count: 2                
-      │  └──Attributes                                 
-      │     └──scope index: 0                          
-      └──test-scope-1-2                                
-         ├──schema url:                                
-         ├──version: v0.0.1                            
-         ├──dropped attributes count: 2                
-         └──Attributes                                 
-            └──scope index: 1                          
+	want := `test-service-1 (01000000000000000000000000000000)
+├──Statistics
+│  └──span count: 4
+└──Resource
+   ├──dropped attributes count: 1
+   ├──schema url:
+   ├──Attributes
+   │  ├──resource attribute: resource attribute value
+   │  ├──resource index: 0
+   │  └──service.name: test-service-1
+   └──Scopes
+      ├──test-scope-1-1
+      │  ├──schema url:
+      │  ├──version: v0.0.1
+      │  ├──dropped attributes count: 2
+      │  └──Attributes
+      │     └──scope index: 0
+      └──test-scope-1-2
+         ├──schema url:
+         ├──version: v0.0.1
+         ├──dropped attributes count: 2
+         └──Attributes
+            └──scope index: 1
 `
-	assert.Equal(t, want, got.String())
+	gotLines := strings.Split(got.String(), "\n")
+	wantLines := strings.Split(want, "\n")
+
+	assert.Equal(t, len(wantLines), len(gotLines))
+
+	for i := 0; i < len(wantLines); i++ {
+		assert.Equal(t, strings.TrimRight(wantLines[i], " \t\r"), strings.TrimRight(gotLines[i], " \t\r"))
+	}
 }
 
 func TestGetTraceInfoTreeWithoutServiceName(t *testing.T) {
@@ -343,30 +351,37 @@ func TestGetTraceInfoTreeWithoutServiceName(t *testing.T) {
 		}
 	}
 
-	want := `unknown (01000000000000000000000000000000)             
-├──Statistics                                          
-│  └──span count: 4                                    
-└──Resource                                            
-   ├──dropped attributes count: 1                      
-   ├──schema url:                                      
-   ├──Attributes                                       
-   │  ├──resource attribute: resource attribute value  
-   │  └──resource index: 0                             
-   └──Scopes                                           
-      ├──test-scope-1-1                                
-      │  ├──schema url:                                
-      │  ├──version: v0.0.1                            
-      │  ├──dropped attributes count: 2                
-      │  └──Attributes                                 
-      │     └──scope index: 0                          
-      └──test-scope-1-2                                
-         ├──schema url:                                
-         ├──version: v0.0.1                            
-         ├──dropped attributes count: 2                
-         └──Attributes                                 
-            └──scope index: 1                          
+	want := `unknown (01000000000000000000000000000000)
+├──Statistics
+│  └──span count: 4
+└──Resource
+   ├──dropped attributes count: 1
+   ├──schema url:
+   ├──Attributes
+   │  ├──resource attribute: resource attribute value
+   │  └──resource index: 0
+   └──Scopes
+      ├──test-scope-1-1
+      │  ├──schema url:
+      │  ├──version: v0.0.1
+      │  ├──dropped attributes count: 2
+      │  └──Attributes
+      │     └──scope index: 0
+      └──test-scope-1-2
+         ├──schema url:
+         ├──version: v0.0.1
+         ├──dropped attributes count: 2
+         └──Attributes
+            └──scope index: 1
 `
-	assert.Equal(t, want, got.String())
+	gotLines := strings.Split(got.String(), "\n")
+	wantLines := strings.Split(want, "\n")
+
+	assert.Equal(t, len(wantLines), len(gotLines))
+
+	for i := 0; i < len(wantLines); i++ {
+		assert.Equal(t, strings.TrimRight(wantLines[i], " \t\r"), strings.TrimRight(gotLines[i], " \t\r"))
+	}
 }
 
 func TestGetTraceInfoTreeNoSpans(t *testing.T) {

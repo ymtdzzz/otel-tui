@@ -28,12 +28,12 @@ func (m KeyMaps) keyTexts() string {
 		} else {
 			key = keyMapRegex.ReplaceAllString(v.key.Name(), "")
 		}
-		keytexts = append(keytexts, fmt.Sprintf(" [yellow]%s[white]: %s",
+		keytexts = append(keytexts, fmt.Sprintf("[yellow]%s[white]: %s",
 			key,
 			v.description,
 		))
 	}
-	return strings.Join(keytexts, " | ")
+	return " " + strings.Join(keytexts, " | ")
 }
 
 type Focusable interface {
