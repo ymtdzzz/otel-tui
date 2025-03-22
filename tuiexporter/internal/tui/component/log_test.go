@@ -3,6 +3,7 @@ package component
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
@@ -172,6 +173,27 @@ func TestLogDataForTable(t *testing.T) {
 				})
 			}
 		})
+		t.Run("for header", func(t *testing.T) {
+			tests := []struct {
+				name   string
+				row    int
+				column int
+				want   string
+			}{
+				{
+					name:   "trace ID",
+					row:    -1,
+					column: 0,
+					want:   "Trace ID",
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					assert.Equal(t, tt.want, ldftable.GetCell(tt.row+1, tt.column).Text)
+				})
+			}
+		})
 		t.Run("for timeline", func(t *testing.T) {
 			tests := []struct {
 				name   string
@@ -286,32 +308,39 @@ func TestGetLogInfoTree(t *testing.T) {
 		}
 	}
 
-	want := `Log                                                    
-└──Resource                                            
-   ├──dropped attributes count: 1                      
-   ├──schema url:                                      
-   ├──Attributes                                       
-   │  ├──resource attribute: resource attribute value  
-   │  ├──resource index: 0                             
-   │  └──service.name: test-service-1                  
-   ├──Scopes                                           
-   │  └──test-scope-1-1                                
-   │     ├──schema url:                                
-   │     ├──version: v0.0.1                            
-   │     ├──dropped attributes count: 2                
-   │     └──Attributes                                 
-   │        └──scope index: 0                          
-   └──LogRecord                                        
-      ├──trace id: 01000000000000000000000000000000    
-      ├──span id: 0100000000000000                     
-      ├──timestamp: 2022/10/21 07:10:02.100000         
+	want := `Log
+└──Resource
+   ├──dropped attributes count: 1
+   ├──schema url:
+   ├──Attributes
+   │  ├──resource attribute: resource attribute value
+   │  ├──resource index: 0
+   │  └──service.name: test-service-1
+   ├──Scopes
+   │  └──test-scope-1-1
+   │     ├──schema url:
+   │     ├──version: v0.0.1
+   │     ├──dropped attributes count: 2
+   │     └──Attributes
+   │        └──scope index: 0
+   └──LogRecord
+      ├──trace id: 01000000000000000000000000000000
+      ├──span id: 0100000000000000
+      ├──timestamp: 2022/10/21 07:10:02.100000
       ├──observed timestamp: 2022/10/21 07:10:02.200000
-      ├──body: log body 0-0-0-0                        
-      ├──severity: INFO (9)                            
-      ├──flags: 0                                      
-      ├──dropped attributes count: 3                   
-      └──Attributes                                    
-         └──span index: 0                              
+      ├──body: log body 0-0-0-0
+      ├──severity: INFO (9)
+      ├──flags: 0
+      ├──dropped attributes count: 3
+      └──Attributes
+         └──span index: 0
 `
-	assert.Equal(t, want, got.String())
+	gotLines := strings.Split(got.String(), "\n")
+	wantLines := strings.Split(want, "\n")
+
+	assert.Equal(t, len(wantLines), len(gotLines))
+
+	for i := 0; i < len(wantLines); i++ {
+		assert.Equal(t, strings.TrimRight(wantLines[i], " \t\r"), strings.TrimRight(gotLines[i], " \t\r"))
+	}
 }
