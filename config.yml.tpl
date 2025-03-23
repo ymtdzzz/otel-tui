@@ -4,6 +4,10 @@ receivers:
     protocols:
       http:
         endpoint: {{ .OTLPHost }}:{{ .OTLPHTTPPort }}
+        cors:
+          allowed_origins:
+            - http://localhost:*
+            - https://localhost:*
       grpc:
         endpoint: {{ .OTLPHost }}:{{ .OTLPGRPCPort }}
 {{- if .EnableZipkin}}
@@ -35,7 +39,7 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: 
+      receivers:
         - otlp
 {{- if .EnableZipkin}}
         - zipkin

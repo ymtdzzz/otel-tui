@@ -23,6 +23,8 @@ Currently, this tool exposes the ports:
 - `4318` to receive OpenTelemetry signals (HTTP)
 - `9411` to receive Zipkin traces (enabled by `--enable-zipkin` option)
 
+The server's Access-Control-Allow-Origin header includes `localhost`, allowing telemetry to be sent directly from browser applications running on localhost.
+
 Options:
 
 ```
