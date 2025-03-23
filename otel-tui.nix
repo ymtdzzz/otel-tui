@@ -6,7 +6,7 @@
 }:
 
 let
-  otel-tui-version = "v0.4.7";
+  otel-tui-version = "v0.4.8";
 in
 pkgs.buildGoModule {
   pname = "otel-tui";
@@ -15,7 +15,7 @@ pkgs.buildGoModule {
     owner = "ymtdzzz";
     repo = "otel-tui";
     rev = "${otel-tui-version}";
-    hash = "sha256-icOVY26yZRxWcaSd2Ravdz1EFmS/vAI2TGZOscgYDRA=";
+    hash = "sha256-cy3gHECl1V26TWGQuzkWg2iKIBqpQsnAMgH021uindE=";
   };
   overrideModAttrs = (
     _: {
@@ -27,7 +27,7 @@ pkgs.buildGoModule {
   ldflags = [
     "-X main.version=${otel-tui-version}"
   ];
-  vendorHash = "sha256-xKefqWEOYl8azPvi4L/lzUR5b1Oyr1o3omdJHoKjtDo=";
+  vendorHash = "sha256-tjzWpiNueFmKBZriYac/q7zACJ8GeWOHy4wnr+Lnafc=";
   subPackages = [ "." ];
   buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
     pkgs.xorg.libX11
