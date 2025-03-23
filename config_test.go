@@ -26,6 +26,10 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://localhost:*
+            - https://localhost:*
       grpc:
         endpoint: 0.0.0.0:4317
   zipkin:
@@ -50,7 +54,7 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: 
+      receivers:
         - otlp
         - zipkin
         - otlpjsonfile
@@ -92,6 +96,10 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://localhost:*
+            - https://localhost:*
       grpc:
         endpoint: 0.0.0.0:4317
 processors:
@@ -101,7 +109,7 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: 
+      receivers:
         - otlp
       processors:
       exporters:
