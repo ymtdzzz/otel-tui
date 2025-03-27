@@ -130,7 +130,7 @@ func (l *LogData) GetServiceName() string {
 }
 
 func (l *LogData) GetTimestampText() string {
-	return l.Log.Timestamp().AsTime().Format("2006/01/02 15:04:05")
+	return l.Log.Timestamp().AsTime().Format("2006-01-02 15:04:05.000Z")
 }
 
 func (l *LogData) GetSeverity() string {

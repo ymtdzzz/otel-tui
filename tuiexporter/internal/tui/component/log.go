@@ -199,10 +199,10 @@ func getLogInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMod
 	spanNode := tview.NewTreeNode(fmt.Sprintf("span id: %s", spanID))
 	record.AddChild(spanNode)
 
-	timestamp := l.Log.Timestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+	timestamp := l.Log.Timestamp().AsTime().Format("2006-01-02 15:04:05.000000Z07")
 	record.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", timestamp)))
 
-	otimestamp := l.Log.ObservedTimestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+	otimestamp := l.Log.ObservedTimestamp().AsTime().Format("2006-01-02 15:04:05.000000Z07")
 	record.AddChild(tview.NewTreeNode(fmt.Sprintf("observed timestamp: %s", otimestamp)))
 
 	body := tview.NewTreeNode(fmt.Sprintf("body: %s", l.Log.Body().AsString()))
