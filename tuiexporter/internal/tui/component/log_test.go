@@ -145,7 +145,7 @@ func TestLogDataForTable(t *testing.T) {
 					name:   "timestamp trace 1 span-2-1-1",
 					row:    6,
 					column: 2,
-					want:   "2022/10/21 07:10:02",
+					want:   "2022-10-21 07:10:02.100Z",
 				},
 				{
 					name:   "serverity trace 1 span-2-1-1",
@@ -229,7 +229,7 @@ func TestLogDataForTable(t *testing.T) {
 					name:   "timestamp trace 1 span-2-1-1",
 					row:    6,
 					column: 1,
-					want:   "2022/10/21 07:10:02",
+					want:   "2022-10-21 07:10:02.100Z",
 				},
 				{
 					name:   "serverity trace 1 span-2-1-1",
@@ -326,8 +326,8 @@ func TestGetLogInfoTree(t *testing.T) {
    └──LogRecord
       ├──trace id: 01000000000000000000000000000000
       ├──span id: 0100000000000000
-      ├──timestamp: 2022/10/21 07:10:02.100000
-      ├──observed timestamp: 2022/10/21 07:10:02.200000
+      ├──timestamp: 2022-10-21 07:10:02.100000Z
+      ├──observed timestamp: 2022-10-21 07:10:02.200000
       ├──body: log body 0-0-0-0
       ├──severity: INFO (9)
       ├──flags: 0
