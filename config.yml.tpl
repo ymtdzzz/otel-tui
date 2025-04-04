@@ -36,6 +36,7 @@ processors:
 exporters:
   tui:
     from_json_file: {{ if .FromJSONFile }}true{{else}}false{{end}}
+    enable_experimental_ui: {{ .EnableExperimentalUI }}
 service:
   pipelines:
     traces:
