@@ -9,12 +9,13 @@ import (
 
 func TestConfigRenderYml(t *testing.T) {
 	cfg := &Config{
-		OTLPHost:     "0.0.0.0",
-		OTLPHTTPPort: 4318,
-		OTLPGRPCPort: 4317,
-		EnableZipkin: true,
-		EnableProm:   true,
-		FromJSONFile: "./path/to/init.json",
+		OTLPHost:             "0.0.0.0",
+		OTLPHTTPPort:         4318,
+		OTLPGRPCPort:         4317,
+		EnableZipkin:         true,
+		EnableProm:           true,
+		FromJSONFile:         "./path/to/init.json",
+		EnableExperimentalUI: true,
 		PromTarget: []string{
 			"localhost:9000",
 			"other-host:9000",
