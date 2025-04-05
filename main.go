@@ -48,6 +48,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 		promEnabledFlag            bool
 		promTargetFlag             []string
 		fromJSONFileFlag           string
+		experimentalUIEnabledFlag  bool
 	)
 
 	rootCmd := &cobra.Command{
@@ -62,13 +63,14 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 			}
 
 			cfg := &Config{
-				OTLPHost:     hostFlag,
-				OTLPHTTPPort: httpPortFlag,
-				OTLPGRPCPort: grpcPortFlag,
-				EnableZipkin: zipkinEnabledFlag,
-				EnableProm:   promEnabledFlag,
-				FromJSONFile: fromJSONFileFlag,
-				PromTarget:   promTargetFlag,
+				OTLPHost:             hostFlag,
+				OTLPHTTPPort:         httpPortFlag,
+				OTLPGRPCPort:         grpcPortFlag,
+				EnableZipkin:         zipkinEnabledFlag,
+				EnableProm:           promEnabledFlag,
+				FromJSONFile:         fromJSONFileFlag,
+				PromTarget:           promTargetFlag,
+				EnableExperimentalUI: experimentalUIEnabledFlag,
 			}
 
 			if err := cfg.Validate(); err != nil {
@@ -104,5 +106,6 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 	rootCmd.Flags().BoolVar(&promEnabledFlag, "enable-prom", false, "Enable the prometheus receiver")
 	rootCmd.Flags().StringVar(&fromJSONFileFlag, "from-json-file", "", "The JSON file path exported by JSON exporter")
 	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "other-host:9000")`)
+	rootCmd.Flags().BoolVar(&experimentalUIEnabledFlag, "enable-experimental-ui", false, "Enable to render UI with bubbletea")
 	return rootCmd
 }
