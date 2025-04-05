@@ -91,7 +91,6 @@ func New(store *telemetry.Store) Model {
 		traceCellMappers,
 		func(selected *telemetry.SpanData, idx int) tea.Cmd {
 			return func() tea.Msg {
-				// TODO: construct tree node from selected span
 				return tree.UpdateTreeMsg{
 					Root: getTraceInfoTreeNode(store.GetFilteredServiceSpansByIdx(idx)),
 				}
