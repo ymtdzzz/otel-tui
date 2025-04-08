@@ -13,13 +13,14 @@ import (
 var configYmlTpl string
 
 type Config struct {
-	OTLPHost     string
-	OTLPHTTPPort int
-	OTLPGRPCPort int
-	EnableZipkin bool
-	EnableProm   bool
-	FromJSONFile string
-	PromTarget   []string
+	OTLPHost             string
+	OTLPHTTPPort         int
+	OTLPGRPCPort         int
+	EnableZipkin         bool
+	EnableProm           bool
+	FromJSONFile         string
+	PromTarget           []string
+	EnableExperimentalUI bool
 }
 
 func (c *Config) RenderYml() (string, error) {
