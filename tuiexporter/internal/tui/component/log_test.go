@@ -145,7 +145,7 @@ func TestLogDataForTable(t *testing.T) {
 					name:   "timestamp trace 1 span-2-1-1",
 					row:    6,
 					column: 2,
-					want:   "2022-10-21 07:10:02.100Z",
+					want:   "2022-10-21 07:10:02",
 				},
 				{
 					name:   "serverity trace 1 span-2-1-1",
@@ -229,7 +229,7 @@ func TestLogDataForTable(t *testing.T) {
 					name:   "timestamp trace 1 span-2-1-1",
 					row:    6,
 					column: 1,
-					want:   "2022-10-21 07:10:02.100Z",
+					want:   "2022-10-21 07:10:02",
 				},
 				{
 					name:   "serverity trace 1 span-2-1-1",

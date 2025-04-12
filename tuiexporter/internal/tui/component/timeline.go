@@ -8,6 +8,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -544,11 +545,11 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 	durationNode := tview.NewTreeNode(fmt.Sprintf("duration: %s", duration.String()))
 	root.AddChild(durationNode)
 
-	startTime := span.Span.StartTimestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+	startTime := datetime.GetFullTime(span.Span.StartTimestamp().AsTime())
 	startTimeNode := tview.NewTreeNode(fmt.Sprintf("start time: %s", startTime))
 	root.AddChild(startTimeNode)
 
-	endTime := span.Span.EndTimestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+	endTime := datetime.GetFullTime(span.Span.EndTimestamp().AsTime())
 	endTimeNode := tview.NewTreeNode(fmt.Sprintf("end time: %s", endTime))
 	root.AddChild(endTimeNode)
 
@@ -567,7 +568,7 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 		name := event.Name()
 		eventNode := tview.NewTreeNode(name)
 
-		timestamp := event.Timestamp().AsTime().Format("2006/01/02 15:04:05.000000")
+		timestamp := datetime.GetFullTime(event.Timestamp().AsTime())
 		timestampNode := tview.NewTreeNode(fmt.Sprintf("timestamp: %s", timestamp))
 		eventNode.AddChild(timestampNode)
 

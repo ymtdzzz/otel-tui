@@ -5,6 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
 
@@ -199,10 +200,10 @@ func getLogInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMod
 	spanNode := tview.NewTreeNode(fmt.Sprintf("span id: %s", spanID))
 	record.AddChild(spanNode)
 
-	timestamp := l.Log.Timestamp().AsTime().Format("2006-01-02 15:04:05.000000Z07")
+	timestamp := datetime.GetFullTime(l.Log.Timestamp().AsTime())
 	record.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", timestamp)))
 
-	otimestamp := l.Log.ObservedTimestamp().AsTime().Format("2006-01-02 15:04:05.000000Z07")
+	otimestamp := datetime.GetFullTime(l.Log.ObservedTimestamp().AsTime())
 	record.AddChild(tview.NewTreeNode(fmt.Sprintf("observed timestamp: %s", otimestamp)))
 
 	body := tview.NewTreeNode(fmt.Sprintf("body: %s", l.Log.Body().AsString()))
