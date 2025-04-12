@@ -10,6 +10,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -184,7 +185,7 @@ func TestSpanDataForTable(t *testing.T) {
 				name:   "received at trace 2 span-1-1-1",
 				row:    2,
 				column: 3,
-				want:   receivedAt.Local().Format("2006-01-02 15:04:05"),
+				want:   datetime.GetSimpleTime(receivedAt.Local()),
 			},
 			{
 				name:   "span name trace 2 span-1-1-1",
@@ -199,6 +200,12 @@ func TestSpanDataForTable(t *testing.T) {
 				assert.Equal(t, tt.want, sdftable.GetCell(tt.row+1, tt.column).Text)
 			})
 		}
+
+		t.Run("full datetime", func(t *testing.T) {
+			sdftable.SetFullDatetime(true)
+			defer sdftable.SetFullDatetime(false)
+			assert.Equal(t, datetime.GetFullTime(receivedAt.Local()), sdftable.GetCell(3, 3).Text)
+		})
 	})
 }
 

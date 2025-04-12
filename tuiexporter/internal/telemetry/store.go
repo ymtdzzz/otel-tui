@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/icza/gox/timex"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -41,8 +42,11 @@ func (sd *SpanData) GetDurationText() string {
 	return timex.Round(duration, 2).String()
 }
 
-func (sd *SpanData) GetReceivedAtText() string {
-	return sd.ReceivedAt.Local().Format("2006-01-02 15:04:05")
+func (sd *SpanData) GetReceivedAtText(full bool) string {
+	if full {
+		return datetime.GetFullTime(sd.ReceivedAt.Local())
+	}
+	return datetime.GetSimpleTime(sd.ReceivedAt.Local())
 }
 
 func (sd *SpanData) GetSpanName() string {
@@ -129,8 +133,11 @@ func (l *LogData) GetServiceName() string {
 	return GetServiceNameFromResource(l.ResourceLog.Resource())
 }
 
-func (l *LogData) GetTimestampText() string {
-	return l.Log.Timestamp().AsTime().Format("2006-01-02 15:04:05.000Z")
+func (l *LogData) GetTimestampText(full bool) string {
+	if full {
+		return datetime.GetFullTime(l.Log.Timestamp().AsTime())
+	}
+	return datetime.GetSimpleTime(l.Log.Timestamp().AsTime())
 }
 
 func (l *LogData) GetSeverity() string {

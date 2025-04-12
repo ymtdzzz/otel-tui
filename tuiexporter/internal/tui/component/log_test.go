@@ -145,7 +145,7 @@ func TestLogDataForTable(t *testing.T) {
 					name:   "timestamp trace 1 span-2-1-1",
 					row:    6,
 					column: 2,
-					want:   "2022-10-21 07:10:02.100Z",
+					want:   "2022-10-21 07:10:02",
 				},
 				{
 					name:   "serverity trace 1 span-2-1-1",
@@ -172,6 +172,12 @@ func TestLogDataForTable(t *testing.T) {
 					assert.Equal(t, tt.want, ldftable.GetCell(tt.row+1, tt.column).Text)
 				})
 			}
+
+			t.Run("full datetime", func(t *testing.T) {
+				ldftable.SetFullDatetime(true)
+				defer ldftable.SetFullDatetime(false)
+				assert.Equal(t, "2022-10-21 07:10:02.100000Z", ldftable.GetCell(1, 2).Text)
+			})
 		})
 		t.Run("for header", func(t *testing.T) {
 			tests := []struct {
@@ -229,7 +235,7 @@ func TestLogDataForTable(t *testing.T) {
 					name:   "timestamp trace 1 span-2-1-1",
 					row:    6,
 					column: 1,
-					want:   "2022-10-21 07:10:02.100Z",
+					want:   "2022-10-21 07:10:02",
 				},
 				{
 					name:   "serverity trace 1 span-2-1-1",
@@ -256,6 +262,12 @@ func TestLogDataForTable(t *testing.T) {
 					assert.Equal(t, tt.want, ldftableForTL.GetCell(tt.row+1, tt.column).Text)
 				})
 			}
+
+			t.Run("full datetime", func(t *testing.T) {
+				ldftableForTL.SetFullDatetime(true)
+				defer ldftableForTL.SetFullDatetime(false)
+				assert.Equal(t, "2022-10-21 07:10:02.100000Z", ldftableForTL.GetCell(1, 1).Text)
+			})
 		})
 	})
 

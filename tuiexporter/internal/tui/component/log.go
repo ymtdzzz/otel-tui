@@ -5,6 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 )
 
@@ -24,7 +25,7 @@ var defaultLogCellMappers = cellMappers[telemetry.LogData]{
 	2: {
 		header: "Timestamp",
 		getTextRowFn: func(log *telemetry.LogData) string {
-			return log.GetTimestampText()
+			panic("Timestamp column should be overridden")
 		},
 	},
 	3: {
@@ -57,7 +58,7 @@ var logCellMappersForTimeline = cellMappers[telemetry.LogData]{
 	1: {
 		header: "Timestamp",
 		getTextRowFn: func(log *telemetry.LogData) string {
-			return log.GetTimestampText()
+			panic("Timestamp column should be overridden")
 		},
 	},
 	2: {
@@ -83,23 +84,53 @@ var logCellMappersForTimeline = cellMappers[telemetry.LogData]{
 // LogDataForTable is a wrapper for logs to be displayed in a table
 type LogDataForTable struct {
 	tview.TableContentReadOnly
-	logs   *[]*telemetry.LogData
-	mapper cellMappers[telemetry.LogData]
+	logs           *[]*telemetry.LogData
+	mapper         cellMappers[telemetry.LogData]
+	isFullDatetime bool
 }
 
 // NewLogDataForTable creates a new LogDataForTable.
 func NewLogDataForTable(logs *[]*telemetry.LogData) LogDataForTable {
-	return LogDataForTable{
+	l := LogDataForTable{
 		logs:   logs,
 		mapper: defaultLogCellMappers,
 	}
+	l.updateTimestampMapper()
+
+	return l
 }
 
 // NewLogDataForTableForTimeline creates a new LogDataForTable for timeline page.
 func NewLogDataForTableForTimeline(logs *[]*telemetry.LogData) LogDataForTable {
-	return LogDataForTable{
+	l := LogDataForTable{
 		logs:   logs,
 		mapper: logCellMappersForTimeline,
+	}
+	l.updateTimestampMapper()
+
+	return l
+}
+
+// SetFullDatetime sets whether to display full datetime or not
+func (l *LogDataForTable) SetFullDatetime(full bool) {
+	l.isFullDatetime = full
+	l.updateTimestampMapper()
+}
+
+// IsFullDatetime returns whether to display full datetime or not
+func (l LogDataForTable) IsFullDatetime() bool {
+	return l.isFullDatetime
+}
+
+func (l *LogDataForTable) updateTimestampMapper() {
+	for k, m := range l.mapper {
+		if m.header == "Timestamp" {
+			m.getTextRowFn = func(data *telemetry.LogData) string {
+				return data.GetTimestampText(l.isFullDatetime)
+			}
+			l.mapper[k] = m
+			break
+		}
 	}
 }
 
@@ -199,10 +230,10 @@ func getLogInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMod
 	spanNode := tview.NewTreeNode(fmt.Sprintf("span id: %s", spanID))
 	record.AddChild(spanNode)
 
-	timestamp := l.Log.Timestamp().AsTime().Format("2006-01-02 15:04:05.000000Z07")
+	timestamp := datetime.GetFullTime(l.Log.Timestamp().AsTime())
 	record.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", timestamp)))
 
-	otimestamp := l.Log.ObservedTimestamp().AsTime().Format("2006-01-02 15:04:05.000000Z07")
+	otimestamp := datetime.GetFullTime(l.Log.ObservedTimestamp().AsTime())
 	record.AddChild(tview.NewTreeNode(fmt.Sprintf("observed timestamp: %s", otimestamp)))
 
 	body := tview.NewTreeNode(fmt.Sprintf("body: %s", l.Log.Body().AsString()))
