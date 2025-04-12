@@ -195,10 +195,11 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 	inputConfirmed := ""
 	sortType := telemetry.SORT_TYPE_NONE
 	tableContainer.SetTitle("Traces (t)").SetBorder(true)
+	sdft := NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), &sortType)
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false).
-		SetContent(NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), &sortType)).
+		SetContent(sdft).
 		SetSelectedFunc(func(row, _ int) {
 			p.showTimelineByRow(store, row-1)
 		}).
@@ -219,6 +220,9 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			log.Printf("sortType: %s", sortType)
 			store.ApplyFilterTraces(inputConfirmed, sortType)
 			return nil
+		} else if event.Key() == tcell.KeyCtrlF {
+			sdft.SetFullDatetime(!sdft.IsFullDatetime())
+			return nil
 		} else if event.Rune() == 'r' {
 			row, _ := table.GetSelection()
 			if row == 0 {
@@ -236,15 +240,19 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			description: "Search traces",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'S', tcell.ModCtrl),
+			key:         tcell.NewEventKey(tcell.KeyRune, 's', tcell.ModCtrl),
 			description: "Toggle sort (Latency)",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl),
+			description: "Toggle full datetime",
 		},
 		{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'R', tcell.ModNone),
 			description: "Recalculate service root span",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
 			description: "Clear all data",
 		},
 	})
@@ -516,7 +524,7 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 			description: "Search metrics",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
 			description: "Clear all data",
 		},
 	})
@@ -654,13 +662,18 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	registerCommandList(commands, body, nil, KeyMaps{})
 
 	tableContainer.SetTitle("Logs (o)").SetBorder(true)
+	ldft := NewLogDataForTable(store.GetFilteredLogs())
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false).
-		SetContent(NewLogDataForTable(store.GetFilteredLogs())).
+		SetContent(ldft).
 		SetFixed(1, 0)
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlL {
+		switch event.Key() {
+		case tcell.KeyCtrlF:
+			ldft.SetFullDatetime(!ldft.IsFullDatetime())
+			return nil
+		case tcell.KeyCtrlL:
 			store.Flush()
 			p.clearPanes()
 			return nil
@@ -678,7 +691,11 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			description: "Copy Log to clipboard",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			key:         tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl),
+			description: "Toggle full datetime",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
 			description: "Clear all data",
 		},
 	})
@@ -782,6 +799,9 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 func (p *TUIPages) createDebugLogPage() *tview.Flex {
 	logview := tview.NewTextView().SetDynamicColors(true)
 	logview.Box.SetTitle("Log").SetBorder(true)
+	logview.SetChangedFunc(func() {
+		logview.ScrollToEnd()
+	})
 	// file, _ := os.OpenFile("log.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	// log.SetOutput(file)
 	log.SetOutput(logview)

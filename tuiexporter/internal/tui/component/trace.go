@@ -26,7 +26,7 @@ var defaultSpanCellMappers = cellMappers[telemetry.SpanData]{
 	3: {
 		header: "Received At",
 		getTextRowFn: func(data *telemetry.SpanData) string {
-			return data.GetReceivedAtText()
+			panic("Received At column should be overridden")
 		},
 	},
 	4: {
@@ -40,19 +40,46 @@ var defaultSpanCellMappers = cellMappers[telemetry.SpanData]{
 // SpanDataForTable is a wrapper for spans to be displayed in a table.
 type SpanDataForTable struct {
 	tview.TableContentReadOnly
-	tcache   *telemetry.TraceCache
-	spans    *telemetry.SvcSpans
-	sortType *telemetry.SortType
-	mapper   cellMappers[telemetry.SpanData]
+	tcache         *telemetry.TraceCache
+	spans          *telemetry.SvcSpans
+	sortType       *telemetry.SortType
+	mapper         cellMappers[telemetry.SpanData]
+	isFullDatetime bool
 }
 
 // NewSpanDataForTable creates a new SpanDataForTable.
 func NewSpanDataForTable(tcache *telemetry.TraceCache, spans *telemetry.SvcSpans, sortType *telemetry.SortType) SpanDataForTable {
-	return SpanDataForTable{
+	t := SpanDataForTable{
 		tcache:   tcache,
 		spans:    spans,
 		sortType: sortType,
 		mapper:   defaultSpanCellMappers,
+	}
+	t.updateReceivedAtMapper()
+
+	return t
+}
+
+// SetFullDatetime sets the full datetime flag for the table.
+func (s *SpanDataForTable) SetFullDatetime(full bool) {
+	s.isFullDatetime = full
+	s.updateReceivedAtMapper()
+}
+
+// IsFullDatetime returns the full datetime flag for the table.
+func (s SpanDataForTable) IsFullDatetime() bool {
+	return s.isFullDatetime
+}
+
+func (s *SpanDataForTable) updateReceivedAtMapper() {
+	for k, m := range s.mapper {
+		if m.header == "Received At" {
+			m.getTextRowFn = func(data *telemetry.SpanData) string {
+				return data.GetReceivedAtText(s.isFullDatetime)
+			}
+			s.mapper[k] = m
+			break
+		}
 	}
 }
 

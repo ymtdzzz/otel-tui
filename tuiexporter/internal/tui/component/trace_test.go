@@ -200,6 +200,12 @@ func TestSpanDataForTable(t *testing.T) {
 				assert.Equal(t, tt.want, sdftable.GetCell(tt.row+1, tt.column).Text)
 			})
 		}
+
+		t.Run("full datetime", func(t *testing.T) {
+			sdftable.SetFullDatetime(true)
+			defer sdftable.SetFullDatetime(false)
+			assert.Equal(t, datetime.GetFullTime(receivedAt.Local()), sdftable.GetCell(3, 3).Text)
+		})
 	})
 }
 

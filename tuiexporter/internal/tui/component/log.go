@@ -25,7 +25,7 @@ var defaultLogCellMappers = cellMappers[telemetry.LogData]{
 	2: {
 		header: "Timestamp",
 		getTextRowFn: func(log *telemetry.LogData) string {
-			return log.GetTimestampText()
+			panic("Timestamp column should be overridden")
 		},
 	},
 	3: {
@@ -58,7 +58,7 @@ var logCellMappersForTimeline = cellMappers[telemetry.LogData]{
 	1: {
 		header: "Timestamp",
 		getTextRowFn: func(log *telemetry.LogData) string {
-			return log.GetTimestampText()
+			panic("Timestamp column should be overridden")
 		},
 	},
 	2: {
@@ -84,23 +84,53 @@ var logCellMappersForTimeline = cellMappers[telemetry.LogData]{
 // LogDataForTable is a wrapper for logs to be displayed in a table
 type LogDataForTable struct {
 	tview.TableContentReadOnly
-	logs   *[]*telemetry.LogData
-	mapper cellMappers[telemetry.LogData]
+	logs           *[]*telemetry.LogData
+	mapper         cellMappers[telemetry.LogData]
+	isFullDatetime bool
 }
 
 // NewLogDataForTable creates a new LogDataForTable.
 func NewLogDataForTable(logs *[]*telemetry.LogData) LogDataForTable {
-	return LogDataForTable{
+	l := LogDataForTable{
 		logs:   logs,
 		mapper: defaultLogCellMappers,
 	}
+	l.updateTimestampMapper()
+
+	return l
 }
 
 // NewLogDataForTableForTimeline creates a new LogDataForTable for timeline page.
 func NewLogDataForTableForTimeline(logs *[]*telemetry.LogData) LogDataForTable {
-	return LogDataForTable{
+	l := LogDataForTable{
 		logs:   logs,
 		mapper: logCellMappersForTimeline,
+	}
+	l.updateTimestampMapper()
+
+	return l
+}
+
+// SetFullDatetime sets whether to display full datetime or not
+func (l *LogDataForTable) SetFullDatetime(full bool) {
+	l.isFullDatetime = full
+	l.updateTimestampMapper()
+}
+
+// IsFullDatetime returns whether to display full datetime or not
+func (l LogDataForTable) IsFullDatetime() bool {
+	return l.isFullDatetime
+}
+
+func (l *LogDataForTable) updateTimestampMapper() {
+	for k, m := range l.mapper {
+		if m.header == "Timestamp" {
+			m.getTextRowFn = func(data *telemetry.LogData) string {
+				return data.GetTimestampText(l.isFullDatetime)
+			}
+			l.mapper[k] = m
+			break
+		}
 	}
 }
 

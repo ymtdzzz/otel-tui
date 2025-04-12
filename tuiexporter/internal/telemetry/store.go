@@ -42,7 +42,10 @@ func (sd *SpanData) GetDurationText() string {
 	return timex.Round(duration, 2).String()
 }
 
-func (sd *SpanData) GetReceivedAtText() string {
+func (sd *SpanData) GetReceivedAtText(full bool) string {
+	if full {
+		return datetime.GetFullTime(sd.ReceivedAt.Local())
+	}
 	return datetime.GetSimpleTime(sd.ReceivedAt.Local())
 }
 
@@ -130,7 +133,10 @@ func (l *LogData) GetServiceName() string {
 	return GetServiceNameFromResource(l.ResourceLog.Resource())
 }
 
-func (l *LogData) GetTimestampText() string {
+func (l *LogData) GetTimestampText(full bool) string {
+	if full {
+		return datetime.GetFullTime(l.Log.Timestamp().AsTime())
+	}
 	return datetime.GetSimpleTime(l.Log.Timestamp().AsTime())
 }
 

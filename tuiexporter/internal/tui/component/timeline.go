@@ -131,6 +131,16 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 
 	// logs
 	logs := tview.NewTable().SetBorders(false).SetSelectable(true, false)
+	var ldft *LogDataForTable
+	logs.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlF {
+			if ldft != nil {
+				ldft.SetFullDatetime(!ldft.IsFullDatetime())
+			}
+			return nil
+		}
+		return event
+	})
 
 	updateLogTableFn := func(traceID, spanID string, all bool) {
 		logCount := 0
@@ -146,6 +156,10 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 			}
 			logCount = len(lds)
 			logData := NewLogDataForTableForTimeline(&lds)
+			if ldft != nil {
+				logData.SetFullDatetime(ldft.IsFullDatetime())
+			}
+			ldft = &logData
 			logs.SetContent(&logData)
 			attachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
 		}
@@ -155,6 +169,10 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	allLogs := false
 	updateLogTableFn(traceID, nodes[0].span.Span.SpanID().String(), allLogs)
 	registerCommandList(commands, logs, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl),
+			description: "Toggle full datetime",
+		},
 		{
 			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
 			description: "Back to Traces",

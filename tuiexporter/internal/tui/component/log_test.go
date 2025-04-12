@@ -172,6 +172,12 @@ func TestLogDataForTable(t *testing.T) {
 					assert.Equal(t, tt.want, ldftable.GetCell(tt.row+1, tt.column).Text)
 				})
 			}
+
+			t.Run("full datetime", func(t *testing.T) {
+				ldftable.SetFullDatetime(true)
+				defer ldftable.SetFullDatetime(false)
+				assert.Equal(t, "2022-10-21 07:10:02.100000Z", ldftable.GetCell(1, 2).Text)
+			})
 		})
 		t.Run("for header", func(t *testing.T) {
 			tests := []struct {
@@ -256,6 +262,12 @@ func TestLogDataForTable(t *testing.T) {
 					assert.Equal(t, tt.want, ldftableForTL.GetCell(tt.row+1, tt.column).Text)
 				})
 			}
+
+			t.Run("full datetime", func(t *testing.T) {
+				ldftableForTL.SetFullDatetime(true)
+				defer ldftableForTL.SetFullDatetime(false)
+				assert.Equal(t, "2022-10-21 07:10:02.100000Z", ldftableForTL.GetCell(1, 1).Text)
+			})
 		})
 	})
 
