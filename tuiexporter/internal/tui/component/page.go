@@ -7,6 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"golang.design/x/clipboard"
 )
@@ -20,12 +21,14 @@ const (
 	PAGE_METRICS        = "Metrics"
 	PAGE_MODAL          = "Modal"
 
-	DEFAULT_PROPORTION_TRACE_DETAILS = 20
-	DEFAULT_PROPORTION_TRACE_TABLE   = 30
-	DEFAULT_PROPORTION_METRIC_SIDE   = 25
-	DEFAULT_PROPORTION_METRIC_TABLE  = 25
-	DEFAULT_PROPORTION_LOG_DETAILS   = 20
-	DEFAULT_PROPORTION_LOG_TABLE     = 30
+	DEFAULT_HORIZONTAL_PROPORTION_TRACE_DETAILS = 20
+	DEFAULT_HORIZONTAL_PROPORTION_TRACE_TABLE   = 30
+	DEFAULT_HORIZONTAL_PROPORTION_METRIC_SIDE   = 25
+	DEFAULT_HORIZONTAL_PROPORTION_METRIC_TABLE  = 25
+	DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS   = 20
+	DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE     = 30
+	DEFAULT_VERTICAL_PROPORTION_LOG_MAIN        = 15
+	DEFAULT_VERTICAL_PROPORTION_LOG_BODY        = 3
 )
 
 type TUIPages struct {
@@ -160,8 +163,8 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		details.Clear()
 	})
 	details.SetTitle("Details (d)").SetBorder(true)
-	detailspro := DEFAULT_PROPORTION_TRACE_DETAILS
-	tablepro := DEFAULT_PROPORTION_TRACE_TABLE
+	detailspro := DEFAULT_HORIZONTAL_PROPORTION_TRACE_DETAILS
+	tablepro := DEFAULT_HORIZONTAL_PROPORTION_TRACE_TABLE
 
 	details.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -171,10 +174,8 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro++
 			detailspro--
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		case tcell.KeyCtrlH:
 			if tablepro <= 1 {
@@ -182,13 +183,21 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro--
 			detailspro++
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		}
 		return event
+	})
+	registerCommandList(commands, details, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
+			description: "Expand details",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Shrink details",
+		},
 	})
 
 	input := ""
@@ -320,7 +329,7 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
-	basePage.AddItem(tableContainer, 0, DEFAULT_PROPORTION_TRACE_TABLE, true).AddItem(details, 0, DEFAULT_PROPORTION_TRACE_DETAILS, false)
+	basePage.AddItem(tableContainer, 0, DEFAULT_HORIZONTAL_PROPORTION_TRACE_TABLE, true).AddItem(details, 0, DEFAULT_HORIZONTAL_PROPORTION_TRACE_DETAILS, false)
 	basePage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if !search.HasFocus() {
 			switch event.Rune() {
@@ -472,8 +481,8 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		details.Clear()
 	})
 	details.SetTitle("Details (d)").SetBorder(true)
-	sidepro := DEFAULT_PROPORTION_METRIC_SIDE
-	tablepro := DEFAULT_PROPORTION_METRIC_TABLE
+	sidepro := DEFAULT_HORIZONTAL_PROPORTION_METRIC_SIDE
+	tablepro := DEFAULT_HORIZONTAL_PROPORTION_METRIC_TABLE
 
 	details.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -483,10 +492,8 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro++
 			sidepro--
-			tableFocus := tableContainer.HasFocus()
-			sideFocus := side.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(side, 0, sidepro, sideFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(side, 0, sidepro)
 			return nil
 		case tcell.KeyCtrlH:
 			if tablepro <= 1 {
@@ -494,13 +501,21 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro--
 			sidepro++
-			tableFocus := tableContainer.HasFocus()
-			sideFocus := side.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(side, 0, sidepro, sideFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(side, 0, sidepro)
 			return nil
 		}
 		return event
+	})
+	registerCommandList(commands, details, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
+			description: "Expand details",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Shrink details",
+		},
 	})
 
 	chart := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -508,6 +523,7 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		chart.Clear()
 	})
 	chart.SetTitle("Chart (c)").SetBorder(true)
+	registerCommandList(commands, chart, nil, KeyMaps{})
 
 	side.AddItem(details, 0, 5, false).
 		AddItem(chart, 0, 5, false)
@@ -604,7 +620,7 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
-	basePage.AddItem(tableContainer, 0, DEFAULT_PROPORTION_METRIC_TABLE, true).AddItem(side, 0, DEFAULT_PROPORTION_METRIC_SIDE, false)
+	basePage.AddItem(tableContainer, 0, DEFAULT_HORIZONTAL_PROPORTION_METRIC_TABLE, true).AddItem(side, 0, DEFAULT_HORIZONTAL_PROPORTION_METRIC_SIDE, false)
 	basePage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if !search.HasFocus() {
 			switch event.Rune() {
@@ -638,8 +654,10 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		details.Clear()
 	})
 	details.SetTitle("Details (d)").SetBorder(true)
-	detailspro := DEFAULT_PROPORTION_LOG_DETAILS
-	tablepro := DEFAULT_PROPORTION_LOG_TABLE
+	detailspro := DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS
+	tablepro := DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE
+	logMainPro := DEFAULT_VERTICAL_PROPORTION_LOG_MAIN
+	logBodyPro := DEFAULT_VERTICAL_PROPORTION_LOG_BODY
 
 	details.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -649,10 +667,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro++
 			detailspro--
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			page.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			page.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		case tcell.KeyCtrlH:
 			if tablepro <= 1 {
@@ -660,13 +676,21 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro--
 			detailspro++
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			page.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			page.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		}
 		return event
+	})
+	registerCommandList(commands, details, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
+			description: "Expand details",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Shrink details",
+		},
 	})
 
 	body := tview.NewTextView()
@@ -674,7 +698,39 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		body.Clear()
 	})
 	body.SetBorder(true).SetTitle("Body (b)")
-	registerCommandList(commands, body, nil, KeyMaps{})
+	body.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlK:
+			if logMainPro <= 1 {
+				return nil
+			}
+			logMainPro--
+			logBodyPro++
+			pageContainer.ResizeItem(page, 0, logMainPro).
+				ResizeItem(body, 0, logBodyPro)
+			return nil
+		case tcell.KeyCtrlJ:
+			if logBodyPro <= 1 {
+				return nil
+			}
+			logMainPro++
+			logBodyPro--
+			pageContainer.ResizeItem(page, 0, logMainPro).
+				ResizeItem(body, 0, logBodyPro)
+			return nil
+		}
+		return event
+	})
+	registerCommandList(commands, body, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModCtrl),
+			description: "Shrink log body",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'k', tcell.ModCtrl),
+			description: "Expand log body",
+		},
+	})
 
 	tableContainer.SetTitle("Logs (o)").SetBorder(true)
 	ldft := NewLogDataForTable(store.GetFilteredLogs())
@@ -769,12 +825,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}), 0, 1, true)
 		log.Printf("selected row(original): %d", row)
 
-		if selected != nil {
-			resolved = selected.GetResolvedBody()
-			body.SetText(resolved)
-			return
-		}
-		resolved = ""
+		resolved = json.PrettyJSON(selected.GetResolvedBody())
+		body.SetText(resolved)
 	})
 	tableContainer.
 		AddItem(search, 1, 0, false).
@@ -791,7 +843,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
-	page.AddItem(tableContainer, 0, DEFAULT_PROPORTION_LOG_TABLE, true).AddItem(details, 0, DEFAULT_PROPORTION_LOG_DETAILS, false)
+	page.AddItem(tableContainer, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE, true).AddItem(details, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS, false)
 	pageContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if !search.HasFocus() {
 			switch event.Rune() {
@@ -813,7 +865,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 
 		return event
 	})
-	pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
+	// pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
+	pageContainer.AddItem(page, 0, DEFAULT_VERTICAL_PROPORTION_LOG_MAIN, true).AddItem(body, 0, DEFAULT_VERTICAL_PROPORTION_LOG_BODY, false)
 
 	return attachTab(attachCommandList(commands, pageContainer), PAGE_LOGS)
 }
