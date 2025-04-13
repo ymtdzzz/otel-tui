@@ -176,6 +176,9 @@ type Store struct {
 	maxServiceSpanCount int
 	maxMetricCount      int
 	maxLogCount         int
+	onSpanAdded         func()
+	onMetricAdded       func()
+	onLogAdded          func()
 }
 
 // NewStore creates a new store
@@ -235,6 +238,21 @@ func (s *Store) GetFilteredLogs() *[]*LogData {
 // UpdatedAt returns the last updated time
 func (s *Store) UpdatedAt() time.Time {
 	return s.updatedAt
+}
+
+// SetOnSpanAdded sets the callback function to be called when a span is added
+func (s *Store) SetOnSpanAdded(f func()) {
+	s.onSpanAdded = f
+}
+
+// SetOnMetricAdded sets the callback function to be called when a metric is added
+func (s *Store) SetOnMetricAdded(f func()) {
+	s.onMetricAdded = f
+}
+
+// SetOnLogAdded sets the callback function to be called when a log is added
+func (s *Store) SetOnLogAdded(f func()) {
+	s.onLogAdded = f
 }
 
 // ApplyFilterTraces applies a filter and sort to the traces
@@ -426,6 +444,10 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 	}
 
 	s.updateFilterService()
+
+	if s.onSpanAdded != nil {
+		s.onSpanAdded()
+	}
 }
 
 // AddMetric adds metrics to the store
@@ -466,6 +488,10 @@ func (s *Store) AddMetric(metrics *pmetric.Metrics) {
 	}
 
 	s.updateFilterMetrics()
+
+	if s.onMetricAdded != nil {
+		s.onMetricAdded()
+	}
 }
 
 // AddLog adds logs to the store
@@ -505,6 +531,10 @@ func (s *Store) AddLog(logs *plog.Logs) {
 	}
 
 	s.updateFilterLogs()
+
+	if s.onLogAdded != nil {
+		s.onLogAdded()
+	}
 }
 
 // Flush clears the store including the cache
