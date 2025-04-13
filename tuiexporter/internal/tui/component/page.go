@@ -204,10 +204,14 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			p.showTimelineByRow(store, row-1)
 		}).
 		SetFixed(1, 0)
+	store.SetOnSpanAdded(func() {
+		table.Select(table.GetSelection())
+	})
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
 			store.Flush()
 			p.clearPanes()
+			table.Select(0, 0)
 			return nil
 		} else if event.Key() == tcell.KeyCtrlS {
 			if sortType == telemetry.SORT_TYPE_NONE {
@@ -293,8 +297,12 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		if row == 0 {
 			return
 		}
+		spans := store.GetFilteredServiceSpansByIdx(row - 1)
+		if spans == nil {
+			return
+		}
 		details.Clear()
-		details.AddItem(getTraceInfoTree(commands, p.showModal, p.hideModal, store.GetFilteredServiceSpansByIdx(row-1)), 0, 1, true)
+		details.AddItem(getTraceInfoTree(commands, p.showModal, p.hideModal, spans), 0, 1, true)
 		log.Printf("selected row(original): %d", row)
 	})
 	tableContainer.
@@ -510,10 +518,14 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		SetSelectable(true, false).
 		SetContent(NewMetricDataForTable(store.GetFilteredMetrics())).
 		SetFixed(1, 0)
+	store.SetOnMetricAdded(func() {
+		table.Select(table.GetSelection())
+	})
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
 			store.Flush()
 			p.clearPanes()
+			table.Select(0, 0)
 			return nil
 		}
 		return event
@@ -567,6 +579,9 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 			return
 		}
 		selected := store.GetFilteredMetricByIdx(row - 1)
+		if selected == nil {
+			return
+		}
 		details.Clear()
 		details.AddItem(getMetricInfoTree(commands, p.showModal, p.hideModal, selected), 0, 1, true)
 		// TODO: async rendering with spinner
@@ -668,6 +683,9 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		SetSelectable(true, false).
 		SetContent(ldft).
 		SetFixed(1, 0)
+	store.SetOnLogAdded(func() {
+		table.Select(table.GetSelection())
+	})
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlF:
@@ -676,6 +694,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		case tcell.KeyCtrlL:
 			store.Flush()
 			p.clearPanes()
+			table.Select(0, 0)
 			return nil
 		}
 
@@ -739,6 +758,9 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			return
 		}
 		selected := store.GetFilteredLogByIdx(row - 1)
+		if selected == nil {
+			return
+		}
 		details.Clear()
 		details.AddItem(getLogInfoTree(commands, p.showModal, p.hideModal, selected, store.GetTraceCache(), func(traceID string) {
 			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), func(pr tview.Primitive) {
