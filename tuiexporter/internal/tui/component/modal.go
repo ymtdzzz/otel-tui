@@ -1,21 +1,12 @@
 package component
 
 import (
-	"bytes"
-	"encoding/json"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 )
-
-func prettyJSON(s string) string {
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(s), "", "  "); err != nil {
-		return s
-	}
-	return prettyJSON.String()
-}
 
 type showModalFunc func(tview.Primitive, string) *tview.TextView
 
@@ -39,9 +30,7 @@ func attachModalForTreeAttributes(tree *tview.TreeView, showFn showModalFunc, hi
 		parts := strings.SplitN(nodeText, ": ", 2)
 		if len(parts) >= 2 {
 			value := parts[1]
-			if json.Valid([]byte(value)) {
-				value = prettyJSON(value)
-			}
+			value = json.PrettyJSON(value)
 			nodeText = parts[0] + ": " + value
 		}
 		textView := showFn(tree, nodeText)
@@ -91,9 +80,7 @@ func attachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn
 		currentRow = row
 		if cell := table.GetCell(row, mapper.GetColumnIdx()); cell != nil {
 			text := cell.Text
-			if json.Valid([]byte(text)) {
-				text = prettyJSON(text)
-			}
+			text = json.PrettyJSON(text)
 			textView := showFn(table, text)
 			textView.SetTitle(MODAL_TITLE)
 			table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
