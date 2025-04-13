@@ -7,6 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"golang.design/x/clipboard"
 )
@@ -171,10 +172,8 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro++
 			detailspro--
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		case tcell.KeyCtrlH:
 			if tablepro <= 1 {
@@ -182,10 +181,8 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro--
 			detailspro++
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		}
 		return event
@@ -483,10 +480,8 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro++
 			sidepro--
-			tableFocus := tableContainer.HasFocus()
-			sideFocus := side.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(side, 0, sidepro, sideFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(side, 0, sidepro)
 			return nil
 		case tcell.KeyCtrlH:
 			if tablepro <= 1 {
@@ -494,10 +489,8 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro--
 			sidepro++
-			tableFocus := tableContainer.HasFocus()
-			sideFocus := side.HasFocus()
-			basePage.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(side, 0, sidepro, sideFocus)
+			basePage.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(side, 0, sidepro)
 			return nil
 		}
 		return event
@@ -649,10 +642,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro++
 			detailspro--
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			page.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			page.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		case tcell.KeyCtrlH:
 			if tablepro <= 1 {
@@ -660,10 +651,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			}
 			tablepro--
 			detailspro++
-			tableFocus := tableContainer.HasFocus()
-			detailsFocus := details.HasFocus()
-			page.Clear().AddItem(tableContainer, 0, tablepro, tableFocus).
-				AddItem(details, 0, detailspro, detailsFocus)
+			page.ResizeItem(tableContainer, 0, tablepro).
+				ResizeItem(details, 0, detailspro)
 			return nil
 		}
 		return event
@@ -769,12 +758,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}), 0, 1, true)
 		log.Printf("selected row(original): %d", row)
 
-		if selected != nil {
-			resolved = selected.GetResolvedBody()
-			body.SetText(resolved)
-			return
-		}
-		resolved = ""
+		resolved = selected.GetResolvedBody()
+		body.SetText(json.PrettyJSON(resolved))
 	})
 	tableContainer.
 		AddItem(search, 1, 0, false).

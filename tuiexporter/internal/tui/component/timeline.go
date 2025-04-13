@@ -313,10 +313,8 @@ func detailsInputFunc(traceContainer *tview.Flex, grid *tview.Grid, details *tvi
 			}
 			*gridpro++
 			*detailspro--
-			gridFocus := grid.HasFocus()
-			detailsFocus := details.HasFocus()
-			traceContainer.Clear().AddItem(grid, 0, *gridpro, gridFocus).
-				AddItem(details, 0, *detailspro, detailsFocus)
+			traceContainer.ResizeItem(grid, 0, *gridpro).
+				ResizeItem(details, 0, *detailspro)
 			return nil
 		case tcell.KeyCtrlH:
 			if *gridpro <= 1 {
@@ -324,10 +322,8 @@ func detailsInputFunc(traceContainer *tview.Flex, grid *tview.Grid, details *tvi
 			}
 			*gridpro--
 			*detailspro++
-			gridFocus := grid.HasFocus()
-			detailsFocus := details.HasFocus()
-			traceContainer.Clear().AddItem(grid, 0, *gridpro, gridFocus).
-				AddItem(details, 0, *detailspro, detailsFocus)
+			traceContainer.ResizeItem(grid, 0, *gridpro).
+				ResizeItem(details, 0, *detailspro)
 			return nil
 		}
 		return event
