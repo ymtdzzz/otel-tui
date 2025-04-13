@@ -825,8 +825,8 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		}), 0, 1, true)
 		log.Printf("selected row(original): %d", row)
 
-		resolved = selected.GetResolvedBody()
-		body.SetText(json.PrettyJSON(resolved))
+		resolved = json.PrettyJSON(selected.GetResolvedBody())
+		body.SetText(resolved)
 	})
 	tableContainer.
 		AddItem(search, 1, 0, false).
