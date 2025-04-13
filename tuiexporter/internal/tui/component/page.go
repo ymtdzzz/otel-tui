@@ -26,7 +26,7 @@ const (
 	DEFAULT_HORIZONTAL_PROPORTION_METRIC_SIDE   = 25
 	DEFAULT_HORIZONTAL_PROPORTION_METRIC_TABLE  = 25
 	DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS   = 20
-	DEFAULT_HORIZONTALPROPORTION_LOG_TABLE      = 30
+	DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE     = 30
 	DEFAULT_VERTICAL_PROPORTION_LOG_MAIN        = 15
 	DEFAULT_VERTICAL_PROPORTION_LOG_BODY        = 3
 )
@@ -655,7 +655,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	})
 	details.SetTitle("Details (d)").SetBorder(true)
 	detailspro := DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS
-	tablepro := DEFAULT_HORIZONTALPROPORTION_LOG_TABLE
+	tablepro := DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE
 	logMainPro := DEFAULT_VERTICAL_PROPORTION_LOG_MAIN
 	logBodyPro := DEFAULT_VERTICAL_PROPORTION_LOG_BODY
 
@@ -843,7 +843,7 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		return event
 	})
 
-	page.AddItem(tableContainer, 0, DEFAULT_HORIZONTALPROPORTION_LOG_TABLE, true).AddItem(details, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS, false)
+	page.AddItem(tableContainer, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE, true).AddItem(details, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS, false)
 	pageContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if !search.HasFocus() {
 			switch event.Rune() {
