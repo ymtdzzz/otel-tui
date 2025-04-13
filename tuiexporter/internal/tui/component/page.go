@@ -189,6 +189,16 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		}
 		return event
 	})
+	registerCommandList(commands, details, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
+			description: "Expand details",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Shrink details",
+		},
+	})
 
 	input := ""
 	inputConfirmed := ""
@@ -497,12 +507,23 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		}
 		return event
 	})
+	registerCommandList(commands, details, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
+			description: "Expand details",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Shrink details",
+		},
+	})
 
 	chart := tview.NewFlex().SetDirection(tview.FlexRow)
 	p.clearFns = append(p.clearFns, func() {
 		chart.Clear()
 	})
 	chart.SetTitle("Chart (c)").SetBorder(true)
+	registerCommandList(commands, chart, nil, KeyMaps{})
 
 	side.AddItem(details, 0, 5, false).
 		AddItem(chart, 0, 5, false)
@@ -660,6 +681,16 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 			return nil
 		}
 		return event
+	})
+	registerCommandList(commands, details, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
+			description: "Expand details",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Shrink details",
+		},
 	})
 
 	body := tview.NewTextView()
