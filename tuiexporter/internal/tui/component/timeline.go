@@ -41,6 +41,7 @@ type spanTreeNode struct {
 	label    string
 	box      *tview.Box
 	children []*spanTreeNode
+	expand   bool
 }
 
 func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) tview.Primitive {
@@ -56,40 +57,15 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	traceContainer := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	// draw timeline
-	title := tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("Spans")
 	tree, duration := newSpanTree(traceID, tcache)
-
-	timeline := tview.NewBox().SetBorder(false).
-		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
-			// Draw a horizontal line across the middle of the box.
-			centerY := y + height/2
-			for cx := x + 1; cx < x+width-1; cx++ {
-				screen.SetContent(cx, centerY, tview.BoxDrawingsLightHorizontal, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
-			}
-
-			// Write some text along the horizontal line.
-			unit, count := calculateTimelineUnit(duration)
-			for i := 0; i < count; i++ {
-				ratio := float64(i) / float64(count)
-				label := roundDownDuration(unit * time.Duration(i)).String()
-				if i == 0 {
-					label = "0"
-				}
-				tview.Print(screen, label, x+getXByRatio(ratio, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
-			}
-
-			// Space for other content.
-			return x + 1, centerY + 1, width - 2, height - (centerY + 1 - y)
-		})
 
 	// place spans on the timeline
 	snameWidth := SPAN_NAME_COLUMN_WIDTH_DEFAULT
 	grid := tview.NewGrid().
-		SetColumns(snameWidth, 0). // TODO: dynamic width
-		SetBorders(true).
-		AddItem(title, 0, 0, 1, 1, 0, 0, false).
-		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
+		SetColumns(snameWidth, 0).
+		SetBorders(true)
 	grid.SetTitle("Trace Timeline (t)").SetBorder(true)
+	clearTimeline(duration, grid)
 	registerCommandList(commands, grid, nil, KeyMaps{
 		{
 			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
@@ -239,6 +215,23 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 				snameWidth = narrowInLimit(SPAN_NAME_COLUMN_WIDTH_RESIZE_UNIT, snameWidth, SPAN_NAME_COLUMN_WIDTH_DEFAULT)
 				grid.SetColumns(snameWidth, 0)
 				return nil
+			case tcell.KeyEnter:
+				nodes[currentRow].expand = !nodes[currentRow].expand
+
+				tvs = []*tview.TextView{}
+				nodes = []*spanTreeNode{}
+				clearTimeline(duration, grid)
+				totalRow = 0
+				for _, n := range tree {
+					totalRow = placeSpan(commands, grid, n, totalRow, 0, &tvs, &nodes)
+				}
+				rows := make([]int, totalRow+2)
+				for i := 0; i < totalRow+1; i++ {
+					rows[i] = 1
+				}
+				grid.SetRows(rows...)
+				setFocusFn(tvs[currentRow])
+				return nil
 			}
 			return event
 		})
@@ -246,7 +239,7 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 
 	details.SetBorder(true).SetTitle("Details (d)")
 
-	isCollapse := true
+	isLogCollapse := true
 	traceContainer.AddItem(grid, 0, DEFAULT_PROPORTION_TIMELINE_GRID, true).
 		AddItem(details, 0, DEFAULT_PROPORTION_TIMELINE_DETAILS, false)
 	base.AddItem(traceContainer, 0, 1, true).
@@ -255,22 +248,18 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	base.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'd':
-			log.Printf("d key pressed")
 			setFocusFn(traceContainer.GetItem(TIMELINE_DETAILS_IDX))
 			return nil
 		case 't':
-			log.Printf("t key pressed")
 			setFocusFn(grid)
 			return nil
 		case 'l':
-			log.Printf("l key pressed")
 			setFocusFn(logs)
 			return nil
 		case 'L':
-			log.Printf("L key pressed")
-			isCollapse = !isCollapse
+			isLogCollapse = !isLogCollapse
 			logHeight := 10
-			if isCollapse {
+			if isLogCollapse {
 				logHeight = 2
 			}
 			base.Clear().AddItem(traceContainer, 0, 1, traceContainer.HasFocus()).
@@ -278,7 +267,6 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 
 			return nil
 		case 'A':
-			log.Printf("A key pressed")
 			allLogs = !allLogs
 			updateLogTableFn(traceID, nodes[currentRow].span.Span.SpanID().String(), allLogs)
 
@@ -288,6 +276,35 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 	})
 
 	return base
+}
+
+func clearTimeline(duration time.Duration, grid *tview.Grid) {
+	title := tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("Spans")
+	timeline := tview.NewBox().SetBorder(false).
+		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+			// Draw a horizontal line across the middle of the box.
+			centerY := y + height/2
+			for cx := x + 1; cx < x+width-1; cx++ {
+				screen.SetContent(cx, centerY, tview.BoxDrawingsLightHorizontal, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+			}
+
+			// Write some text along the horizontal line.
+			unit, count := calculateTimelineUnit(duration)
+			for i := 0; i < count; i++ {
+				ratio := float64(i) / float64(count)
+				label := roundDownDuration(unit * time.Duration(i)).String()
+				if i == 0 {
+					label = "0"
+				}
+				tview.Print(screen, label, x+getXByRatio(ratio, width), centerY, width-2, tview.AlignLeft, tcell.ColorYellow)
+			}
+
+			// Space for other content.
+			return x + 1, centerY + 1, width - 2, height - (centerY + 1 - y)
+		})
+	grid.Clear().
+		AddItem(title, 0, 0, 1, 1, 0, 0, false).
+		AddItem(timeline, 0, 1, 1, 1, 0, 0, false)
 }
 
 func narrowInLimit(step, curr, limit int) int {
@@ -363,11 +380,22 @@ func placeSpan(commands *tview.TextView, grid *tview.Grid, node *spanTreeNode, r
 		}
 		prefix = prefix + " "
 	}
-	tv := newTextView(commands, prefix+label)
+	exp := " "
+	if len(node.children) > 0 {
+		if node.expand {
+			exp = "▼"
+		} else {
+			exp = "▶"
+		}
+	}
+	tv := newTextView(commands, prefix+exp+label)
 	*tvs = append(*tvs, tv)
 	*nodes = append(*nodes, node)
 	grid.AddItem(tv, row, 0, 1, 1, 0, 0, false)
 	grid.AddItem(node.box, row, 1, 1, 1, 0, 0, false)
+	if !node.expand {
+		return row
+	}
 	sort.SliceStable(node.children, func(i, j int) bool {
 		return node.children[i].span.Span.StartTimestamp().AsTime().Before(
 			node.children[j].span.Span.StartTimestamp().AsTime(),
@@ -393,7 +421,7 @@ func newSpanTree(traceID string, cache *telemetry.TraceCache) (rootNodes []*span
 	colorMemo := make(map[string]tcell.Color)
 	nodes := []*spanTreeNode{}
 	for idx, span := range spans {
-		nodes = append(nodes, &spanTreeNode{span: span})
+		nodes = append(nodes, &spanTreeNode{span: span, expand: true})
 		spanMemo[span.Span.SpanID().String()] = idx
 		if span.Span.StartTimestamp().AsTime().Before(start) {
 			start = span.Span.StartTimestamp().AsTime()
@@ -461,6 +489,10 @@ func newTextView(commands *tview.TextView, text string) *tview.TextView {
 		{
 			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
 			description: "Move down",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			description: "Toggle folding the child spans",
 		},
 		{
 			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
