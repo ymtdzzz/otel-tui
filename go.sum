@@ -672,8 +672,8 @@ github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 h1:QldyIu/L63oPpyvQmHg
 github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778/go.mod h1:2MuV+tbUrU1zIOPMxZ5EncGwgmMJsa+9ucAQZXxsObs=
 github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859 h1:TPrtTTD4gqQIj9g+4hAIa3Va2DkYBTOdOni/xh9RZak=
 github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859/go.mod h1:gDx5dss6A/czppfsA5jQ0J5jxYpfhojLVgiF5ArbIE8=
-github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250412090231-e79dd7e07ae0 h1:TQC1hojrq42XlRgcWt51T/WZc5+iqUVxbz2qr1oxtwU=
-github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250412090231-e79dd7e07ae0/go.mod h1:hD+q8ElUvBMBAB17EUeT31kpaw4VP4Gan4iFmXfA/kM=
+github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250418140830-f409b4fdff1c h1:9EOQEb9CQtNxB/wqVOt3KaXQJ6zMqhqvLQ/qbQ6ZMXA=
+github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250418140830-f409b4fdff1c/go.mod h1:hD+q8ElUvBMBAB17EUeT31kpaw4VP4Gan4iFmXfA/kM=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
