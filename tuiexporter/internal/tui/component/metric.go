@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -642,7 +643,7 @@ func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *
 	return chart
 }
 
-func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, attrkey string, start, end time.Time) ([][]float64, *tview.Flex) {
+func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, attrkey string, start, end time.Time) ([][]float64, *tview.TextView) {
 	// Sort keys
 	keys := make([]string, 0, len(dataMap[attrkey]))
 	for k := range dataMap[attrkey] {
@@ -664,8 +665,8 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 			d[i][ii] = NULL_VALUE_FLOAT64
 		}
 	}
-	txts := tview.NewFlex().SetDirection(tview.FlexRow)
-	count := 0
+	tv := tview.NewTextView()
+	tv.SetDynamicColors(true)
 	wholedur := end.Sub(start).Nanoseconds()
 	type locateMap struct {
 		prevpos int
@@ -677,7 +678,8 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 	// Set values to timestamp relative position.
 	// Note that this process keeps values between corresponding positions null value.
 	// ex: [1.2 1.3 null 1.6 1.1 null null 2.5]
-	for _, k := range keys {
+	txts := make([]string, len(keys))
+	for i, k := range keys {
 		prevpos := -1
 		prevval := NULL_VALUE_FLOAT64
 		for _, dp := range dataMap[attrkey][k] {
@@ -690,8 +692,8 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 				ratio = float64(dur) / float64(wholedur)
 			}
 			pos := int(math.Round(float64(dpnum) * ratio))
-			if pos >= len(d[count]) {
-				pos = len(d[count]) - 1
+			if pos >= len(d[i]) {
+				pos = len(d[i]) - 1
 			}
 			if pos < 0 {
 				pos = 0
@@ -703,8 +705,8 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 			case pmetric.NumberDataPointValueTypeInt:
 				val = float64(dp.IntValue())
 			}
-			d[count][pos] = val
-			locatedposmap[count] = append(locatedposmap[count], locateMap{
+			d[i][pos] = val
+			locatedposmap[i] = append(locatedposmap[i], locateMap{
 				prevpos: prevpos,
 				prevval: prevval,
 				pos:     pos,
@@ -713,12 +715,9 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 			prevpos = pos
 			prevval = val
 		}
-		txt := tview.NewTextView()
-		txt.SetTextColor(colors[count])
-		txt.SetText(fmt.Sprintf("● %s: %s", attrkey, k))
-		txts.AddItem(txt, 2, 1, false)
-		count++
+		txts[i] = fmt.Sprintf("[%s]● %s: %s", colors[i].String(), attrkey, k)
 	}
+	tv.SetText(strings.Join(txts, "\n"))
 	// Replace null value with appropriate value for smooth line
 	// ex: [1.2 1.3 1.45 1.6 1.1 1.56 2.02 2.5]
 	for i := range d {
@@ -746,7 +745,7 @@ func getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDataPoint, att
 			}
 		}
 	}
-	return d, txts
+	return d, tv
 }
 
 // uint64ToInt converts uint64 into int. When the input is larger than math.MaxInt, it returns math.MaxInt.
