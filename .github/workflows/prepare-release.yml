@@ -23,6 +23,7 @@ jobs:
           LATEST_COMMIT=$(git rev-parse HEAD)
           go mod edit -require=github.com/ymtdzzz/otel-tui/tuiexporter@${LATEST_COMMIT}
           go mod tidy
+          go work sync
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
