@@ -664,6 +664,39 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 	}
 	root.AddChild(links)
 
+	// resource info
+	rs := span.ResourceSpan
+	r := rs.Resource()
+	resource := tview.NewTreeNode("Resource")
+	root.AddChild(resource)
+	rdropped := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", r.DroppedAttributesCount()))
+	resource.AddChild(rdropped)
+	rschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", rs.SchemaUrl()))
+	resource.AddChild(rschema)
+
+	rattrs := tview.NewTreeNode("Attributes")
+	appendAttrsSorted(rattrs, r.Attributes())
+	resource.AddChild(rattrs)
+
+	// scope info
+	scopes := tview.NewTreeNode("Scopes")
+	for si := 0; si < rs.ScopeSpans().Len(); si++ {
+		ss := rs.ScopeSpans().At(si)
+		scope := tview.NewTreeNode(ss.Scope().Name())
+		sschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", ss.SchemaUrl()))
+		scope.AddChild(sschema)
+
+		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("version: %s", ss.Scope().Version())))
+		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", ss.Scope().DroppedAttributesCount())))
+
+		attrs := tview.NewTreeNode("Attributes")
+		appendAttrsSorted(attrs, ss.Scope().Attributes())
+		scope.AddChild(attrs)
+
+		scopes.AddChild(scope)
+	}
+	resource.AddChild(scopes)
+
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
 	})
