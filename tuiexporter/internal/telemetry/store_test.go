@@ -143,7 +143,7 @@ func TestStoreMetricFilters(t *testing.T) {
 	//      └- metric: metric-2-1-1
 	//        └- datapoint: dp-2-1-1-1
 	store := NewStore()
-	payload, testdata := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	payload, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddMetric(&payload)
 
 	store.ApplyFilterMetrics("service-2")
@@ -510,7 +510,7 @@ func TestStoreAddMetricWithoutRotation(t *testing.T) {
 	store := NewStore()
 	store.maxMetricCount = 3 // no rotation
 	before := store.updatedAt
-	payload, testdata := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	payload, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddMetric(&payload)
 
 	assert.Equal(t, "", store.filterMetric)
@@ -554,7 +554,7 @@ func TestStoreAddMetricWithRotation(t *testing.T) {
 	store := NewStore()
 	store.maxMetricCount = 1 // no rotation
 	before := store.updatedAt
-	payload, testdata := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	payload, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddMetric(&payload)
 
 	assert.Equal(t, "", store.filterMetric)
@@ -718,7 +718,7 @@ func TestStoreFlush(t *testing.T) {
 	tp2, _ := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
 	lp1, _ := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	lp2, _ := test.GenerateOTLPLogsPayload(t, 2, 1, []int{1}, [][]int{{1}})
-	m, _ := test.GenerateOTLPMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	m, _ := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddSpan(&tp1)
 	store.AddSpan(&tp2)
 	store.AddLog(&lp1)

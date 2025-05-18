@@ -431,17 +431,28 @@ func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData)
 		txt := tview.NewFlex().SetDirection(tview.FlexRow)
 		txt.SetBorder(true).SetTitle("Attributes")
 		for bci := 0; bci < dp.BucketCounts().Len(); bci++ {
-			if bci == dp.BucketCounts().Len()-1 {
-				ch.AddBar(fmt.Sprintf("%.1f~", dp.ExplicitBounds().At(bci-1)), uint64ToInt(dp.BucketCounts().At(bci)), tcell.ColorYellow)
+			var label string
+
+			if dp.ExplicitBounds().Len() == 0 {
+				label = "inf"
 			} else {
-				ch.AddBar(fmt.Sprintf("%.1f", dp.ExplicitBounds().At(bci)), uint64ToInt(dp.BucketCounts().At(bci)), tcell.ColorYellow)
+				switch {
+				case bci == 0:
+					label = fmt.Sprintf("~%.1f", dp.ExplicitBounds().At(0))
+				case bci == dp.BucketCounts().Len()-1:
+					label = fmt.Sprintf("%.1f~", dp.ExplicitBounds().At(bci-1))
+				default:
+					label = fmt.Sprintf("%.1f", dp.ExplicitBounds().At(bci))
+				}
 			}
+
+			ch.AddBar(label, uint64ToInt(dp.BucketCounts().At(bci)), tcell.ColorYellow)
 		}
 		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● max: %.1f", dp.Max())), 1, 1, false)
 		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● min: %.1f", dp.Min())), 1, 1, false)
 		sts.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● sum: %.1f", dp.Sum())), 1, 1, false)
 		dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-			txt.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● %s: %s", k, v.Str())), 2, 1, false)
+			txt.AddItem(tview.NewTextView().SetText(fmt.Sprintf("● %s: %s", k, v.AsString())), 2, 1, false)
 			return true
 		})
 		side.AddItem(sts, 5, 1, false).AddItem(txt, 0, 1, false)
