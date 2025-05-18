@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.126.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250419022926-2a981e11fd9c
+	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250518064316-9396ce037cc0
 	go.opentelemetry.io/collector/component v1.32.0
 	go.opentelemetry.io/collector/component/componenttest v0.126.0
 	go.opentelemetry.io/collector/confmap v1.32.0
