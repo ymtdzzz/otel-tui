@@ -6,8 +6,6 @@ updates:
       interval: "weekly"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    reviewers:
-      - "ymtdzzz"
     groups:
       dependencies:
         patterns:
@@ -18,8 +16,6 @@ updates:
       interval: "weekly"
       time: "09:00"
       timezone: "Asia/Tokyo"
-    reviewers:
-      - "ymtdzzz"
     groups:
       dependencies:
         patterns:
