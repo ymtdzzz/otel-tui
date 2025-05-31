@@ -1,8 +1,6 @@
 module github.com/ymtdzzz/otel-tui/tuiexporter
 
-go 1.23.3
-
-toolchain go1.23.6
+go 1.24.3
 
 require (
 	github.com/gdamore/tcell/v2 v2.8.1

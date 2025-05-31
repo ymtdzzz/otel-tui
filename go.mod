@@ -2,9 +2,7 @@
 
 module github.com/ymtdzzz/otel-tui
 
-go 1.23.3
-
-toolchain go1.24.1
+go 1.24.3
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.126.0
