@@ -14,16 +14,22 @@ receivers:
   zipkin:
     endpoint: 0.0.0.0:9411
 {{- end}}
-{{- if .EnableProm}}
+{{- if and (.EnableProm) (gt (len .PromScrapeConfigs) 0)}}
   prometheus:
     config:
       scrape_configs:
-        - job_name: 'prometheus'
-          scrape_interval: 15s
+{{- range $_, $config := .PromScrapeConfigs}}
+        - job_name: '{{ $config.JobName -}}'
+          scrape_interval: 5s
+{{- if ne $config.MetricsPath ""}}
+          metrics_path: '{{ $config.MetricsPath -}}'
+{{- end}}
+{{- if ne $config.Scheme ""}}
+          scheme: '{{ $config.Scheme -}}'
+{{- end}}
           static_configs:
             - targets:
-{{- range $idx, $target := .PromTarget}}
-              - '{{ $target -}}'
+              - '{{ $config.Target -}}'
 {{- end}}
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}

@@ -61,17 +61,17 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 				promEnabledFlag = true
 			}
 
-			cfg := &Config{
-				OTLPHost:     hostFlag,
-				OTLPHTTPPort: httpPortFlag,
-				OTLPGRPCPort: grpcPortFlag,
-				EnableZipkin: zipkinEnabledFlag,
-				EnableProm:   promEnabledFlag,
-				FromJSONFile: fromJSONFileFlag,
-				PromTarget:   promTargetFlag,
-			}
+			cfg, err := NewConfig(
+				hostFlag,
+				httpPortFlag,
+				grpcPortFlag,
+				zipkinEnabledFlag,
+				promEnabledFlag,
+				fromJSONFileFlag,
+				promTargetFlag,
+			)
 
-			if err := cfg.Validate(); err != nil {
+			if err != nil {
 				return err
 			}
 
