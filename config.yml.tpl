@@ -14,7 +14,7 @@ receivers:
   zipkin:
     endpoint: 0.0.0.0:9411
 {{- end}}
-{{- if and (.EnableProm) (gt (len .PromScrapeConfigs) 0)}}
+{{- if gt (len .PromScrapeConfigs) 0}}
   prometheus:
     config:
       scrape_configs:
@@ -68,7 +68,7 @@ service:
     metrics:
       receivers:
         - otlp
-{{- if .EnableProm}}
+{{- if gt (len .PromScrapeConfigs) 0}}
         - prometheus
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}

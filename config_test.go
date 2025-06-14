@@ -69,7 +69,6 @@ func TestConfigRenderYml(t *testing.T) {
 		OTLPHTTPPort: 4318,
 		OTLPGRPCPort: 4317,
 		EnableZipkin: true,
-		EnableProm:   true,
 		FromJSONFile: "./path/to/init.json",
 		PromTarget: []string{
 			"localhost:9090",
@@ -159,7 +158,6 @@ func TestConfigRenderYmlMinimum(t *testing.T) {
 		OTLPHTTPPort: 4318,
 		OTLPGRPCPort: 4317,
 		EnableZipkin: false,
-		EnableProm:   false,
 	}
 	want := `yaml:
 receivers:
@@ -198,6 +196,8 @@ service:
       exporters:
         - tui
 `
+	err := cfg.buildPromScrapeConfigs()
+	assert.Nil(t, err)
 	got, err := cfg.RenderYml()
 	assert.Nil(t, err)
 	assert.Equal(t, want, got)
@@ -221,7 +221,6 @@ func TestValidate(t *testing.T) {
 				OTLPHTTPPort: 4318,
 				OTLPGRPCPort: 4317,
 				EnableZipkin: true,
-				EnableProm:   true,
 				FromJSONFile: "./main.go",
 				PromTarget: []string{
 					"localhost:9000",
@@ -229,16 +228,6 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			want: nil,
-		},
-		{
-			name: "NG_Prom",
-			cfg: &Config{
-				OTLPHost:     "0.0.0.0",
-				OTLPHTTPPort: 4318,
-				OTLPGRPCPort: 4317,
-				EnableProm:   true,
-			},
-			want: errors.New("the target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled"),
 		},
 		{
 			name: "NG_JSON_File",
