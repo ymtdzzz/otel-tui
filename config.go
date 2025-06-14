@@ -56,7 +56,9 @@ func NewConfig(
 	}
 
 	if enableProm {
-		cfg.buildPromScrapeConfigs()
+		if err := cfg.buildPromScrapeConfigs(); err != nil {
+			return nil, fmt.Errorf("failed to build Prometheus scrape configs: %w", err)
+		}
 	}
 
 	return cfg, nil
