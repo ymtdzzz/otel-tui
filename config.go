@@ -26,7 +26,6 @@ type Config struct {
 	OTLPHTTPPort      int
 	OTLPGRPCPort      int
 	EnableZipkin      bool
-	EnableProm        bool
 	FromJSONFile      string
 	PromTarget        []string
 	PromScrapeConfigs []*PromScrapeConfig
@@ -37,7 +36,6 @@ func NewConfig(
 	otlpHTTPPort int,
 	otlpGRPCPort int,
 	enableZipkin bool,
-	enableProm bool,
 	fromJSONFile string,
 	promTarget []string,
 ) (*Config, error) {
@@ -46,7 +44,6 @@ func NewConfig(
 		OTLPHTTPPort: otlpHTTPPort,
 		OTLPGRPCPort: otlpGRPCPort,
 		EnableZipkin: enableZipkin,
-		EnableProm:   enableProm,
 		FromJSONFile: fromJSONFile,
 		PromTarget:   promTarget,
 	}
@@ -55,10 +52,8 @@ func NewConfig(
 		return nil, err
 	}
 
-	if enableProm {
-		if err := cfg.buildPromScrapeConfigs(); err != nil {
-			return nil, fmt.Errorf("failed to build Prometheus scrape configs: %w", err)
-		}
+	if err := cfg.buildPromScrapeConfigs(); err != nil {
+		return nil, fmt.Errorf("failed to build Prometheus scrape configs: %w", err)
 	}
 
 	return cfg, nil
@@ -136,9 +131,6 @@ func structToMap(s any) (map[string]any, error) {
 
 // validate checks if the otel-tui configuration is valid
 func (cfg *Config) validate() error {
-	if cfg.EnableProm && len(cfg.PromTarget) == 0 {
-		return errors.New("the target endpoints for the prometheus receiver (--prom-target) must be specified when prometheus receiver enabled")
-	}
 	if _, err := os.Stat(cfg.FromJSONFile); len(cfg.FromJSONFile) > 0 && err != nil {
 		return errors.New("the initial data JSON file does not exist")
 	}

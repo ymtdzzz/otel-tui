@@ -45,7 +45,6 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 		httpPortFlag, grpcPortFlag int
 		hostFlag                   string
 		zipkinEnabledFlag          bool
-		promEnabledFlag            bool
 		promTargetFlag             []string
 		fromJSONFileFlag           string
 	)
@@ -56,17 +55,11 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			// if a prom target is provided, enable the prom receiver anyway
-			if len(promTargetFlag) > 0 {
-				promEnabledFlag = true
-			}
-
 			cfg, err := NewConfig(
 				hostFlag,
 				httpPortFlag,
 				grpcPortFlag,
 				zipkinEnabledFlag,
-				promEnabledFlag,
 				fromJSONFileFlag,
 				promTargetFlag,
 			)
@@ -101,8 +94,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 	rootCmd.Flags().IntVar(&grpcPortFlag, "grpc", 4317, "The port number on which we listen for OTLP grpc payloads")
 	rootCmd.Flags().StringVar(&hostFlag, "host", "0.0.0.0", "The host where we expose our OTLP endpoints")
 	rootCmd.Flags().BoolVar(&zipkinEnabledFlag, "enable-zipkin", false, "Enable the zipkin receiver")
-	rootCmd.Flags().BoolVar(&promEnabledFlag, "enable-prom", false, "Enable the prometheus receiver")
 	rootCmd.Flags().StringVar(&fromJSONFileFlag, "from-json-file", "", "The JSON file path exported by JSON exporter")
-	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
+	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `Enable the prometheus receiver and specify the target endpoints for the receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
 	return rootCmd
 }
