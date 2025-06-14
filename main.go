@@ -61,17 +61,17 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 				promEnabledFlag = true
 			}
 
-			cfg := &Config{
-				OTLPHost:     hostFlag,
-				OTLPHTTPPort: httpPortFlag,
-				OTLPGRPCPort: grpcPortFlag,
-				EnableZipkin: zipkinEnabledFlag,
-				EnableProm:   promEnabledFlag,
-				FromJSONFile: fromJSONFileFlag,
-				PromTarget:   promTargetFlag,
-			}
+			cfg, err := NewConfig(
+				hostFlag,
+				httpPortFlag,
+				grpcPortFlag,
+				zipkinEnabledFlag,
+				promEnabledFlag,
+				fromJSONFileFlag,
+				promTargetFlag,
+			)
 
-			if err := cfg.Validate(); err != nil {
+			if err != nil {
 				return err
 			}
 
@@ -103,6 +103,6 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 	rootCmd.Flags().BoolVar(&zipkinEnabledFlag, "enable-zipkin", false, "Enable the zipkin receiver")
 	rootCmd.Flags().BoolVar(&promEnabledFlag, "enable-prom", false, "Enable the prometheus receiver")
 	rootCmd.Flags().StringVar(&fromJSONFileFlag, "from-json-file", "", "The JSON file path exported by JSON exporter")
-	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "other-host:9000")`)
+	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
 	return rootCmd
 }

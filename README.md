@@ -38,7 +38,7 @@ Flags:
   -h, --help                      help for otel-tui
       --host string               The host where we expose our OTLP endpoints (default "0.0.0.0")
       --http int                  The port number on which we listen for OTLP http payloads (default 4318)
-      --prom-target stringArray   The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "other-host:9000")
+      --prom-target stringArray   The target endpoints for the prometheus receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")
   -v, --version                   version for otel-tui
 ```
 
