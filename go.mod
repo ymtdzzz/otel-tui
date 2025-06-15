@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.127.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250614074545-f6a0012d3339
+	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250615031621-17f662dc82a7
 	go.opentelemetry.io/collector/component v1.33.0
 	go.opentelemetry.io/collector/component/componenttest v0.127.0
 	go.opentelemetry.io/collector/confmap v1.33.0
@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.127.0
 	go.opentelemetry.io/collector/processor v1.33.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.127.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.33.0
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1
 )
@@ -288,7 +289,6 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
 	golang.design/x/clipboard v0.7.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
