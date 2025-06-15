@@ -23,17 +23,23 @@ type TUIApp struct {
 	pages           *component.TUIPages
 	store           *telemetry.Store
 	refreshedAt     time.Time
+	logFile         *os.File
 }
 
 // NewTUIApp creates a new TUI application.
 func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFilePath string) (*TUIApp, error) {
+	var (
+		logFile *os.File
+		err     error
+	)
+
 	if debugLogFilePath != "" {
 		log.Printf("Debug logging enabled, writing to %s", debugLogFilePath)
-		file, err := os.OpenFile(filepath.Clean(debugLogFilePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		logFile, err = os.OpenFile(filepath.Clean(debugLogFilePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			return nil, err
 		}
-		log.SetOutput(file)
+		log.SetOutput(logFile)
 	} else {
 		log.SetOutput(io.Discard) // Disable logging if no file is specified
 	}
@@ -51,6 +57,7 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFi
 		app:             app,
 		pages:           tpages,
 		store:           store,
+		logFile:         logFile,
 	}
 
 	app.SetRoot(pages, true)
@@ -92,6 +99,11 @@ func (t *TUIApp) Run() error {
 // Stop stops the TUI application.
 func (t *TUIApp) Stop() error {
 	t.app.Stop()
+	if t.logFile != nil {
+		if err := t.logFile.Close(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
