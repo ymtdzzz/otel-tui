@@ -32,7 +32,9 @@ Usage:
   otel-tui [flags]
 
 Flags:
+      --debug-log                 Enable debug log output to file (/tmp/otel-tui.log)
       --enable-zipkin             Enable the zipkin receiver
+      --from-json-file string     The JSON file path exported by JSON exporter
       --grpc int                  The port number on which we listen for OTLP grpc payloads (default 4317)
   -h, --help                      help for otel-tui
       --host string               The host where we expose our OTLP endpoints (default "0.0.0.0")

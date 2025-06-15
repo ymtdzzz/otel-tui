@@ -4,7 +4,8 @@ import "go.opentelemetry.io/collector/component"
 
 // Config defines configuration for TUI exporter.
 type Config struct {
-	FromJSONFile bool `mapstructure:"from_json_file"`
+	FromJSONFile     bool   `mapstructure:"from_json_file"`
+	DebugLogFilePath string `mapstructure:"debug_log_file_path"`
 }
 
 var _ component.Config = (*Config)(nil)

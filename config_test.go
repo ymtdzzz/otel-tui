@@ -75,6 +75,7 @@ func TestConfigRenderYml(t *testing.T) {
 			"http://127.0.0.1:1111/custom/prometheus",
 			"example.com:1234/my-metrics",
 		},
+		DebugLogFilePath: "/tmp/otel-tui.log",
 	}
 	want := `yaml:
 receivers:
@@ -119,6 +120,7 @@ processors:
 exporters:
   tui:
     from_json_file: true
+    debug_log_file_path: '/tmp/otel-tui.log'
 service:
   pipelines:
     traces:
@@ -175,6 +177,7 @@ processors:
 exporters:
   tui:
     from_json_file: false
+    debug_log_file_path: ''
 service:
   pipelines:
     traces:

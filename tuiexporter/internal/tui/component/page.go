@@ -17,7 +17,6 @@ const (
 	PAGE_TIMELINE       = "Timeline"
 	PAGE_TRACE_TOPOLOGY = "TraceTopology"
 	PAGE_LOGS           = "Logs"
-	PAGE_DEBUG_LOG      = "DebugLog"
 	PAGE_METRICS        = "Metrics"
 	PAGE_MODAL          = "Modal"
 
@@ -39,7 +38,6 @@ type TUIPages struct {
 	topology          *tview.Flex
 	metrics           *tview.Flex
 	logs              *tview.Flex
-	debuglog          *tview.Flex
 	modal             *tview.Flex
 	clearFns          []func()
 	current           string
@@ -60,27 +58,14 @@ func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TU
 
 	tp.registerPages(store)
 
+	initClipboard()
+
 	return tp
 }
 
 // GetPages returns the pages
 func (p *TUIPages) GetPages() *tview.Pages {
 	return p.pages
-}
-
-// ToggleLog toggles the log page.
-func (p *TUIPages) ToggleLog() {
-	cname, cpage := p.pages.GetFrontPage()
-	if cname == PAGE_DEBUG_LOG {
-		// hide log
-		p.pages.SendToBack(PAGE_DEBUG_LOG)
-		p.pages.HidePage(PAGE_DEBUG_LOG)
-	} else {
-		// show log
-		p.pages.ShowPage(PAGE_DEBUG_LOG)
-		p.pages.SendToFront(PAGE_DEBUG_LOG)
-		p.setFocusFn(cpage)
-	}
 }
 
 func (p *TUIPages) showModal(current tview.Primitive, text string) *tview.TextView {
@@ -126,10 +111,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	modal, _ := p.createModalPage("")
 	p.modal = modal
 	p.pages.AddPage(PAGE_MODAL, modal, true, true)
-
-	logpage := p.createDebugLogPage()
-	p.debuglog = logpage
-	p.pages.AddPage(PAGE_DEBUG_LOG, logpage, true, true)
 
 	traces := p.createTracePage(store)
 	p.traces = traces
@@ -869,25 +850,6 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	pageContainer.AddItem(page, 0, DEFAULT_VERTICAL_PROPORTION_LOG_MAIN, true).AddItem(body, 0, DEFAULT_VERTICAL_PROPORTION_LOG_BODY, false)
 
 	return attachTab(attachCommandList(commands, pageContainer), PAGE_LOGS)
-}
-
-func (p *TUIPages) createDebugLogPage() *tview.Flex {
-	logview := tview.NewTextView().SetDynamicColors(true)
-	logview.Box.SetTitle("Log").SetBorder(true)
-	logview.SetChangedFunc(func() {
-		logview.ScrollToEnd()
-	})
-	// file, _ := os.OpenFile("log.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	// log.SetOutput(file)
-	log.SetOutput(logview)
-
-	initClipboard()
-
-	page := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(nil, 0, 7, false).
-		AddItem(logview, 0, 3, false)
-
-	return page
 }
 
 func attachTab(p tview.Primitive, name string) *tview.Flex {

@@ -29,6 +29,7 @@ type Config struct {
 	FromJSONFile      string
 	PromTarget        []string
 	PromScrapeConfigs []*PromScrapeConfig
+	DebugLogFilePath  string
 }
 
 func NewConfig(
@@ -38,14 +39,16 @@ func NewConfig(
 	enableZipkin bool,
 	fromJSONFile string,
 	promTarget []string,
+	debugLogFilePath string,
 ) (*Config, error) {
 	cfg := &Config{
-		OTLPHost:     otlpHost,
-		OTLPHTTPPort: otlpHTTPPort,
-		OTLPGRPCPort: otlpGRPCPort,
-		EnableZipkin: enableZipkin,
-		FromJSONFile: fromJSONFile,
-		PromTarget:   promTarget,
+		OTLPHost:         otlpHost,
+		OTLPHTTPPort:     otlpHTTPPort,
+		OTLPGRPCPort:     otlpGRPCPort,
+		EnableZipkin:     enableZipkin,
+		FromJSONFile:     fromJSONFile,
+		PromTarget:       promTarget,
+		DebugLogFilePath: debugLogFilePath,
 	}
 
 	if err := cfg.validate(); err != nil {
