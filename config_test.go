@@ -20,6 +20,9 @@ func TestBuildPromScrapeConfigs(t *testing.T) {
 				"localhost:9090",
 				"http://127.0.0.1:1111/custom/prometheus",
 				"example.com:1234/my-metrics",
+				"http://localhost:19901/stats?format=prometheus",
+				"http://exporterserver:9199/ups_metrics?ups=secondary&server=nutserver2",
+				"http://source-prometheus-1:9090/federate?match[]={job=\"prometheus\"}&match[]={__name__=~\"job:.*\"}",
 			},
 			want: []*PromScrapeConfig{
 				{
@@ -30,7 +33,6 @@ func TestBuildPromScrapeConfigs(t *testing.T) {
 				},
 				{
 					JobName:     "oteltui_prom_2",
-					Scheme:      "http",
 					MetricsPath: "/custom/prometheus",
 					Target:      "127.0.0.1:1111",
 				},
@@ -39,6 +41,43 @@ func TestBuildPromScrapeConfigs(t *testing.T) {
 					Scheme:      "",
 					MetricsPath: "/my-metrics",
 					Target:      "example.com:1234",
+				},
+				{
+					JobName:     "oteltui_prom_4",
+					MetricsPath: "/stats",
+					Target:      "localhost:19901",
+					Params: []Param{
+						{
+							Key:    "format",
+							Values: []string{"prometheus"},
+						},
+					},
+				},
+				{
+					JobName:     "oteltui_prom_5",
+					MetricsPath: "/ups_metrics",
+					Target:      "exporterserver:9199",
+					Params: []Param{
+						{
+							Key:    "server",
+							Values: []string{"nutserver2"},
+						},
+						{
+							Key:    "ups",
+							Values: []string{"secondary"},
+						},
+					},
+				},
+				{
+					JobName:     "oteltui_prom_6",
+					MetricsPath: "/federate",
+					Target:      "source-prometheus-1:9090",
+					Params: []Param{
+						{
+							Key:    "match[]",
+							Values: []string{`{job="prometheus"}`, `{__name__=~"job:.*"}`},
+						},
+					},
 				},
 			},
 			wantErr: nil,
@@ -74,6 +113,9 @@ func TestConfigRenderYml(t *testing.T) {
 			"localhost:9090",
 			"http://127.0.0.1:1111/custom/prometheus",
 			"example.com:1234/my-metrics",
+			"http://localhost:19901/stats?format=prometheus",
+			"http://exporterserver:9199/ups_metrics?ups=secondary&server=nutserver2",
+			"http://source-prometheus-1:9090/federate?match[]={job=\"prometheus\"}&match[]={__name__=~\"job:.*\"}",
 		},
 		DebugLogFilePath: "/tmp/otel-tui.log",
 	}
@@ -102,7 +144,6 @@ receivers:
         - job_name: 'oteltui_prom_2'
           scrape_interval: 5s
           metrics_path: '/custom/prometheus'
-          scheme: 'http'
           static_configs:
             - targets:
               - '127.0.0.1:1111'
@@ -112,6 +153,36 @@ receivers:
           static_configs:
             - targets:
               - 'example.com:1234'
+        - job_name: 'oteltui_prom_4'
+          scrape_interval: 5s
+          metrics_path: '/stats'
+          params:
+            format:
+              - 'prometheus'
+          static_configs:
+            - targets:
+              - 'localhost:19901'
+        - job_name: 'oteltui_prom_5'
+          scrape_interval: 5s
+          metrics_path: '/ups_metrics'
+          params:
+            server:
+              - 'nutserver2'
+            ups:
+              - 'secondary'
+          static_configs:
+            - targets:
+              - 'exporterserver:9199'
+        - job_name: 'oteltui_prom_6'
+          scrape_interval: 5s
+          metrics_path: '/federate'
+          params:
+            match[]:
+              - '{job="prometheus"}'
+              - '{__name__=~"job:.*"}'
+          static_configs:
+            - targets:
+              - 'source-prometheus-1:9090'
   otlpjsonfile:
     include:
       - './path/to/init.json'
