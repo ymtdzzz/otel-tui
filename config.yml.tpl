@@ -27,6 +27,15 @@ receivers:
 {{- if ne $config.Scheme ""}}
           scheme: '{{ $config.Scheme -}}'
 {{- end}}
+{{- if $config.Params }}
+          params:
+{{- range $param := $config.Params }}
+            {{ $param.Key }}:
+{{- range $v := $param.Values }}
+              - '{{ $v }}'
+{{- end }}
+{{- end }}
+{{- end }}
           static_configs:
             - targets:
               - '{{ $config.Target -}}'

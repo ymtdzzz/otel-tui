@@ -5,20 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
+	"text/template"
 )
 
 //go:embed config.yml.tpl
 var configYmlTpl string
+
+type Param struct {
+	Key    string
+	Values []string
+}
 
 type PromScrapeConfig struct {
 	JobName     string
 	Scheme      string
 	MetricsPath string
 	Target      string
+	Params      []Param
 }
 
 type Config struct {
@@ -64,17 +71,12 @@ func NewConfig(
 
 // buildPromScrapeConfigs parses PromTarget entries and builds PromScrapeConfig objects
 func (c *Config) buildPromScrapeConfigs() error {
-	scrapeConfigs := make([]*PromScrapeConfig, 0, len(c.PromTarget))
+	c.PromScrapeConfigs = make([]*PromScrapeConfig, 0, len(c.PromTarget))
 
 	for i, target := range c.PromTarget {
-		scrapeConfig := &PromScrapeConfig{
-			JobName: fmt.Sprintf("oteltui_prom_%d", i+1),
-		}
-
-		hasScheme := true
-		if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
+		hasExplicitScheme := strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://")
+		if !hasExplicitScheme {
 			target = "http://" + target
-			hasScheme = false
 		}
 
 		parsed, err := url.Parse(target)
@@ -82,18 +84,32 @@ func (c *Config) buildPromScrapeConfigs() error {
 			return fmt.Errorf("failed to parse target URL %q: %w", target, err)
 		}
 
-		if hasScheme {
-			scrapeConfig.Scheme = parsed.Scheme
+		config := &PromScrapeConfig{
+			JobName: fmt.Sprintf("oteltui_prom_%d", i+1),
+			Target:  parsed.Host,
 		}
-		if parsed.Path != "" {
-			scrapeConfig.MetricsPath = parsed.Path
-		}
-		scrapeConfig.Target = parsed.Host
 
-		scrapeConfigs = append(scrapeConfigs, scrapeConfig)
+		if hasExplicitScheme && parsed.Scheme != "http" {
+			config.Scheme = parsed.Scheme
+		}
+
+		if parsed.Path != "" {
+			config.MetricsPath = parsed.Path
+		}
+
+		if q := parsed.Query(); len(q) > 0 {
+			config.Params = make([]Param, 0, len(q))
+			for key, values := range q {
+				config.Params = append(config.Params, Param{Key: key, Values: values})
+			}
+			sort.Slice(config.Params, func(i, j int) bool {
+				return config.Params[i].Key < config.Params[j].Key
+			})
+		}
+
+		c.PromScrapeConfigs = append(c.PromScrapeConfigs, config)
 	}
 
-	c.PromScrapeConfigs = scrapeConfigs
 	return nil
 }
 
@@ -133,8 +149,8 @@ func structToMap(s any) (map[string]any, error) {
 }
 
 // validate checks if the otel-tui configuration is valid
-func (cfg *Config) validate() error {
-	if _, err := os.Stat(cfg.FromJSONFile); len(cfg.FromJSONFile) > 0 && err != nil {
+func (c *Config) validate() error {
+	if _, err := os.Stat(c.FromJSONFile); len(c.FromJSONFile) > 0 && err != nil {
 		return errors.New("the initial data JSON file does not exist")
 	}
 
