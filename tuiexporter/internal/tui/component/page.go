@@ -38,7 +38,6 @@ type TUIPages struct {
 	topology          *tview.Flex
 	metrics           *tview.Flex
 	logs              *tview.Flex
-	debuglog          *tview.Flex
 	modal             *tview.Flex
 	clearFns          []func()
 	current           string

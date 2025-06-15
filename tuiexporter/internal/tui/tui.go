@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -28,7 +29,7 @@ type TUIApp struct {
 func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFilePath string) (*TUIApp, error) {
 	if debugLogFilePath != "" {
 		log.Printf("Debug logging enabled, writing to %s", debugLogFilePath)
-		file, err := os.OpenFile(debugLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(filepath.Clean(debugLogFilePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			return nil, err
 		}
