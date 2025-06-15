@@ -17,16 +17,21 @@ type tuiExporter struct {
 	app *tui.TUIApp
 }
 
-func newTuiExporter(config *Config) *tuiExporter {
+func newTuiExporter(config *Config) (*tuiExporter, error) {
 	var initialInterval time.Duration
 	if config.FromJSONFile {
 		// FIXME: When reading telemetry from a JSON file on startup, the UI will break
 		//        if it runs at the same time as the UI drawing. As a workaround, wait for a second.
 		initialInterval = 1 * time.Second
 	}
-	return &tuiExporter{
-		app: tui.NewTUIApp(telemetry.NewStore(), initialInterval),
+
+	app, err := tui.NewTUIApp(telemetry.NewStore(), initialInterval, config.DebugLogFilePath)
+	if err != nil {
+		return nil, err
 	}
+	return &tuiExporter{
+		app: app,
+	}, nil
 }
 
 func (e *tuiExporter) pushTraces(_ context.Context, traces ptrace.Traces) error {

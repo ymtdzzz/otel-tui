@@ -1,6 +1,10 @@
 package tui
 
 import (
+	"io"
+	"log"
+	"os"
+	"syscall"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -21,8 +25,22 @@ type TUIApp struct {
 }
 
 // NewTUIApp creates a new TUI application.
-func NewTUIApp(store *telemetry.Store, initialInterval time.Duration) *TUIApp {
+func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFilePath string) (*TUIApp, error) {
+	if debugLogFilePath != "" {
+		log.Printf("Debug logging enabled, writing to %s", debugLogFilePath)
+		file, err := os.OpenFile(debugLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, err
+		}
+		log.SetOutput(file)
+	} else {
+		log.SetOutput(io.Discard) // Disable logging if no file is specified
+	}
+
 	app := tview.NewApplication()
+
+	log.Println("=== otel-tui exporter initialized ===")
+
 	tpages := component.NewTUIPages(store, func(p tview.Primitive) {
 		app.SetFocus(p)
 	})
@@ -38,11 +56,16 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration) *TUIApp {
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyF12:
-			tpages.ToggleLog()
-			return nil
 		case tcell.KeyTab:
 			tpages.TogglePage()
+			return nil
+		case tcell.KeyCtrlC:
+			// Send SGITERM to self on Ctrl+C to ensure global signal handlers are triggered
+			// Prevents the need for pressing Ctrl+C twice due to tview consuming the first Ctrl+C
+			p, err := os.FindProcess(os.Getpid())
+			if err == nil {
+				_ = p.Signal(syscall.SIGTERM)
+			}
 			return nil
 		}
 		return event
@@ -50,7 +73,7 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration) *TUIApp {
 
 	tapp.refreshedAt = time.Now()
 
-	return tapp
+	return tapp, nil
 }
 
 // Store returns the store

@@ -34,7 +34,7 @@ func createTraces(ctx context.Context, set exporter.Settings, cfg component.Conf
 	e, err := exporters.LoadOrStore(
 		oCfg,
 		func() (*tuiExporter, error) {
-			return newTuiExporter(oCfg), nil
+			return newTuiExporter(oCfg)
 		},
 		&set.TelemetrySettings,
 	)
@@ -55,7 +55,7 @@ func createMetrics(ctx context.Context, set exporter.Settings, cfg component.Con
 	e, err := exporters.LoadOrStore(
 		oCfg,
 		func() (*tuiExporter, error) {
-			return newTuiExporter(oCfg), nil
+			return newTuiExporter(oCfg)
 		},
 		&set.TelemetrySettings,
 	)
@@ -76,7 +76,7 @@ func createLogs(ctx context.Context, set exporter.Settings, cfg component.Config
 	e, err := exporters.LoadOrStore(
 		oCfg,
 		func() (*tuiExporter, error) {
-			return newTuiExporter(oCfg), nil
+			return newTuiExporter(oCfg)
 		},
 		&set.TelemetrySettings,
 	)
