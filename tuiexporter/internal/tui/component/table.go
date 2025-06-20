@@ -22,5 +22,7 @@ func getCellFromData[T any](mappers cellMappers[T], data *T, column int) *tview.
 		text = "N/A"
 	}
 
+	text = tview.Escape(text)
+
 	return tview.NewTableCell(text)
 }
