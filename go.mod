@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.35.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.129.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.34.0
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1
 )
 
