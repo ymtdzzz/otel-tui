@@ -74,7 +74,7 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFi
 			if err == nil {
 				_ = p.Signal(syscall.SIGTERM)
 			}
-			return nil
+			// NOTE: Do not return nil here, as we want to allow the event to propagate for Windows
 		}
 		return event
 	})
