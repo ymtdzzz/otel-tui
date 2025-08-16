@@ -4,3 +4,6 @@ coverage.*
 
 dist/
 result
+
+# MCP
+.serena
