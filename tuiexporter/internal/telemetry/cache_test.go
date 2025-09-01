@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestGetSpansByTraceID(t *testing.T) {
@@ -194,4 +195,36 @@ func TestGetMetricsBySvcAndMetricName(t *testing.T) {
 			assert.Equal(t, tt.wantok, gotok)
 		})
 	}
+}
+
+func TestMetricCacheAggregateView(t *testing.T) {
+	cache := NewMetricCache()
+
+	// Create test metric data
+	// Note: This is a simplified test - in reality, you'd create proper pmetric.Metric objects
+	// For testing purposes, we'll verify the cache structure and basic functionality
+
+	t.Run("GetAllMetricNames_empty_cache", func(t *testing.T) {
+		names := cache.GetAllMetricNames()
+		assert.Empty(t, names)
+	})
+
+	t.Run("GetMetricDataByName_nonexistent", func(t *testing.T) {
+		data, metricType, exists := cache.GetMetricDataByName("nonexistent")
+		assert.Nil(t, data)
+		assert.Equal(t, pmetric.MetricTypeEmpty, metricType)
+		assert.False(t, exists)
+	})
+
+	t.Run("GetMetricNamesSummary_empty_cache", func(t *testing.T) {
+		summaries := cache.GetMetricNamesSummary()
+		assert.Empty(t, summaries)
+	})
+
+	// Test cache initialization
+	t.Run("cache_initialization", func(t *testing.T) {
+		assert.NotNil(t, cache.svcmetric2metrics)
+		assert.NotNil(t, cache.name2metrics)
+		assert.NotNil(t, cache.name2types)
+	})
 }
