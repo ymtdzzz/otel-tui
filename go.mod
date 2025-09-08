@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.134.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.134.0
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250722055357-283fce1365fc
 	go.opentelemetry.io/collector/component v1.40.0
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.40.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.134.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.35.0
+	golang.org/x/sys v0.36.0
 	google.golang.org/genproto v0.0.0-20250505200425-f936aa4a68b2
 )
 
@@ -219,7 +219,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.7 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
