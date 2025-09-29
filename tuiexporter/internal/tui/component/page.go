@@ -13,12 +13,13 @@ import (
 )
 
 const (
-	PAGE_TRACES         = "Traces"
-	PAGE_TIMELINE       = "Timeline"
-	PAGE_TRACE_TOPOLOGY = "TraceTopology"
-	PAGE_LOGS           = "Logs"
-	PAGE_METRICS        = "Metrics"
-	PAGE_MODAL          = "Modal"
+	PAGE_TRACES           = "Traces"
+	PAGE_TIMELINE         = "Timeline"
+	PAGE_TRACE_TOPOLOGY   = "TraceTopology"
+	PAGE_LOGS             = "Logs"
+	PAGE_METRICS          = "Metrics"
+	PAGE_METRICS_OVERVIEW = "MetricsOverview"
+	PAGE_MODAL            = "Modal"
 
 	DEFAULT_HORIZONTAL_PROPORTION_TRACE_DETAILS = 20
 	DEFAULT_HORIZONTAL_PROPORTION_TRACE_TABLE   = 30
@@ -37,6 +38,7 @@ type TUIPages struct {
 	timeline          *tview.Flex
 	topology          *tview.Flex
 	metrics           *tview.Flex
+	metricsOverview   *tview.Flex
 	logs              *tview.Flex
 	modal             *tview.Flex
 	clearFns          []func()
@@ -84,14 +86,16 @@ func (p *TUIPages) hideModal(current tview.Primitive) {
 
 // TogglePage toggles Traces & Logs page.
 func (p *TUIPages) TogglePage() {
-	if p.current == PAGE_TRACES {
+	switch p.current {
+	case PAGE_TRACES:
+		p.switchToPage(PAGE_METRICS_OVERVIEW)
+	case PAGE_METRICS_OVERVIEW:
 		p.switchToPage(PAGE_METRICS)
-	} else if p.current == PAGE_METRICS {
+	case PAGE_METRICS:
 		p.switchToPage(PAGE_LOGS)
-	} else if p.current == PAGE_LOGS {
+	case PAGE_LOGS:
 		p.switchToPage(PAGE_TRACE_TOPOLOGY)
-		p.updateTopology(p.store.GetTraceCache())
-	} else {
+	case PAGE_TRACE_TOPOLOGY:
 		p.switchToPage(PAGE_TRACES)
 	}
 }
@@ -123,6 +127,10 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	topology := p.createTraceTopologyPage(store.GetTraceCache())
 	p.topology = topology
 	p.pages.AddPage(PAGE_TRACE_TOPOLOGY, topology, true, false)
+
+	metricsOverview := p.createMetricsOverviewPage(store)
+	p.metricsOverview = metricsOverview
+	p.pages.AddPage(PAGE_METRICS_OVERVIEW, metricsOverview, true, false)
 
 	metrics := p.createMetricsPage(store)
 	p.metrics = metrics
@@ -852,17 +860,127 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 	return attachTab(attachCommandList(commands, pageContainer), PAGE_LOGS)
 }
 
+func (p *TUIPages) createMetricsOverviewPage(store *telemetry.Store) *tview.Flex {
+	commands := newCommandList()
+	basePage := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
+
+	side := tview.NewFlex().SetDirection(tview.FlexRow)
+
+	chart := tview.NewFlex().SetDirection(tview.FlexRow)
+	p.clearFns = append(p.clearFns, func() {
+		chart.Clear()
+	})
+	chart.SetTitle("Chart (c)").SetBorder(true)
+	registerCommandList(commands, chart, nil, KeyMaps{})
+
+	side.AddItem(chart, 0, 1, false)
+
+	tableContainer.SetTitle("Metrics Overview (o)").SetBorder(true)
+
+	table := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false).
+		SetContent(NewMetricSummaryDataForTable(store.GetMetricSummaries())).
+		SetFixed(1, 0)
+	store.SetOnMetricAdded(func() {
+		table.Select(table.GetSelection())
+	})
+	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlL {
+			store.Flush()
+			p.clearPanes()
+			table.Select(0, 0)
+			return nil
+		}
+		return event
+	})
+	registerCommandList(commands, table, nil, KeyMaps{
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
+			description: "Search metrics",
+		},
+		{
+			key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
+			description: "Clear all data",
+		},
+	})
+
+	search := tview.NewInputField().
+		SetLabel("Filter by metric name (/): ").
+		SetFieldWidth(20)
+	search.SetChangedFunc(func(text string) {
+		if strings.HasSuffix(text, "/") {
+			text = strings.TrimSuffix(text, "/")
+			search.SetText(text)
+		}
+	})
+	search.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEnter {
+			table.SetContent(NewMetricSummaryDataForTable(store.GetMetricSummaries()))
+			table.Select(0, 0)
+			search.SetText("")
+			p.setFocusFn(table)
+		}
+		if key == tcell.KeyEscape {
+			search.SetText("")
+			p.setFocusFn(table)
+		}
+	})
+
+	tableContainer.AddItem(search, 1, 1, false).AddItem(table, 0, 1, true)
+
+	table.SetSelectionChangedFunc(func(row, column int) {
+		if row == 0 {
+			return
+		}
+		summaries := *store.GetMetricSummaries()
+		if row > len(summaries) {
+			return
+		}
+		metricName := summaries[row-1].MetricName
+		metricData, _, _ := store.GetMetricCache().GetMetricDataByName(metricName)
+		if len(metricData) == 0 {
+			return
+		}
+		chart.Clear()
+		chartWidget := drawMetricOverviewChart(p.setFocusFn, commands, store, metricName)
+		chart.AddItem(chartWidget, 0, 1, true)
+	})
+
+	basePage.AddItem(tableContainer, 0, 1, true).AddItem(side, 0, 1, false)
+	basePage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if !search.HasFocus() {
+			switch event.Rune() {
+			case 'o':
+				p.setFocusFn(tableContainer)
+				// don't return nil here, because we want to pass the event to the search input
+			case 'c':
+				p.setFocusFn(chart)
+				// don't return nil here, because we want to pass the event to the search input
+			}
+		}
+
+		return event
+	})
+
+	return attachTab(attachCommandList(commands, basePage), PAGE_METRICS_OVERVIEW)
+}
+
 func attachTab(p tview.Primitive, name string) *tview.Flex {
 	var text string
 	switch name {
 	case PAGE_TRACES:
-		text = "< [yellow]Traces[white] | Metrics | Logs | Topology (beta) > (Tab to switch)"
+		text = "< [yellow]Traces[white] | Metrics Overview | Metrics | Logs | Topology (beta) > (Tab to switch)"
+	case PAGE_METRICS_OVERVIEW:
+		text = "< Traces | [yellow]Metrics Overview[white] | Metrics | Logs | Topology (beta) > (Tab to switch)"
 	case PAGE_METRICS:
-		text = "< Traces | [yellow]Metrics[white] | Logs | Topology (beta) > (Tab to switch)"
+		text = "< Traces | Metrics Overview | [yellow]Metrics[white] | Logs | Topology (beta) > (Tab to switch)"
 	case PAGE_LOGS:
-		text = "< Traces | Metrics | [yellow]Logs[white] | Topology (beta) > (Tab to switch)"
+		text = "< Traces | Metrics Overview | Metrics | [yellow]Logs[white] | Topology (beta) > (Tab to switch)"
 	case PAGE_TRACE_TOPOLOGY:
-		text = "< Traces | Metrics | Logs | [yellow]Topology (beta)[white] > (Tab to switch)"
+		text = "< Traces | Metrics Overview | Metrics | Logs | [yellow]Topology (beta)[white] > (Tab to switch)"
 	}
 
 	tabs := tview.NewTextView().

@@ -17,6 +17,65 @@ import (
 
 const NULL_VALUE_FLOAT64 = math.MaxFloat64
 
+// ViewMode represents the chart grouping mode
+type ViewMode int
+
+const (
+	ViewModeByService   ViewMode = iota // Group by service
+	ViewModeByAttribute                 // Group by attribute
+	ViewModeCombined                    // All combined
+)
+
+func (v ViewMode) String() string {
+	switch v {
+	case ViewModeByService:
+		return "By Service"
+	case ViewModeByAttribute:
+		return "By Attribute"
+	case ViewModeCombined:
+		return "Combined"
+	default:
+		return "Unknown"
+	}
+}
+
+// createTimeAxisLabelFunc creates a function that converts array index to time labels
+func createTimeAxisLabelFunc(start, end time.Time, dpnum int) func(int) string {
+	wholedur := end.Sub(start)
+
+	return func(index int) string {
+		if dpnum <= 1 {
+			return start.Format("15:04:05")
+		}
+
+		// Calculate time for this index
+		ratio := float64(index) / float64(dpnum-1)
+		offset := time.Duration(float64(wholedur) * ratio)
+		timestamp := start.Add(offset)
+
+		// Smart formatting based on duration
+		if wholedur < time.Minute {
+			return timestamp.Format("15:04:05.000") // seconds with milliseconds
+		} else if wholedur < time.Hour {
+			return timestamp.Format("15:04:05") // seconds
+		} else if wholedur < 24*time.Hour {
+			return timestamp.Format("15:04") // minutes
+		} else {
+			return timestamp.Format("01/02 15:04") // date + time
+		}
+	}
+}
+
+// MultiDimensionalData holds metric data organized by service and attributes
+type MultiDimensionalData struct {
+	// service -> attribute_key -> attribute_value -> datapoints
+	data          map[string]map[string]map[string][]*pmetric.NumberDataPoint
+	services      []string
+	attributeKeys map[string][]string // service -> attribute keys available for that service
+	start         time.Time
+	end           time.Time
+}
+
 var defaultMetricCellMappers = cellMappers[telemetry.MetricData]{
 	0: {
 		header: "Service Name",
@@ -44,16 +103,62 @@ var defaultMetricCellMappers = cellMappers[telemetry.MetricData]{
 	},
 }
 
+var metricOverviewCellMappers = cellMappers[telemetry.MetricSummary]{
+	0: {
+		header: "Metric Name",
+		getTextRowFn: func(data *telemetry.MetricSummary) string {
+			return data.MetricName
+		},
+	},
+	1: {
+		header: "Type",
+		getTextRowFn: func(data *telemetry.MetricSummary) string {
+			return data.MetricType.String()
+		},
+	},
+	2: {
+		header: "Service Count",
+		getTextRowFn: func(data *telemetry.MetricSummary) string {
+			return fmt.Sprintf("%d", data.ServiceCount)
+		},
+	},
+	3: {
+		header: "Data Count",
+		getTextRowFn: func(data *telemetry.MetricSummary) string {
+			return fmt.Sprintf("%d", data.DataCount)
+		},
+	},
+	4: {
+		header: "Latest Value",
+		getTextRowFn: func(data *telemetry.MetricSummary) string {
+			return data.LatestValue
+		},
+	},
+}
+
 type MetricDataForTable struct {
 	tview.TableContentReadOnly
 	metrics *[]*telemetry.MetricData
 	mapper  cellMappers[telemetry.MetricData]
 }
 
+type MetricSummaryDataForTable struct {
+	tview.TableContentReadOnly
+	summaries *[]*telemetry.MetricSummary
+	mapper    cellMappers[telemetry.MetricSummary]
+}
+
 func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable {
 	return MetricDataForTable{
 		metrics: metrics,
 		mapper:  defaultMetricCellMappers,
+	}
+}
+
+func NewMetricSummaryDataForTable(summaries *[]*telemetry.MetricSummary) MetricSummaryDataForTable {
+	return MetricSummaryDataForTable{
+		summaries: summaries,
+		mapper:    metricOverviewCellMappers,
 	}
 }
 
@@ -78,6 +183,38 @@ func (m MetricDataForTable) GetColumnCount() int {
 }
 
 func (m MetricDataForTable) getHeaderCell(column int) *tview.TableCell {
+	cell := tview.NewTableCell("N/A").
+		SetSelectable(false).
+		SetTextColor(tcell.ColorYellow)
+	h, ok := m.mapper[column]
+	if !ok {
+		return cell
+	}
+	cell.SetText(h.header)
+
+	return cell
+}
+
+// MetricNameDataForTable implementations
+func (m MetricSummaryDataForTable) GetCell(row, column int) *tview.TableCell {
+	if row == 0 {
+		return m.getHeaderCell(column)
+	}
+	if row > 0 && row <= len(*m.summaries) {
+		return getCellFromData(m.mapper, (*m.summaries)[row-1], column)
+	}
+	return tview.NewTableCell("N/A")
+}
+
+func (m MetricSummaryDataForTable) GetRowCount() int {
+	return len(*m.summaries) + 1
+}
+
+func (m MetricSummaryDataForTable) GetColumnCount() int {
+	return len(m.mapper)
+}
+
+func (m MetricSummaryDataForTable) getHeaderCell(column int) *tview.TableCell {
 	cell := tview.NewTableCell("N/A").
 		SetSelectable(false).
 		SetTextColor(tcell.ColorYellow)
@@ -416,6 +553,157 @@ func drawMetricChartByRow(commands *tview.TextView, store *telemetry.Store, row 
 	return nil
 }
 
+// drawMetricOverviewChart creates a cross-service chart for the given metric name
+func drawMetricOverviewChart(setFocusFn func(p tview.Primitive), commands *tview.TextView, store *telemetry.Store, metricName string) tview.Primitive {
+	if metricName == "" {
+		txt := tview.NewTextView().SetText("No metric selected")
+		return txt
+	}
+
+	mcache := store.GetMetricCache()
+	allData, metricType, exists := mcache.GetMetricDataByName(metricName)
+	if !exists || len(allData) == 0 {
+		txt := tview.NewTextView().SetText(fmt.Sprintf("No data found for metric: %s", metricName))
+		return txt
+	}
+
+	// Only support Gauge and Sum for now
+	if metricType != pmetric.MetricTypeGauge && metricType != pmetric.MetricTypeSum {
+		txt := tview.NewTextView().SetText(fmt.Sprintf("Metric type %s not supported in overview charts yet", metricType.String()))
+		return txt
+	}
+
+	// Build multi-dimensional data structure
+	multiData := buildMultiDimensionalData(allData, metricType)
+	if len(multiData.services) == 0 {
+		txt := tview.NewTextView().SetText("No valid data points found")
+		return txt
+	}
+
+	// Create chart with view mode switching
+	return createOverviewChartWithViewMode(setFocusFn, commands, multiData, metricName)
+}
+
+// buildMultiDimensionalData organizes metric data by service and attributes
+func buildMultiDimensionalData(allData []*telemetry.MetricData, metricType pmetric.MetricType) *MultiDimensionalData {
+	multiData := &MultiDimensionalData{
+		data:          make(map[string]map[string]map[string][]*pmetric.NumberDataPoint),
+		services:      []string{},
+		attributeKeys: make(map[string][]string),
+		start:         time.Unix(1<<63-62135596801, 999999999),
+		end:           time.Unix(0, 0),
+	}
+
+	serviceSet := make(map[string]bool)
+
+	for _, metricData := range allData {
+		serviceName := metricData.GetServiceName()
+		serviceSet[serviceName] = true
+
+		if _, exists := multiData.data[serviceName]; !exists {
+			multiData.data[serviceName] = make(map[string]map[string][]*pmetric.NumberDataPoint)
+			multiData.attributeKeys[serviceName] = []string{}
+		}
+
+		// Process data points based on metric type
+		var processDataPoints func(int) (pmetric.NumberDataPoint, map[string]any)
+		var dataPointCount int
+
+		switch metricType {
+		case pmetric.MetricTypeGauge:
+			gauge := metricData.Metric.Gauge()
+			dataPointCount = gauge.DataPoints().Len()
+			processDataPoints = func(i int) (pmetric.NumberDataPoint, map[string]any) {
+				dp := gauge.DataPoints().At(i)
+				return dp, dp.Attributes().AsRaw()
+			}
+		case pmetric.MetricTypeSum:
+			sum := metricData.Metric.Sum()
+			dataPointCount = sum.DataPoints().Len()
+			processDataPoints = func(i int) (pmetric.NumberDataPoint, map[string]any) {
+				dp := sum.DataPoints().At(i)
+				return dp, dp.Attributes().AsRaw()
+			}
+		default:
+			continue
+		}
+
+		attributeKeySet := make(map[string]bool)
+
+		for i := 0; i < dataPointCount; i++ {
+			dp, attrs := processDataPoints(i)
+
+			// Update time range
+			timestamp := dp.Timestamp().AsTime()
+			if timestamp.Before(multiData.start) {
+				multiData.start = timestamp
+			}
+			if timestamp.After(multiData.end) {
+				multiData.end = timestamp
+			}
+
+			// Process attributes
+			if len(attrs) > 0 {
+				for attrKey, attrValue := range attrs {
+					attributeKeySet[attrKey] = true
+					attrValueStr := fmt.Sprintf("%v", attrValue)
+
+					if _, exists := multiData.data[serviceName][attrKey]; !exists {
+						multiData.data[serviceName][attrKey] = make(map[string][]*pmetric.NumberDataPoint)
+					}
+
+					multiData.data[serviceName][attrKey][attrValueStr] = append(
+						multiData.data[serviceName][attrKey][attrValueStr], &dp)
+				}
+			} else {
+				// Handle metrics without attributes
+				attrKey := "N/A"
+				attrValueStr := "N/A"
+				attributeKeySet[attrKey] = true
+
+				if _, exists := multiData.data[serviceName][attrKey]; !exists {
+					multiData.data[serviceName][attrKey] = make(map[string][]*pmetric.NumberDataPoint)
+				}
+
+				multiData.data[serviceName][attrKey][attrValueStr] = append(
+					multiData.data[serviceName][attrKey][attrValueStr], &dp)
+			}
+		}
+
+		// Update attribute keys for this service
+		for attrKey := range attributeKeySet {
+			found := false
+			for _, existing := range multiData.attributeKeys[serviceName] {
+				if existing == attrKey {
+					found = true
+					break
+				}
+			}
+			if !found {
+				multiData.attributeKeys[serviceName] = append(multiData.attributeKeys[serviceName], attrKey)
+			}
+		}
+		sort.Strings(multiData.attributeKeys[serviceName])
+	}
+
+	// Convert service set to sorted slice
+	for serviceName := range serviceSet {
+		multiData.services = append(multiData.services, serviceName)
+	}
+	sort.Strings(multiData.services)
+
+	// Sort all data points by timestamp
+	for serviceName := range multiData.data {
+		for attrKey := range multiData.data[serviceName] {
+			for attrValue := range multiData.data[serviceName][attrKey] {
+				sort.Sort(ByTimestamp(multiData.data[serviceName][attrKey][attrValue]))
+			}
+		}
+	}
+
+	return multiData
+}
+
 func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData) tview.Primitive {
 	dpcount := m.Metric.Histogram().DataPoints().Len()
 	chs := make([]*tvxwidgets.BarChart, dpcount)
@@ -611,7 +899,13 @@ func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *
 	ch.SetTitle(getTitle(attrkeyidx))
 	ch.SetBorder(true)
 	ch.SetData(data)
-	ch.SetDrawXAxisLabel(false)
+
+	// Enable time axis labels
+	ch.SetDrawXAxisLabel(true)
+	if len(data) > 0 && len(data[0]) > 0 {
+		ch.SetXAxisLabelFunc(createTimeAxisLabelFunc(start, end, len(data[0])))
+	}
+
 	ch.SetLineColor(colors)
 
 	legend := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -630,6 +924,10 @@ func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *
 			legend.Clear()
 			legend.AddItem(txts, 0, 1, false)
 			ch.SetData(data)
+			// Update time axis labels for new data
+			if len(data) > 0 && len(data[0]) > 0 {
+				ch.SetXAxisLabelFunc(createTimeAxisLabelFunc(start, end, len(data[0])))
+			}
 			return nil
 		case tcell.KeyLeft:
 			if attrkeyidx > 0 {
@@ -642,6 +940,10 @@ func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *
 			legend.Clear()
 			legend.AddItem(txts, 0, 1, false)
 			ch.SetData(data)
+			// Update time axis labels for new data
+			if len(data) > 0 && len(data[0]) > 0 {
+				ch.SetXAxisLabelFunc(createTimeAxisLabelFunc(start, end, len(data[0])))
+			}
 			return nil
 		}
 		return event
@@ -765,4 +1067,334 @@ func uint64ToInt(u uint64) int {
 		return math.MaxInt
 	}
 	return int(u)
+}
+
+// createOverviewChartWithViewMode creates a chart with multi-dimensional view switching
+func createOverviewChartWithViewMode(setFocuFn func(p tview.Primitive), commands *tview.TextView, multiData *MultiDimensionalData, metricName string) tview.Primitive {
+	// Main container with vertical layout
+	container := tview.NewFlex().SetDirection(tview.FlexRow)
+
+	// Controls container with horizontal layout for dropdowns
+	controlsContainer := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	// Create service dropdown
+	serviceDropdown := tview.NewDropDown().
+		SetLabel("Service(s): ").
+		SetFieldWidth(20)
+
+	// Create attributes dropdown
+	attributesDropdown := tview.NewDropDown().
+		SetLabel("Attributes(a): ").
+		SetFieldWidth(20)
+
+	// Chart container with horizontal layout
+	chartContainer := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	// Create chart and legend containers (persistent to maintain focus)
+	ch := tvxwidgets.NewPlot()
+	ch.SetMarker(tvxwidgets.PlotMarkerBraille)
+	ch.SetBorder(true)
+	ch.SetLineColor(colors)
+
+	legendContainer := tview.NewFlex().SetDirection(tview.FlexRow)
+
+	// State for current selections
+	currentServiceSelection := "All (*)"
+	currentAttributeSelection := "All (*)"
+
+	// Populate service dropdown options
+	serviceOptions := []string{"All (*)"}
+	serviceOptions = append(serviceOptions, multiData.services...)
+	for _, option := range serviceOptions {
+		serviceDropdown.AddOption(option, nil)
+	}
+
+	// Populate attributes dropdown options
+	attributeOptions := []string{"All (*)"}
+	attrKeySet := make(map[string]bool)
+	for _, service := range multiData.services {
+		for _, attrKey := range multiData.attributeKeys[service] {
+			attrKeySet[attrKey] = true
+		}
+	}
+	var uniqueAttrKeys []string
+	for key := range attrKeySet {
+		uniqueAttrKeys = append(uniqueAttrKeys, key)
+	}
+	sort.Strings(uniqueAttrKeys)
+	attributeOptions = append(attributeOptions, uniqueAttrKeys...)
+	for _, option := range attributeOptions {
+		attributesDropdown.AddOption(option, nil)
+	}
+
+	// Function to get data based on current selections
+	getDataForCurrentSelection := func() ([][]float64, *tview.TextView) {
+		return getDataToDrawWithFilters(multiData, currentServiceSelection, currentAttributeSelection)
+	}
+
+	// Update chart content without clearing the container
+	updateChart := func() {
+		data, legend := getDataForCurrentSelection()
+
+		// Update chart title
+		title := fmt.Sprintf("%s - Service: %s, Attributes: %s",
+			metricName, currentServiceSelection, currentAttributeSelection)
+		ch.SetTitle(title)
+		ch.SetData(data)
+
+		// Enable time axis labels
+		ch.SetDrawXAxisLabel(true)
+		if len(data) > 0 && len(data[0]) > 0 {
+			ch.SetXAxisLabelFunc(createTimeAxisLabelFunc(multiData.start, multiData.end, len(data[0])))
+		}
+
+		// Update legend content
+		legendContainer.Clear()
+		if legend != nil {
+			legendContainer.AddItem(legend, 0, 1, false)
+		}
+	}
+
+	// Set up service dropdown selection handler
+	serviceDropdown.SetSelectedFunc(func(text string, index int) {
+		currentServiceSelection = text
+		updateChart()
+	})
+
+	// Set up attributes dropdown selection handler
+	attributesDropdown.SetSelectedFunc(func(text string, index int) {
+		currentAttributeSelection = text
+		updateChart()
+	})
+
+	controlsContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 's':
+			setFocuFn(serviceDropdown)
+			return nil
+		case 'a':
+			setFocuFn(attributesDropdown)
+			return nil
+		}
+		return event
+	})
+
+	// Initial chart setup
+	updateChart()
+
+	// Add dropdowns to controls container
+	controlsContainer.AddItem(serviceDropdown, 0, 1, false).
+		AddItem(attributesDropdown, 0, 1, false)
+
+	// Add chart and legend to chart container
+	chartContainer.AddItem(ch, 0, 7, false).
+		AddItem(legendContainer, 0, 3, false)
+
+	// Add all components to main container
+	container.AddItem(controlsContainer, 1, 0, true).
+		AddItem(chartContainer, 0, 1, false)
+
+	return container
+}
+
+func getDataToDrawWithFilters(multiData *MultiDimensionalData, serviceFilter string, attributeFilter string) ([][]float64, *tview.TextView) {
+	tv := tview.NewTextView()
+	tv.SetDynamicColors(true)
+
+	var lineLabels []string
+	var dataPoints [][]*pmetric.NumberDataPoint
+
+	// Determine which services to include
+	var servicesToProcess []string
+	if serviceFilter == "All (*)" {
+		servicesToProcess = multiData.services
+	} else {
+		servicesToProcess = []string{serviceFilter}
+	}
+
+	// Determine which attributes to include
+	var attributesToProcess []string
+	if attributeFilter == "All (*)" {
+		// Get all unique attribute keys across selected services
+		attrKeySet := make(map[string]bool)
+		for _, serviceName := range servicesToProcess {
+			for _, attrKey := range multiData.attributeKeys[serviceName] {
+				attrKeySet[attrKey] = true
+			}
+		}
+		for key := range attrKeySet {
+			attributesToProcess = append(attributesToProcess, key)
+		}
+		sort.Strings(attributesToProcess)
+	} else {
+		attributesToProcess = []string{attributeFilter}
+	}
+
+	// Collect data points based on filters
+	for _, serviceName := range servicesToProcess {
+		serviceData, exists := multiData.data[serviceName]
+		if !exists {
+			continue
+		}
+
+		for _, attrKey := range attributesToProcess {
+			attrData, exists := serviceData[attrKey]
+			if !exists {
+				continue
+			}
+
+			for attrValue, points := range attrData {
+				var label string
+				if serviceFilter == "All (*)" && attributeFilter == "All (*)" {
+					// Show both service and attribute info
+					label = fmt.Sprintf("%s (%s=%s)", serviceName, attrKey, attrValue)
+				} else if serviceFilter == "All (*)" {
+					// Show service info (attribute is fixed)
+					label = fmt.Sprintf("%s (%s=%s)", serviceName, attrKey, attrValue)
+				} else if attributeFilter == "All (*)" {
+					// Show attribute info (service is fixed)
+					label = fmt.Sprintf("%s=%s", attrKey, attrValue)
+				} else {
+					// Both service and attribute are fixed, show just the attribute value
+					label = fmt.Sprintf("%s=%s", attrKey, attrValue)
+				}
+
+				lineLabels = append(lineLabels, label)
+				dataPoints = append(dataPoints, points)
+			}
+		}
+	}
+
+	if len(dataPoints) == 0 {
+		tv.SetText(fmt.Sprintf("No data points for Service: %s, Attributes: %s", serviceFilter, attributeFilter))
+		return [][]float64{}, tv
+	}
+
+	return convertToPlotData(dataPoints, lineLabels, multiData.start, multiData.end, tv)
+}
+
+// convertToPlotData converts metric data points to plot-ready format (similar to getDataToDraw)
+func convertToPlotData(dataPoints [][]*pmetric.NumberDataPoint, lineLabels []string, start, end time.Time, tv *tview.TextView) ([][]float64, *tview.TextView) {
+	if len(dataPoints) == 0 {
+		return [][]float64{}, tv
+	}
+
+	// Count total data points for X-axis resolution
+	dpnum := 0
+	for _, points := range dataPoints {
+		dpnum += len(points)
+	}
+
+	if dpnum == 0 {
+		return [][]float64{}, tv
+	}
+
+	// Create data matrix
+	d := make([][]float64, len(dataPoints))
+	for i := range d {
+		d[i] = make([]float64, dpnum)
+		for j := range d[i] {
+			d[i][j] = NULL_VALUE_FLOAT64
+		}
+	}
+
+	wholedur := end.Sub(start).Nanoseconds()
+	if wholedur == 0 {
+		wholedur = 1 // Avoid division by zero
+	}
+
+	type locateMap struct {
+		prevpos int
+		prevval float64
+		pos     int
+		val     float64
+	}
+
+	locatedposmap := make(map[int][]locateMap, len(dataPoints))
+	txts := make([]string, len(lineLabels))
+
+	// Process each line
+	for i, points := range dataPoints {
+		prevpos := -1
+		prevval := NULL_VALUE_FLOAT64
+
+		for _, dp := range points {
+			// Calculate relative position
+			dur := dp.Timestamp().AsTime().Sub(start).Nanoseconds()
+			var ratio float64
+			if dur == 0 {
+				ratio = 0
+			} else {
+				ratio = float64(dur) / float64(wholedur)
+			}
+
+			pos := int(math.Round(float64(dpnum) * ratio))
+			if pos >= len(d[i]) {
+				pos = len(d[i]) - 1
+			}
+			if pos < 0 {
+				pos = 0
+			}
+
+			// Extract value
+			var val float64
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeDouble:
+				val = dp.DoubleValue()
+			case pmetric.NumberDataPointValueTypeInt:
+				val = float64(dp.IntValue())
+			}
+
+			d[i][pos] = val
+			locatedposmap[i] = append(locatedposmap[i], locateMap{
+				prevpos: prevpos,
+				prevval: prevval,
+				pos:     pos,
+				val:     val,
+			})
+
+			prevpos = pos
+			prevval = val
+		}
+
+		// Set legend text
+		colorIndex := i % len(colors)
+		txts[i] = fmt.Sprintf("[%s]● %s", colors[colorIndex].String(), lineLabels[i])
+	}
+
+	tv.SetText(strings.Join(txts, "\n"))
+
+	// Smooth the data (fill null values)
+	for i := range d {
+		for c, pmap := range locatedposmap[i] {
+			// Fill after the last element
+			if c == len(locatedposmap[i])-1 && pmap.pos < dpnum {
+				for j := pmap.pos + 1; j < dpnum; j++ {
+					d[i][j] = pmap.val
+				}
+			}
+
+			// Fill before the first element
+			if pmap.prevpos == -1 {
+				for j := 0; j < pmap.pos; j++ {
+					d[i][j] = pmap.val
+				}
+				continue
+			}
+
+			// Interpolate between points
+			split := pmap.pos - pmap.prevpos
+			if split > 1 {
+				diff := pmap.val - pmap.prevval
+				step := diff / float64(split)
+				curr := pmap.prevval
+				for j := pmap.prevpos + 1; j < pmap.pos; j++ {
+					curr += step
+					d[i][j] = curr
+				}
+			}
+		}
+	}
+
+	return d, tv
 }

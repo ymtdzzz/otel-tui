@@ -169,6 +169,7 @@ type Store struct {
 	metrics             []*MetricData
 	metricsFiltered     []*MetricData
 	metriccache         *MetricCache
+	metricSummaries     []*MetricSummary
 	logs                []*LogData
 	logsFiltered        []*LogData
 	logcache            *LogCache
@@ -191,6 +192,7 @@ func NewStore() *Store {
 		metrics:             []*MetricData{},
 		metricsFiltered:     []*MetricData{},
 		metriccache:         NewMetricCache(),
+		metricSummaries:     []*MetricSummary{},
 		logs:                []*LogData{},
 		logsFiltered:        []*LogData{},
 		logcache:            NewLogCache(),
@@ -233,6 +235,11 @@ func (s *Store) GetFilteredMetrics() *[]*MetricData {
 // GetFilteredLogs returns the filtered logs in the store
 func (s *Store) GetFilteredLogs() *[]*LogData {
 	return &s.logsFiltered
+}
+
+// GetMetricSummaries returns the metric summaries in the store
+func (s *Store) GetMetricSummaries() *[]*MetricSummary {
+	return &s.metricSummaries
 }
 
 // UpdatedAt returns the last updated time
@@ -489,6 +496,9 @@ func (s *Store) AddMetric(metrics *pmetric.Metrics) {
 
 	s.updateFilterMetrics()
 
+	// Update metric summaries
+	s.metricSummaries = s.metriccache.GetMetricNamesSummary()
+
 	if s.onMetricAdded != nil {
 		s.onMetricAdded()
 	}
@@ -551,6 +561,7 @@ func (s *Store) Flush() {
 	s.metrics = []*MetricData{}
 	s.metricsFiltered = []*MetricData{}
 	s.metriccache.flush()
+	s.metricSummaries = []*MetricSummary{}
 	s.logs = []*LogData{}
 	s.logsFiltered = []*LogData{}
 	s.logcache.flush()
