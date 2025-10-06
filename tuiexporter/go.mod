@@ -1,11 +1,11 @@
 module github.com/ymtdzzz/otel-tui/tuiexporter
 
-go 1.24.3
+go 1.24.7
 
 require (
 	github.com/gdamore/tcell/v2 v2.9.0
-	github.com/icza/gox v0.2.0
-	github.com/navidys/tvxwidgets v0.12.0
+	github.com/icza/gox v0.2.2
+	github.com/navidys/tvxwidgets v0.12.1
 	github.com/rivo/tview v0.42.0
 	github.com/stretchr/testify v1.11.1
 	github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859
