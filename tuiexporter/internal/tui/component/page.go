@@ -84,14 +84,31 @@ func (p *TUIPages) hideModal(current tview.Primitive) {
 
 // TogglePage toggles Traces & Logs page.
 func (p *TUIPages) TogglePage() {
-	if p.current == PAGE_TRACES {
+	switch p.current {
+	case PAGE_TRACES:
 		p.switchToPage(PAGE_METRICS)
-	} else if p.current == PAGE_METRICS {
+	case PAGE_METRICS:
 		p.switchToPage(PAGE_LOGS)
-	} else if p.current == PAGE_LOGS {
+	case PAGE_LOGS:
 		p.switchToPage(PAGE_TRACE_TOPOLOGY)
 		p.updateTopology(p.store.GetTraceCache())
-	} else {
+	default:
+		p.switchToPage(PAGE_TRACES)
+	}
+}
+
+func (p *TUIPages) TogglePageReverse() {
+	switch p.current {
+	case PAGE_TRACES:
+		p.switchToPage(PAGE_TRACE_TOPOLOGY)
+		p.updateTopology(p.store.GetTraceCache())
+	case PAGE_METRICS:
+		p.switchToPage(PAGE_TRACES)
+	case PAGE_LOGS:
+		p.switchToPage(PAGE_METRICS)
+	case PAGE_TRACE_TOPOLOGY:
+		p.switchToPage(PAGE_LOGS)
+	default:
 		p.switchToPage(PAGE_TRACES)
 	}
 }

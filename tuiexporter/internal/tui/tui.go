@@ -64,6 +64,9 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFi
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
+		case tcell.KeyBacktab:
+			tpages.TogglePageReverse()
+			return nil
 		case tcell.KeyTab:
 			tpages.TogglePage()
 			return nil
