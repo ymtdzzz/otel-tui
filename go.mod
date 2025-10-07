@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.136.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
-	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20250722055357-283fce1365fc
+	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20251007010623-d8c51cd4b1fe
 	go.opentelemetry.io/collector/component v1.42.0
 	go.opentelemetry.io/collector/component/componenttest v0.136.0
 	go.opentelemetry.io/collector/confmap v1.42.0
@@ -89,7 +89,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.8.1 // indirect
+	github.com/gdamore/tcell/v2 v2.9.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -180,7 +180,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/navidys/tvxwidgets v0.11.1 // indirect
+	github.com/navidys/tvxwidgets v0.12.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0 // indirect
@@ -212,7 +212,7 @@ require (
 	github.com/prometheus/prometheus v0.305.1-0.20250808193045-294f36e80261 // indirect
 	github.com/prometheus/sigv4 v0.2.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/rivo/tview v0.0.0-20240616192244-23476fa0bab2 // indirect
+	github.com/rivo/tview v0.42.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33 // indirect
