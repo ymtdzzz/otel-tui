@@ -135,7 +135,7 @@ $ go run ./...
 
 ### Clipboard Functionality Requirements
 
-The clipboard feature (`y` key to copy telemetry data) requires platform-specific tools:
+The clipboard feature (`y` key to copy log body) requires platform-specific tools:
 
 - **Linux/Unix**: Install `xclip` or `xsel` command
 - **macOS**: No additional tools required
