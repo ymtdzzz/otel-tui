@@ -3,6 +3,7 @@ module github.com/ymtdzzz/otel-tui/tuiexporter
 go 1.24.3
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/gdamore/tcell/v2 v2.9.0
 	github.com/icza/gox v0.2.0
 	github.com/navidys/tvxwidgets v0.12.0
@@ -15,7 +16,6 @@ require (
 	go.opentelemetry.io/collector/exporter v1.42.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.136.0
 	go.opentelemetry.io/collector/pdata v1.42.0
-	golang.design/x/clipboard v0.7.1
 	gotest.tools/v3 v3.5.2
 )
 
@@ -73,9 +73,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
-	golang.org/x/image v0.28.0 // indirect
-	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.35.0 // indirect

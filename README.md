@@ -133,6 +133,16 @@ $ cd otel-tui
 $ go run ./...
 ```
 
+### Clipboard Functionality Requirements
+
+The clipboard feature (`y` key to copy log body) requires platform-specific tools:
+
+- **Linux/Unix**: Install `xclip` or `xsel` command
+- **macOS**: No additional tools required
+- **Windows**: No additional tools required
+
+**Note**: If clipboard tools are not available, the application will run normally but clipboard functionality will be disabled.
+
 ## TODOs
 
 There're a lot of things to do. Here are some of them:
