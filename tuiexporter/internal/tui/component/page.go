@@ -221,11 +221,12 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 			table.Select(0, 0)
 			return nil
 		} else if event.Key() == tcell.KeyCtrlS {
-			if sortType == telemetry.SORT_TYPE_NONE {
+			switch sortType {
+			case telemetry.SORT_TYPE_NONE:
 				sortType = telemetry.SORT_TYPE_LATENCY_DESC
-			} else if sortType == telemetry.SORT_TYPE_LATENCY_DESC {
+			case telemetry.SORT_TYPE_LATENCY_DESC:
 				sortType = telemetry.SORT_TYPE_LATENCY_ASC
-			} else {
+			default:
 				sortType = telemetry.SORT_TYPE_NONE
 			}
 			log.Printf("sortType: %s", sortType)
@@ -280,11 +281,12 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		input = text
 	})
 	search.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
+		switch key {
+		case tcell.KeyEnter:
 			inputConfirmed = input
 			log.Println("search service name: ", inputConfirmed)
 			store.ApplyFilterTraces(inputConfirmed, sortType)
-		} else if key == tcell.KeyEsc {
+		case tcell.KeyEsc:
 			search.SetText(inputConfirmed)
 		}
 		p.setFocusFn(table)
@@ -575,10 +577,11 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		input = text
 	})
 	search.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
+		switch key {
+		case tcell.KeyEnter:
 			inputConfirmed = input
 			store.ApplyFilterMetrics(inputConfirmed)
-		} else if key == tcell.KeyEsc {
+		case tcell.KeyEsc:
 			search.SetText(inputConfirmed)
 		}
 		p.setFocusFn(table)
@@ -803,10 +806,11 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		input = text
 	})
 	search.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
+		switch key {
+		case tcell.KeyEnter:
 			inputConfirmed = input
 			store.ApplyFilterLogs(inputConfirmed)
-		} else if key == tcell.KeyEsc {
+		case tcell.KeyEsc:
 			search.SetText(inputConfirmed)
 		}
 		p.setFocusFn(table)
