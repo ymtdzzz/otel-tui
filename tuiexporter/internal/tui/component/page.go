@@ -5,11 +5,11 @@ import (
 	"log"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
-	"golang.design/x/clipboard"
 )
 
 const (
@@ -57,8 +57,6 @@ func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TU
 	}
 
 	tp.registerPages(store)
-
-	initClipboard()
 
 	return tp
 }
@@ -855,8 +853,11 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 				p.setFocusFn(body)
 				// don't return nil here, because we want to pass the event to the search input
 			case 'y':
-				clipboard.Write(clipboard.FmtText, []byte(resolved))
-				log.Println("Selected log body has been copied to your clipboard")
+				if err := clipboard.WriteAll(resolved); err != nil {
+					log.Printf("Failed to copy log body to clipboard: %v", err)
+				} else {
+					log.Println("Selected log body has been copied to your clipboard")
+				}
 				// don't return nil here, because we want to pass the event to the search input
 			}
 		}
