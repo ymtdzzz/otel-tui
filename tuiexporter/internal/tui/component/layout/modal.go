@@ -1,4 +1,4 @@
-package component
+package layout
 
 import (
 	"strings"
@@ -8,13 +8,13 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 )
 
-type showModalFunc func(tview.Primitive, string) *tview.TextView
+type ShowModalFunc func(tview.Primitive, string) *tview.TextView
 
-type hideModalFunc func(tview.Primitive)
+type HideModalFunc func(tview.Primitive)
 
 const MODAL_TITLE = "Scroll (Ctrl+J, Ctrl+K)"
 
-func attachModalForTreeAttributes(tree *tview.TreeView, showFn showModalFunc, hideFn hideModalFunc) {
+func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hideFn HideModalFunc) {
 	var currentModalNode *tview.TreeNode = nil
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		if len(node.GetChildren()) > 0 {
@@ -64,7 +64,7 @@ type tableModalMapper interface {
 	GetColumnIdx() int
 }
 
-func attachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn showModalFunc, hideFn hideModalFunc) {
+func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn ShowModalFunc, hideFn HideModalFunc) {
 	if mapper == nil {
 		return
 	}

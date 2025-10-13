@@ -10,6 +10,8 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/table"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -44,7 +46,7 @@ type spanTreeNode struct {
 	expand   bool
 }
 
-func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) tview.Primitive {
+func DrawTimeline(commands *tview.TextView, showModalFn layout.ShowModalFunc, hideModalFn layout.HideModalFunc, traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(p tview.Primitive)) tview.Primitive {
 	if traceID == "" || tcache == nil {
 		return newTextView(commands, "No spans found")
 	}
@@ -66,26 +68,26 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 		SetBorders(true)
 	grid.SetTitle("Trace Timeline (t)").SetBorder(true)
 	clearTimeline(duration, grid)
-	registerCommandList(commands, grid, nil, KeyMaps{
+	layout.RegisterCommandList(commands, grid, nil, layout.KeyMaps{
 		{
-			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
-			description: "Move up",
+			Key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
+			Description: "Move up",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
-			description: "Move down",
+			Key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
+			Description: "Move down",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "Expand the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			Description: "Expand the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "Reduce the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			Description: "Reduce the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "Back to Traces",
+			Key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			Description: "Back to Traces",
 		},
 	})
 
@@ -107,7 +109,7 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 
 	// logs
 	logs := tview.NewTable().SetBorders(false).SetSelectable(true, false)
-	var ldft *LogDataForTable
+	var ldft *table.LogDataForTable
 	logs.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlF {
 			if ldft != nil {
@@ -131,27 +133,27 @@ func DrawTimeline(commands *tview.TextView, showModalFn showModalFunc, hideModal
 				lds = flds
 			}
 			logCount = len(lds)
-			logData := NewLogDataForTableForTimeline(&lds)
+			logData := table.NewLogDataForTableForTimeline(&lds)
 			if ldft != nil {
 				logData.SetFullDatetime(ldft.IsFullDatetime())
 			}
 			ldft = &logData
 			logs.SetContent(&logData)
-			attachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
+			layout.AttachModalForTableRows(logs, &logData, showModalFn, hideModalFn)
 		}
 		logs.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L: toggle collapse, A: toggle filter by span)", logCount))
 	}
 
 	allLogs := false
 	updateLogTableFn(traceID, nodes[0].span.Span.SpanID().String(), allLogs)
-	registerCommandList(commands, logs, nil, KeyMaps{
+	layout.RegisterCommandList(commands, logs, nil, layout.KeyMaps{
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl),
-			description: "Toggle full datetime",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl),
+			Description: "Toggle full datetime",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "Back to Traces",
+			Key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			Description: "Back to Traces",
 		},
 	})
 
@@ -478,33 +480,33 @@ func newTextView(commands *tview.TextView, text string) *tview.TextView {
 		SetWordWrap(false)
 		// FIXME: The parent component Grid does not trigger FocusFunc so set it on child tvs
 		//   But this is redundant. Is there any better ways?
-	registerCommandList(commands, tv, func() {
+	layout.RegisterCommandList(commands, tv, func() {
 		tv.SetBackgroundColor(tcell.ColorWhite)
 		tv.SetTextColor(tcell.ColorBlack)
-	}, KeyMaps{
+	}, layout.KeyMaps{
 		{
-			key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
-			description: "Move up",
+			Key:         tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
+			Description: "Move up",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
-			description: "Move down",
+			Key:         tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
+			Description: "Move down",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "Toggle folding the child spans",
+			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			Description: "Toggle folding the child spans",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "Expand the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			Description: "Expand the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "Reduce the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			Description: "Reduce the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "Back to Traces",
+			Key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			Description: "Back to Traces",
 		},
 	})
 	tv.SetBlurFunc(func() {
@@ -541,7 +543,7 @@ func createSpan(color tcell.Color, total, start, end time.Duration) (span *tview
 		})
 }
 
-func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, span *telemetry.SpanData, title string) *tview.TreeView {
+func getSpanInfoTree(commands *tview.TextView, showModalFn layout.ShowModalFunc, hideModalFn layout.HideModalFunc, span *telemetry.SpanData, title string) *tview.TreeView {
 	traceID := span.Span.TraceID().String()
 	sname := telemetry.GetServiceNameFromResource(span.ResourceSpan.Resource())
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname, traceID))
@@ -604,7 +606,7 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 	root.AddChild(droppedNode)
 
 	attrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(attrs, span.Span.Attributes())
+	layout.AppendAttrsSorted(attrs, span.Span.Attributes())
 	root.AddChild(attrs)
 
 	// events
@@ -623,7 +625,7 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 		eventNode.AddChild(droppedNode)
 
 		attrs := tview.NewTreeNode("Attributes")
-		appendAttrsSorted(attrs, event.Attributes())
+		layout.AppendAttrsSorted(attrs, event.Attributes())
 		eventNode.AddChild(attrs)
 
 		events.AddChild(eventNode)
@@ -657,7 +659,7 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 		linkNode.AddChild(linkDroppedNode)
 
 		attrs := tview.NewTreeNode("Attributes")
-		appendAttrsSorted(attrs, link.Attributes())
+		layout.AppendAttrsSorted(attrs, link.Attributes())
 		linkNode.AddChild(attrs)
 
 		links.AddChild(linkNode)
@@ -675,7 +677,7 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 	resource.AddChild(rschema)
 
 	rattrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(rattrs, r.Attributes())
+	layout.AppendAttrsSorted(rattrs, r.Attributes())
 	resource.AddChild(rattrs)
 
 	// scope info
@@ -690,7 +692,7 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", ss.Scope().DroppedAttributesCount())))
 
 		attrs := tview.NewTreeNode("Attributes")
-		appendAttrsSorted(attrs, ss.Scope().Attributes())
+		layout.AppendAttrsSorted(attrs, ss.Scope().Attributes())
 		scope.AddChild(attrs)
 
 		scopes.AddChild(scope)
@@ -701,24 +703,24 @@ func getSpanInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideMo
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
+	layout.AttachModalForTreeAttributes(tree, showModalFn, hideModalFn)
 
-	registerCommandList(commands, tree, nil, KeyMaps{
+	layout.RegisterCommandList(commands, tree, nil, layout.KeyMaps{
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "Reduce the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			Description: "Reduce the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "Expand the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			Description: "Expand the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "Toggle folding the child nodes",
+			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			Description: "Toggle folding the child nodes",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			description: "Back to Traces",
+			Key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			Description: "Back to Traces",
 		},
 	})
 
