@@ -1,13 +1,9 @@
-package component
+package table
 
 import (
-	"fmt"
-	"sort"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var defaultSpanCellMappers = cellMappers[telemetry.SpanData]{
@@ -142,89 +138,4 @@ func (s SpanDataForTable) getHeaderCell(column int, sortType *telemetry.SortType
 	cell.SetText(h.header)
 
 	return cell
-}
-
-func getTraceInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, spans []*telemetry.SpanData) *tview.TreeView {
-	if len(spans) == 0 {
-		return tview.NewTreeView()
-	}
-	traceID := spans[0].Span.TraceID().String()
-	sname := telemetry.GetServiceNameFromResource(spans[0].ResourceSpan.Resource())
-	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname, traceID))
-	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
-
-	// statistics
-	statistics := tview.NewTreeNode("Statistics")
-	spanCount := tview.NewTreeNode(fmt.Sprintf("span count: %d", len(spans)))
-	statistics.AddChild(spanCount)
-
-	root.AddChild(statistics)
-
-	// resource info
-	rs := spans[0].ResourceSpan
-	r := rs.Resource()
-	resource := tview.NewTreeNode("Resource")
-	rdropped := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", r.DroppedAttributesCount()))
-	resource.AddChild(rdropped)
-	rschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", rs.SchemaUrl()))
-	resource.AddChild(rschema)
-
-	attrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(attrs, r.Attributes())
-	resource.AddChild(attrs)
-
-	// scope info
-	scopes := tview.NewTreeNode("Scopes")
-	for si := 0; si < rs.ScopeSpans().Len(); si++ {
-		ss := rs.ScopeSpans().At(si)
-		scope := tview.NewTreeNode(ss.Scope().Name())
-		sschema := tview.NewTreeNode(fmt.Sprintf("schema url: %s", ss.SchemaUrl()))
-		scope.AddChild(sschema)
-
-		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("version: %s", ss.Scope().Version())))
-		scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", ss.Scope().DroppedAttributesCount())))
-
-		attrs := tview.NewTreeNode("Attributes")
-		appendAttrsSorted(attrs, ss.Scope().Attributes())
-		scope.AddChild(attrs)
-
-		scopes.AddChild(scope)
-	}
-	resource.AddChild(scopes)
-
-	root.AddChild(resource)
-
-	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
-
-	registerCommandList(commands, tree, nil, KeyMaps{
-		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "Reduce the width",
-		},
-		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "Expand the width",
-		},
-		{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "Toggle folding (parent), Show full text (child)",
-		},
-	})
-
-	return tree
-}
-
-func appendAttrsSorted(parent *tview.TreeNode, attrs pcommon.Map) {
-	keys := make([]string, 0, attrs.Len())
-	attrs.Range(func(k string, _ pcommon.Value) bool {
-		keys = append(keys, k)
-		return true
-	})
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		v, _ := attrs.Get(k)
-		attr := tview.NewTreeNode(fmt.Sprintf("%s: %s", k, v.AsString()))
-		parent.AddChild(attr)
-	}
 }

@@ -11,86 +11,14 @@ import (
 	"github.com/navidys/tvxwidgets"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const NULL_VALUE_FLOAT64 = math.MaxFloat64
 
-var defaultMetricCellMappers = cellMappers[telemetry.MetricData]{
-	0: {
-		header: "Service Name",
-		getTextRowFn: func(data *telemetry.MetricData) string {
-			return data.GetServiceName()
-		},
-	},
-	1: {
-		header: "Metric Name",
-		getTextRowFn: func(data *telemetry.MetricData) string {
-			return data.GetMetricName()
-		},
-	},
-	2: {
-		header: "Metric Type",
-		getTextRowFn: func(data *telemetry.MetricData) string {
-			return data.GetMetricTypeText()
-		},
-	},
-	3: {
-		header: "Data Point Count",
-		getTextRowFn: func(data *telemetry.MetricData) string {
-			return data.GetDataPointNum()
-		},
-	},
-}
-
-type MetricDataForTable struct {
-	tview.TableContentReadOnly
-	metrics *[]*telemetry.MetricData
-	mapper  cellMappers[telemetry.MetricData]
-}
-
-func NewMetricDataForTable(metrics *[]*telemetry.MetricData) MetricDataForTable {
-	return MetricDataForTable{
-		metrics: metrics,
-		mapper:  defaultMetricCellMappers,
-	}
-}
-
-// implementations for tview Virtual Table
-// see: https://github.com/rivo/tview/wiki/VirtualTable
-func (m MetricDataForTable) GetCell(row, column int) *tview.TableCell {
-	if row == 0 {
-		return m.getHeaderCell(column)
-	}
-	if row > 0 && row <= len(*m.metrics) {
-		return getCellFromData(m.mapper, (*m.metrics)[row-1], column)
-	}
-	return tview.NewTableCell("N/A")
-}
-
-func (m MetricDataForTable) GetRowCount() int {
-	return len(*m.metrics) + 1
-}
-
-func (m MetricDataForTable) GetColumnCount() int {
-	return len(m.mapper)
-}
-
-func (m MetricDataForTable) getHeaderCell(column int) *tview.TableCell {
-	cell := tview.NewTableCell("N/A").
-		SetSelectable(false).
-		SetTextColor(tcell.ColorYellow)
-	h, ok := m.mapper[column]
-	if !ok {
-		return cell
-	}
-	cell.SetText(h.header)
-
-	return cell
-}
-
-func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hideModalFn hideModalFunc, m *telemetry.MetricData) *tview.TreeView {
+func getMetricInfoTree(commands *tview.TextView, showModalFn layout.ShowModalFunc, hideModalFn layout.HideModalFunc, m *telemetry.MetricData) *tview.TreeView {
 	if m == nil {
 		return nil
 	}
@@ -117,7 +45,7 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 	resource.AddChild(rschema)
 
 	attrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(attrs, r.Attributes())
+	layout.AppendAttrsSorted(attrs, r.Attributes())
 	resource.AddChild(attrs)
 
 	// scope info
@@ -132,7 +60,7 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 	scope.AddChild(tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", s.DroppedAttributesCount())))
 
 	sattrs := tview.NewTreeNode("Attributes")
-	appendAttrsSorted(sattrs, s.Attributes())
+	layout.AppendAttrsSorted(sattrs, s.Attributes())
 	scope.AddChild(sattrs)
 
 	scopes.AddChild(scope)
@@ -144,7 +72,7 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 	/// metadata
 	meta := tview.NewTreeNode("Metadata")
 	metr.AddChild(meta)
-	appendAttrsSorted(meta, m.Metric.Metadata())
+	layout.AppendAttrsSorted(meta, m.Metric.Metadata())
 
 	/// datapoints
 	dps := tview.NewTreeNode("Datapoints")
@@ -185,11 +113,11 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes())
+				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes())
+			layout.AppendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -229,11 +157,11 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes())
+				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes())
+			layout.AppendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -273,11 +201,11 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes())
+				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes())
+			layout.AppendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -324,11 +252,11 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 				// filtered attributes
 				fattrs := tview.NewTreeNode("Filtered Attributes")
 				ex.AddChild(fattrs)
-				appendAttrsSorted(fattrs, e.FilteredAttributes())
+				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
 			}
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes())
+			layout.AppendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -358,7 +286,7 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 			dp.AddChild(flg)
 			// attributes
 			attrs := tview.NewTreeNode("Attributes")
-			appendAttrsSorted(attrs, d.Attributes())
+			layout.AppendAttrsSorted(attrs, d.Attributes())
 			dp.AddChild(attrs)
 
 			dps.AddChild(dp)
@@ -371,20 +299,20 @@ func getMetricInfoTree(commands *tview.TextView, showModalFn showModalFunc, hide
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	attachModalForTreeAttributes(tree, showModalFn, hideModalFn)
+	layout.AttachModalForTreeAttributes(tree, showModalFn, hideModalFn)
 
-	registerCommandList(commands, tree, nil, KeyMaps{
+	layout.RegisterCommandList(commands, tree, nil, layout.KeyMaps{
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			description: "Reduce the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
+			Description: "Reduce the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			description: "Expand the width",
+			Key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
+			Description: "Expand the width",
 		},
 		{
-			key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			description: "Toggle folding the child nodes",
+			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			Description: "Toggle folding the child nodes",
 		},
 	})
 
@@ -489,7 +417,7 @@ func drawMetricHistogramChart(commands *tview.TextView, m *telemetry.MetricData)
 		return event
 	})
 
-	registerCommandList(commands, chart, nil, KeyMaps{})
+	layout.RegisterCommandList(commands, chart, nil, layout.KeyMaps{})
 
 	return chart
 }
@@ -649,7 +577,7 @@ func drawMetricNumberChart(commands *tview.TextView, store *telemetry.Store, m *
 
 	chart.AddItem(ch, 0, 7, true).AddItem(legend, 0, 3, false)
 
-	registerCommandList(commands, ch, nil, KeyMaps{})
+	layout.RegisterCommandList(commands, ch, nil, layout.KeyMaps{})
 
 	return chart
 }
