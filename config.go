@@ -29,14 +29,15 @@ type PromScrapeConfig struct {
 }
 
 type Config struct {
-	OTLPHost          string
-	OTLPHTTPPort      int
-	OTLPGRPCPort      int
-	EnableZipkin      bool
-	FromJSONFile      string
-	PromTarget        []string
-	PromScrapeConfigs []*PromScrapeConfig
-	DebugLogFilePath  string
+	OTLPHost               string
+	OTLPHTTPPort           int
+	OTLPGRPCPort           int
+	EnableZipkin           bool
+	FromJSONFile           string
+	PromTarget             []string
+	PromScrapeConfigs      []*PromScrapeConfig
+	DebugLogFilePath       string
+	DisableInternalMetrics bool
 }
 
 func NewConfig(
@@ -47,15 +48,17 @@ func NewConfig(
 	fromJSONFile string,
 	promTarget []string,
 	debugLogFilePath string,
+	disableInternalMetrics bool,
 ) (*Config, error) {
 	cfg := &Config{
-		OTLPHost:         otlpHost,
-		OTLPHTTPPort:     otlpHTTPPort,
-		OTLPGRPCPort:     otlpGRPCPort,
-		EnableZipkin:     enableZipkin,
-		FromJSONFile:     fromJSONFile,
-		PromTarget:       promTarget,
-		DebugLogFilePath: debugLogFilePath,
+		OTLPHost:               otlpHost,
+		OTLPHTTPPort:           otlpHTTPPort,
+		OTLPGRPCPort:           otlpGRPCPort,
+		EnableZipkin:           enableZipkin,
+		FromJSONFile:           fromJSONFile,
+		PromTarget:             promTarget,
+		DebugLogFilePath:       debugLogFilePath,
+		DisableInternalMetrics: disableInternalMetrics,
 	}
 
 	if err := cfg.validate(); err != nil {

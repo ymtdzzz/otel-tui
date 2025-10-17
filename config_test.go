@@ -117,7 +117,8 @@ func TestConfigRenderYml(t *testing.T) {
 			"http://exporterserver:9199/ups_metrics?ups=secondary&server=nutserver2",
 			"http://source-prometheus-1:9090/federate?match[]={job=\"prometheus\"}&match[]={__name__=~\"job:.*\"}",
 		},
-		DebugLogFilePath: "/tmp/otel-tui.log",
+		DebugLogFilePath:       "/tmp/otel-tui.log",
+		DisableInternalMetrics: true,
 	}
 	want := `yaml:
 receivers:
@@ -193,6 +194,9 @@ exporters:
     from_json_file: true
     debug_log_file_path: '/tmp/otel-tui.log'
 service:
+  telemetry:
+    metrics:
+      level: none
   pipelines:
     traces:
       receivers:

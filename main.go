@@ -52,6 +52,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 		promTargetFlag             []string
 		fromJSONFileFlag           string
 		debugLogFlag               bool
+		disableInternalMetricsFlag bool
 	)
 
 	rootCmd := &cobra.Command{
@@ -72,6 +73,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 				fromJSONFileFlag,
 				promTargetFlag,
 				logPath,
+				disableInternalMetricsFlag,
 			)
 
 			if err != nil {
@@ -107,6 +109,7 @@ func newCommand(params otelcol.CollectorSettings) *cobra.Command {
 	rootCmd.Flags().StringVar(&fromJSONFileFlag, "from-json-file", "", "The JSON file path exported by JSON exporter")
 	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `Enable the prometheus receiver and specify the target endpoints for the receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
 	rootCmd.Flags().BoolVar(&debugLogFlag, "debug-log", false, "Enable debug log output to file (/tmp/otel-tui.log)")
+	rootCmd.Flags().BoolVar(&disableInternalMetricsFlag, "disable-internal-metrics", false, "Disable the collector's internal metrics telemetry reporting")
 	return rootCmd
 }
 
