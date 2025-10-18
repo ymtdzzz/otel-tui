@@ -1,4 +1,4 @@
-package component
+package log
 
 import (
 	"fmt"
@@ -10,7 +10,55 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 )
 
-func getLogInfoTree(commands *tview.TextView, showModalFn layout.ShowModalFunc, hideModalFn layout.HideModalFunc, l *telemetry.LogData, tcache *telemetry.TraceCache, drawTimelineFn func(traceID string)) *tview.TreeView {
+type detail struct {
+	commands       *tview.TextView
+	view           *tview.Flex
+	tree           *tview.TreeView
+	showModalFn    layout.ShowModalFunc
+	hideModalFn    layout.HideModalFunc
+	drawTimelineFn func(traceID string)
+	resizeManagers []*layout.ResizeManager
+	tcache         *telemetry.TraceCache
+}
+
+func newDetail(
+	commands *tview.TextView,
+	showModalFn layout.ShowModalFunc,
+	hideModalFn layout.HideModalFunc,
+	drawTimelineFn func(traceID string),
+	resizeManagers []*layout.ResizeManager,
+	tcache *telemetry.TraceCache,
+) *detail {
+	container := tview.NewFlex().SetDirection(tview.FlexRow)
+	container.SetTitle("Details (d)").SetBorder(true)
+
+	detail := &detail{
+		commands:       commands,
+		view:           container,
+		showModalFn:    showModalFn,
+		hideModalFn:    hideModalFn,
+		drawTimelineFn: drawTimelineFn,
+		resizeManagers: resizeManagers,
+		tcache:         tcache,
+	}
+
+	detail.update(nil)
+
+	return detail
+}
+
+func (d *detail) flush() {
+	d.view.Clear()
+}
+
+func (d *detail) update(l *telemetry.LogData) {
+	d.view.Clear()
+	d.tree = d.getLogInfoTree(l)
+	d.updateCommands()
+	d.view.AddItem(d.tree, 0, 1, true)
+}
+
+func (d *detail) getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
 	if l == nil {
 		return tview.NewTreeView()
 	}
@@ -53,12 +101,12 @@ func getLogInfoTree(commands *tview.TextView, showModalFn layout.ShowModalFunc, 
 
 	traceID := l.Log.TraceID().String()
 	traceNode := tview.NewTreeNode(fmt.Sprintf("trace id: %s", traceID))
-	if tcache != nil {
-		if _, ok := tcache.GetSpansByTraceID(traceID); ok {
+	if d.tcache != nil {
+		if _, ok := d.tcache.GetSpansByTraceID(traceID); ok {
 			traceNode.SetText("(🔗)" + traceNode.GetText())
 			traceNode.SetSelectable(true)
 			traceNode.SetSelectedFunc(func() {
-				drawTimelineFn(traceID)
+				d.drawTimelineFn(traceID)
 			})
 		}
 	}
@@ -98,22 +146,20 @@ func getLogInfoTree(commands *tview.TextView, showModalFn layout.ShowModalFunc, 
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	layout.AttachModalForTreeAttributes(tree, showModalFn, hideModalFn)
-
-	layout.RegisterCommandList(commands, tree, nil, layout.KeyMaps{
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModCtrl),
-			Description: "Reduce the width",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'H', tcell.ModCtrl),
-			Description: "Expand the width",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			Description: "Toggle folding the child nodes",
-		},
-	})
+	layout.AttachModalForTreeAttributes(tree, d.showModalFn, d.hideModalFn)
 
 	return tree
+}
+
+func (d *detail) updateCommands() {
+	keyMaps := layout.KeyMaps{
+		{
+			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			Description: "Toggle folding (parent), Show full text (child)",
+		},
+	}
+	for _, rm := range d.resizeManagers {
+		keyMaps.Merge(rm.KeyMaps())
+	}
+	layout.RegisterCommandList2(d.commands, d.tree, nil, keyMaps)
 }

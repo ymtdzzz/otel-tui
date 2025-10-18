@@ -1,8 +1,6 @@
 package filter
 
 import (
-	"strings"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
@@ -55,11 +53,6 @@ func NewFilter(
 
 func (f *Filter) onChangedFunc() func(text string) {
 	return func(text string) {
-		// remove the suffix '/' from input because it is passed from SetInputCapture()
-		if strings.HasSuffix(text, "/") {
-			text = strings.TrimSuffix(text, "/")
-			f.view.SetText(text)
-		}
 		f.input = text
 		if f.onInputChangedFn != nil {
 			f.onInputChangedFn(text)

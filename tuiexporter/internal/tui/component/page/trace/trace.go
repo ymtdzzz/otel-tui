@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	DefaultTableProportion  = 30
-	DefaultDetailProportion = 20
+	defaultTableProportion  = 30
+	defaultDetailProportion = 20
 )
 
 type TracePage struct {
@@ -30,21 +30,20 @@ func NewTracePage(
 	container := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
-	table := newTable(commands, setFocusFn, onSelectTableRow, store, nil, resizeManager)
 	detail := newDetail(commands, showModalFn, hideModalFn, resizeManager)
-	table.detail = detail
+	table := newTable(commands, setFocusFn, onSelectTableRow, store, detail, resizeManager)
 
 	resizeManager.Register(
 		container,
 		table.view,
 		detail.view,
-		DefaultTableProportion,
-		DefaultDetailProportion,
+		defaultTableProportion,
+		defaultDetailProportion,
 		commands,
 	)
 
-	container.AddItem(table.view, 0, DefaultTableProportion, true).
-		AddItem(detail.view, 0, DefaultDetailProportion, false)
+	container.AddItem(table.view, 0, defaultTableProportion, true).
+		AddItem(detail.view, 0, defaultDetailProportion, false)
 
 	trace := &TracePage{
 		setFocusFn: setFocusFn,
@@ -77,10 +76,10 @@ func (p *TracePage) registerCommands() {
 			switch event.Rune() {
 			case 'd':
 				p.setFocusFn(p.detail.view)
-				// don't return nil here, because we want to pass the event to the search input
+				return nil
 			case 't':
 				p.setFocusFn(p.table.view)
-				// don't return nil here, because we want to pass the event to the search input
+				return nil
 			}
 		}
 
