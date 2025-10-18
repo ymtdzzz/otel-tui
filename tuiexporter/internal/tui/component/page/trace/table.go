@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/filter"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	ctable "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/table"
 )
@@ -16,7 +17,7 @@ type table struct {
 	view       *tview.Flex
 	table      *tview.Table
 	spanData   *ctable.SpanDataForTable
-	search     *search
+	filter     *filter.Filter
 	detail     *detail
 }
 
@@ -37,9 +38,22 @@ func newTable(
 		SetSelectedFunc(onSelectTableRow).
 		SetFixed(1, 0)
 
-	search := newSearch(commands, setFocusFn, t, store)
+	filter := filter.NewFilter(
+		commands,
+		"Filter by service or span name (/): ",
+		func(inputConfirmed string, sortType telemetry.SortType) {
+			store.ApplyFilterTraces(inputConfirmed, sortType)
+		},
+		func() {
+			setFocusFn(t)
+		},
+		nil,
+		func(inputConfirmed string, sortType telemetry.SortType) {
+			store.ApplyFilterTraces(inputConfirmed, sortType)
+		},
+	)
 
-	spanData := ctable.NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), &search.sortType)
+	spanData := ctable.NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), filter.SortType())
 	t.SetContent(&spanData)
 	store.SetOnSpanAdded(func() {
 		t.Select(t.GetSelection())
@@ -51,14 +65,14 @@ func newTable(
 		view:       container,
 		table:      t,
 		spanData:   &spanData,
-		search:     search,
+		filter:     filter,
 		detail:     detail,
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
 
 	container.
-		AddItem(search.view, 1, 0, false).
+		AddItem(filter.View(), 1, 0, false).
 		AddItem(t, 0, 1, true)
 
 	stable.registerCommands(commands, resizeManager)
@@ -72,8 +86,8 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManager *layout
 			Key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
 			Description: "Search traces",
 			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
-				if !t.search.view.HasFocus() {
-					t.setFocusFn(t.search.view)
+				if !t.filter.View().HasFocus() {
+					t.setFocusFn(t.filter.View())
 				}
 				return nil
 			},
@@ -82,16 +96,7 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManager *layout
 			Key:         tcell.NewEventKey(tcell.KeyCtrlS, ' ', tcell.ModNone),
 			Description: "Toggle sort (Latency)",
 			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
-				switch t.search.sortType {
-				case telemetry.SORT_TYPE_NONE:
-					t.search.changeSortType(telemetry.SORT_TYPE_LATENCY_DESC)
-				case telemetry.SORT_TYPE_LATENCY_DESC:
-					t.search.changeSortType(telemetry.SORT_TYPE_LATENCY_ASC)
-				default:
-					t.search.changeSortType(telemetry.SORT_TYPE_NONE)
-				}
-				log.Printf("sortType: %s", t.search.sortType)
-				t.store.ApplyFilterTraces(t.search.inputConfirmed, t.search.sortType)
+				t.filter.RotateSortType()
 				return nil
 			},
 		},
