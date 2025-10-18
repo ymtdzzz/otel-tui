@@ -1,12 +1,10 @@
-package log
+package metric
 
 import (
 	"log"
 
-	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/filter"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
@@ -14,15 +12,14 @@ import (
 )
 
 type table struct {
-	setFocusFn      func(primitive tview.Primitive)
-	store           *telemetry.Store
-	view            *tview.Flex
-	table           *tview.Table
-	logData         *ctable.LogDataForTable
-	filter          *filter.Filter
-	detail          *detail
-	body            *body
-	resolvedLogBody string
+	setFocusFn func(primitive tview.Primitive)
+	store      *telemetry.Store
+	view       *tview.Flex
+	table      *tview.Table
+	metricData *ctable.MetricDataForTable
+	filter     *filter.Filter
+	detail     *detail
+	chart      *chart
 }
 
 func newTable(
@@ -30,11 +27,11 @@ func newTable(
 	setFocusFn func(primitive tview.Primitive),
 	store *telemetry.Store,
 	detail *detail,
-	body *body,
+	chart *chart,
 	resizeManagers []*layout.ResizeManager,
 ) *table {
 	container := tview.NewFlex().SetDirection(tview.FlexRow)
-	container.SetTitle("Logs (o)").SetBorder(true)
+	container.SetTitle("Metrics (m)").SetBorder(true)
 
 	t := tview.NewTable().
 		SetBorders(false).
@@ -43,20 +40,22 @@ func newTable(
 
 	filter := filter.NewFilter(
 		commands,
-		"Filter by service or body (/): ",
+		"Filter by service or metric name (/): ",
 		func(inputConfirmed string, _ telemetry.SortType) {
-			store.ApplyFilterLogs(inputConfirmed)
+			store.ApplyFilterMetrics(inputConfirmed)
 		},
 		func() {
 			setFocusFn(t)
 		},
 		nil,
-		nil,
+		func(inputConfirmed string, _ telemetry.SortType) {
+			store.ApplyFilterMetrics(inputConfirmed)
+		},
 	)
 
-	logData := ctable.NewLogDataForTable(store.GetFilteredLogs())
-	t.SetContent(&logData)
-	store.SetOnLogAdded(func() {
+	metricData := ctable.NewMetricDataForTable(store.GetFilteredMetrics())
+	t.SetContent(&metricData)
+	store.SetOnMetricAdded(func() {
 		t.Select(t.GetSelection())
 	})
 
@@ -65,10 +64,10 @@ func newTable(
 		store:      store,
 		view:       container,
 		table:      t,
-		logData:    &logData,
+		metricData: &metricData,
 		filter:     filter,
 		detail:     detail,
-		body:       body,
+		chart:      chart,
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
@@ -86,30 +85,10 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManagers []*lay
 	keyMaps := layout.KeyMaps{
 		{
 			Key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
-			Description: "Search logs",
+			Description: "Search metrics",
 			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
 				if !t.filter.View().HasFocus() {
 					t.setFocusFn(t.filter.View())
-				}
-				return nil
-			},
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyCtrlF, ' ', tcell.ModNone),
-			Description: "Toggle full datetime",
-			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
-				t.logData.SetFullDatetime(!t.logData.IsFullDatetime())
-				return nil
-			},
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone),
-			Description: "Copy log to clipboard",
-			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
-				if err := clipboard.WriteAll(t.resolvedLogBody); err != nil {
-					log.Printf("Failed to copy log body to clipboard: %v", err)
-				} else {
-					log.Println("Selected log body has been copied to your clipboard")
 				}
 				return nil
 			},
@@ -135,14 +114,12 @@ func (t *table) onSelectionChangedFunc() func(row, col int) {
 		if row == 0 {
 			return
 		}
-		selected := t.store.GetFilteredLogByIdx(row - 1)
+		selected := t.store.GetFilteredMetricByIdx(row - 1)
 		if selected == nil {
 			return
 		}
 		t.detail.update(selected)
+		t.chart.update(selected)
 		log.Printf("selected row(original): %d", row)
-
-		t.resolvedLogBody = json.PrettyJSON(selected.GetResolvedBody())
-		t.body.update(t.resolvedLogBody)
 	}
 }
