@@ -5,12 +5,11 @@ import (
 	"log"
 	"strings"
 
-	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	clog "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/log"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/trace"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/table"
 )
@@ -36,7 +35,7 @@ type TUIPages struct {
 	timeline          *tview.Flex
 	topology          *tview.Flex
 	metrics           *tview.Flex
-	logs              *tview.Flex
+	logs              tview.Primitive
 	modal             *tview.Flex
 	clearFnsForFlush  []func()
 	current           string
@@ -136,7 +135,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 		store,
 	)
 	tracesPage := traces.GetPrimitive()
-	log.Printf("trace page created: %v", tracesPage)
 	p.traces = tracesPage
 	p.pages.AddPage(layout.PAGE_TRACES, tracesPage, true, true)
 
@@ -152,9 +150,18 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	p.metrics = metrics
 	p.pages.AddPage(layout.PAGE_METRICS, metrics, true, false)
 
-	logs := p.createLogPage(store)
-	p.logs = logs
-	p.pages.AddPage(layout.PAGE_LOGS, logs, true, false)
+	logs := clog.NewLogPage(
+		p.setFocusFn,
+		p.showModal,
+		p.hideModal,
+		func(traceID string) {
+			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), p.setFocusFn)
+		},
+		store,
+	)
+	logsPage := logs.GetPrimitive()
+	p.logs = logsPage
+	p.pages.AddPage(layout.PAGE_LOGS, logsPage, true, false)
 }
 
 func (p *TUIPages) createTimelinePage() *tview.Flex {
@@ -460,243 +467,4 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 	})
 
 	return layout.AttachTab(layout.AttachCommandList(commands, basePage), layout.PAGE_METRICS)
-}
-
-func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
-	commands := layout.NewCommandList()
-	pageContainer := tview.NewFlex().SetDirection(tview.FlexRow)
-	page := tview.NewFlex().SetDirection(tview.FlexColumn)
-
-	tableContainer := tview.NewFlex().SetDirection(tview.FlexRow)
-
-	details := tview.NewFlex().SetDirection(tview.FlexRow)
-	p.clearFnsForFlush = append(p.clearFnsForFlush, func() {
-		details.Clear()
-	})
-	details.SetTitle("Details (d)").SetBorder(true)
-	detailspro := DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS
-	tablepro := DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE
-	logMainPro := DEFAULT_VERTICAL_PROPORTION_LOG_MAIN
-	logBodyPro := DEFAULT_VERTICAL_PROPORTION_LOG_BODY
-
-	details.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlL:
-			if detailspro <= 1 {
-				return nil
-			}
-			tablepro++
-			detailspro--
-			page.ResizeItem(tableContainer, 0, tablepro).
-				ResizeItem(details, 0, detailspro)
-			return nil
-		case tcell.KeyCtrlH:
-			if tablepro <= 1 {
-				return nil
-			}
-			tablepro--
-			detailspro++
-			page.ResizeItem(tableContainer, 0, tablepro).
-				ResizeItem(details, 0, detailspro)
-			return nil
-		}
-		return event
-	})
-	layout.RegisterCommandList(commands, details, nil, layout.KeyMaps{
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl),
-			Description: "Expand details",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
-			Description: "Shrink details",
-		},
-	})
-
-	body := tview.NewTextView()
-	p.clearFnsForFlush = append(p.clearFnsForFlush, func() {
-		body.Clear()
-	})
-	body.SetBorder(true).SetTitle("Body (b)")
-	body.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlK:
-			if logMainPro <= 1 {
-				return nil
-			}
-			logMainPro--
-			logBodyPro++
-			pageContainer.ResizeItem(page, 0, logMainPro).
-				ResizeItem(body, 0, logBodyPro)
-			return nil
-		case tcell.KeyCtrlJ:
-			if logBodyPro <= 1 {
-				return nil
-			}
-			logMainPro++
-			logBodyPro--
-			pageContainer.ResizeItem(page, 0, logMainPro).
-				ResizeItem(body, 0, logBodyPro)
-			return nil
-		}
-		return event
-	})
-	layout.RegisterCommandList(commands, body, nil, layout.KeyMaps{
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModCtrl),
-			Description: "Shrink log body",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'k', tcell.ModCtrl),
-			Description: "Expand log body",
-		},
-	})
-
-	tableContainer.SetTitle("Logs (o)").SetBorder(true)
-	ldft := table.NewLogDataForTable(store.GetFilteredLogs())
-	table := tview.NewTable().
-		SetBorders(false).
-		SetSelectable(true, false).
-		SetContent(ldft).
-		SetFixed(1, 0)
-	store.SetOnLogAdded(func() {
-		if details.GetItemCount() == 0 {
-			table.Select(table.GetSelection())
-		}
-	})
-	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlF:
-			ldft.SetFullDatetime(!ldft.IsFullDatetime())
-			return nil
-		case tcell.KeyCtrlL:
-			store.Flush()
-			p.clearPanes()
-			table.Select(0, 0)
-			return nil
-		}
-
-		return event
-	})
-	layout.RegisterCommandList(commands, table, nil, layout.KeyMaps{
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModNone),
-			Description: "Search logs",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone),
-			Description: "Copy Log to clipboard",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl),
-			Description: "Toggle full datetime",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl),
-			Description: "Clear all data",
-		},
-	})
-
-	input := ""
-	inputConfirmed := ""
-	search := tview.NewInputField().
-		SetLabel("Filter by service or body (/): ").
-		SetFieldWidth(20)
-	search.SetChangedFunc(func(text string) {
-		// remove the suffix '/' from input because it is passed from SetInputCapture()
-		if strings.HasSuffix(text, "/") {
-			text = strings.TrimSuffix(text, "/")
-			search.SetText(text)
-		}
-		input = text
-	})
-	search.SetDoneFunc(func(key tcell.Key) {
-		switch key {
-		case tcell.KeyEnter:
-			inputConfirmed = input
-			store.ApplyFilterLogs(inputConfirmed)
-		case tcell.KeyEsc:
-			search.SetText(inputConfirmed)
-		}
-		p.setFocusFn(table)
-	})
-	layout.RegisterCommandList(commands, search, nil, layout.KeyMaps{
-		{
-			Key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
-			Description: "Cancel",
-		},
-		{
-			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
-			Description: "Confirm",
-		},
-	})
-
-	resolved := ""
-	table.SetSelectionChangedFunc(func(row, _ int) {
-		if row == 0 {
-			return
-		}
-		selected := store.GetFilteredLogByIdx(row - 1)
-		if selected == nil {
-			return
-		}
-		hasFocus := details.HasFocus()
-		details.Clear()
-		details.AddItem(getLogInfoTree(commands, p.showModal, p.hideModal, selected, store.GetTraceCache(), func(traceID string) {
-			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), func(pr tview.Primitive) {
-				p.setFocusFn(pr)
-			})
-		}), 0, 1, true)
-		if hasFocus {
-			p.setFocusFn(details)
-		}
-		log.Printf("selected row(original): %d", row)
-
-		resolved = json.PrettyJSON(selected.GetResolvedBody())
-		body.SetText(resolved)
-	})
-	tableContainer.
-		AddItem(search, 1, 0, false).
-		AddItem(table, 0, 1, true)
-
-	tableContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Rune() == '/' {
-			if !search.HasFocus() {
-				p.setFocusFn(search)
-			}
-			return nil
-		}
-
-		return event
-	})
-
-	page.AddItem(tableContainer, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE, true).AddItem(details, 0, DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS, false)
-	pageContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if !search.HasFocus() {
-			switch event.Rune() {
-			case 'd':
-				p.setFocusFn(details)
-				// don't return nil here, because we want to pass the event to the search input
-			case 'o':
-				p.setFocusFn(table)
-				// don't return nil here, because we want to pass the event to the search input
-			case 'b':
-				p.setFocusFn(body)
-				// don't return nil here, because we want to pass the event to the search input
-			case 'y':
-				if err := clipboard.WriteAll(resolved); err != nil {
-					log.Printf("Failed to copy log body to clipboard: %v", err)
-				} else {
-					log.Println("Selected log body has been copied to your clipboard")
-				}
-				// don't return nil here, because we want to pass the event to the search input
-			}
-		}
-
-		return event
-	})
-	// pageContainer.AddItem(page, 0, 1, true).AddItem(body, 5, 1, false)
-	pageContainer.AddItem(page, 0, DEFAULT_VERTICAL_PROPORTION_LOG_MAIN, true).AddItem(body, 0, DEFAULT_VERTICAL_PROPORTION_LOG_BODY, false)
-
-	return layout.AttachTab(layout.AttachCommandList(commands, pageContainer), layout.PAGE_LOGS)
 }

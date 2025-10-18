@@ -35,6 +35,8 @@ func newDetail(
 		resizeManager: resizeManager,
 	}
 
+	detail.update(nil)
+
 	return detail
 }
 
@@ -44,7 +46,9 @@ func (d *detail) flush() {
 
 func (d *detail) update(spans []*telemetry.SpanData) {
 	d.view.Clear()
-	d.view.AddItem(d.getTraceInfoTree(spans), 0, 1, true)
+	d.tree = d.getTraceInfoTree(spans)
+	d.updateCommands()
+	d.view.AddItem(d.tree, 0, 1, true)
 }
 
 func (d *detail) getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
@@ -55,7 +59,6 @@ func (d *detail) getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	sname := telemetry.GetServiceNameFromResource(spans[0].ResourceSpan.Resource())
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", sname, traceID))
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
-	d.tree = tree
 
 	// statistics
 	statistics := tview.NewTreeNode("Statistics")
@@ -99,8 +102,6 @@ func (d *detail) getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 	root.AddChild(resource)
 
 	layout.AttachModalForTreeAttributes(tree, d.showModalFn, d.hideModalFn)
-
-	d.updateCommands()
 
 	return tree
 }

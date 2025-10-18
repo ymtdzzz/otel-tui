@@ -18,11 +18,12 @@ const (
 )
 
 type ResizeManager struct {
-	direction             ResizeDirection
-	parent, first, second *tview.Flex
-	firstProportion       int
-	secondProportion      int
-	commands              *tview.TextView
+	direction        ResizeDirection
+	parent           *tview.Flex
+	first, second    tview.Primitive
+	firstProportion  int
+	secondProportion int
+	commands         *tview.TextView
 }
 
 func NewResizeManager(direction ResizeDirection) *ResizeManager {
@@ -32,7 +33,8 @@ func NewResizeManager(direction ResizeDirection) *ResizeManager {
 }
 
 func (m *ResizeManager) Register(
-	parent, first, second *tview.Flex,
+	parent *tview.Flex,
+	first, second tview.Primitive,
 	firstProportion, secondProportion int,
 	commands *tview.TextView,
 ) {
