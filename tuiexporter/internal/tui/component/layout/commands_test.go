@@ -1,4 +1,4 @@
-package component
+package layout
 
 import (
 	"testing"
@@ -18,9 +18,9 @@ func TestKeyMaps_keyTexts(t *testing.T) {
 			name: "single non-arrow key",
 			keymaps: KeyMaps{
 				{
-					key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
-					arrow:       false,
-					description: "quit",
+					Key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
+					Arrow:       false,
+					Description: "quit",
 				},
 			},
 			want: " [yellow]q[white]: quit",
@@ -29,9 +29,9 @@ func TestKeyMaps_keyTexts(t *testing.T) {
 			name: "single arrow key",
 			keymaps: KeyMaps{
 				{
-					key:         tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone),
-					arrow:       true,
-					description: "navigate",
+					Key:         tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone),
+					Arrow:       true,
+					Description: "navigate",
 				},
 			},
 			want: " [yellow]→←↑↓[white]: navigate",
@@ -40,14 +40,14 @@ func TestKeyMaps_keyTexts(t *testing.T) {
 			name: "multiple keys",
 			keymaps: KeyMaps{
 				{
-					key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
-					arrow:       false,
-					description: "quit",
+					Key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
+					Arrow:       false,
+					Description: "quit",
 				},
 				{
-					key:         tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone),
-					arrow:       true,
-					description: "navigate",
+					Key:         tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone),
+					Arrow:       true,
+					Description: "navigate",
 				},
 			},
 			want: " [yellow]q[white]: quit | [yellow]→←↑↓[white]: navigate",
@@ -63,7 +63,7 @@ func TestKeyMaps_keyTexts(t *testing.T) {
 }
 
 func TestNewCommandList(t *testing.T) {
-	cmdList := newCommandList()
+	cmdList := NewCommandList()
 	assert.NotNil(t, cmdList)
 }
 
@@ -90,7 +90,7 @@ func TestAttachCommandList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := attachCommandList(tt.commands, tt.primitive)
+			got := AttachCommandList(tt.commands, tt.primitive)
 			assert.NotNil(t, got)
 			assert.Equal(t, tt.wantItems, got.GetItemCount())
 
@@ -137,9 +137,9 @@ func TestRegisterCommandList(t *testing.T) {
 			commands: tview.NewTextView(),
 			keys: KeyMaps{
 				{
-					key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
-					arrow:       false,
-					description: "quit",
+					Key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
+					Arrow:       false,
+					Description: "quit",
 				},
 			},
 		},
@@ -149,7 +149,7 @@ func TestRegisterCommandList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			focusableMock := newMockFocusable()
 			origFocusFn := func() {}
-			registerCommandList(tt.commands, focusableMock, origFocusFn, tt.keys)
+			RegisterCommandList(tt.commands, focusableMock, origFocusFn, tt.keys)
 
 			if tt.commands == nil {
 				// focusableMock should not have focus function

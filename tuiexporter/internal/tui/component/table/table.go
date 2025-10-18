@@ -1,4 +1,4 @@
-package component
+package table
 
 import "github.com/rivo/tview"
 
