@@ -2,6 +2,7 @@ package layout
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -14,6 +15,7 @@ var keyMapRegex = regexp.MustCompile(`Rune|\[|\]`)
 type KeyMap struct {
 	Key         *tcell.EventKey
 	Arrow       bool
+	Hidden      bool
 	Description string
 	Handler     func(event *tcell.EventKey) *tcell.EventKey
 }
@@ -27,7 +29,7 @@ func (m *KeyMaps) Merge(m2 KeyMaps) {
 func (m KeyMaps) keyTexts() string {
 	keytexts := []string{}
 	for _, v := range m {
-		if v.Description == "" {
+		if v.Description == "" || v.Hidden {
 			continue
 		}
 		key := ""
@@ -102,6 +104,7 @@ func RegisterCommandList2(commands *tview.TextView, c FocusableBox, origFocusFn 
 	}
 
 	c.SetFocusFunc(func() {
+		log.Println("triggered SetFocusFunc in RegisterCommandList2")
 		commands.SetText(keys.keyTexts())
 
 		if origFocusFn != nil {
