@@ -73,7 +73,7 @@ func (p *TracePage) flush() {
 
 func (p *TracePage) registerCommands() {
 	p.view.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if !p.table.search.view.HasFocus() {
+		if !p.table.filter.View().HasFocus() {
 			switch event.Rune() {
 			case 'd':
 				p.setFocusFn(p.detail.view)

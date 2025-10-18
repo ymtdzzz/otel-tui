@@ -83,7 +83,7 @@ func (s *SpanDataForTable) updateReceivedAtMapper() {
 // see: https://github.com/rivo/tview/wiki/VirtualTable
 func (s SpanDataForTable) GetCell(row, column int) *tview.TableCell {
 	if row == 0 {
-		return s.getHeaderCell(column, s.sortType)
+		return s.getHeaderCell(column, *s.sortType)
 	}
 	if row > 0 && row <= len(*s.spans) {
 		sd := (*s.spans)[row-1]
@@ -116,7 +116,7 @@ func (s SpanDataForTable) getErrorIndicator(span *telemetry.SpanData) *tview.Tab
 	return tview.NewTableCell(text)
 }
 
-func (s SpanDataForTable) getHeaderCell(column int, sortType *telemetry.SortType) *tview.TableCell {
+func (s SpanDataForTable) getHeaderCell(column int, sortType telemetry.SortType) *tview.TableCell {
 	cell := tview.NewTableCell("N/A").
 		SetSelectable(false).
 		SetTextColor(tcell.ColorYellow)
