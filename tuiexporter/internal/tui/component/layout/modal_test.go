@@ -1,4 +1,4 @@
-package component
+package layout
 
 import (
 	"testing"
@@ -71,7 +71,7 @@ func Test_attachModalForTreeAttributes(t *testing.T) {
 			}
 			hideFn := func(tview.Primitive) {}
 
-			attachModalForTreeAttributes(tree, showFn, hideFn)
+			AttachModalForTreeAttributes(tree, showFn, hideFn)
 			tree.SetCurrentNode(node)
 
 			event := tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone)

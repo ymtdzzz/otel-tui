@@ -179,6 +179,7 @@ type Store struct {
 	onSpanAdded         func()
 	onMetricAdded       func()
 	onLogAdded          func()
+	onFlushed           []func()
 }
 
 // NewStore creates a new store
@@ -253,6 +254,11 @@ func (s *Store) SetOnMetricAdded(f func()) {
 // SetOnLogAdded sets the callback function to be called when a log is added
 func (s *Store) SetOnLogAdded(f func()) {
 	s.onLogAdded = f
+}
+
+// RegisterOnFlushed registers a callback function to be called when the store is flushed
+func (s *Store) RegisterOnFlushed(f func()) {
+	s.onFlushed = append(s.onFlushed, f)
 }
 
 // ApplyFilterTraces applies a filter and sort to the traces
@@ -555,4 +561,8 @@ func (s *Store) Flush() {
 	s.logsFiltered = []*LogData{}
 	s.logcache.flush()
 	s.updatedAt = time.Now()
+
+	for _, f := range s.onFlushed {
+		f()
+	}
 }
