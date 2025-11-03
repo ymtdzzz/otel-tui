@@ -210,7 +210,9 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		}).
 		SetFixed(1, 0)
 	store.SetOnSpanAdded(func() {
-		table.Select(table.GetSelection())
+		if details.GetItemCount() == 0 {
+			table.Select(table.GetSelection())
+		}
 	})
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
@@ -306,8 +308,12 @@ func (p *TUIPages) createTracePage(store *telemetry.Store) *tview.Flex {
 		if spans == nil {
 			return
 		}
+		hasFocus := details.HasFocus()
 		details.Clear()
 		details.AddItem(getTraceInfoTree(commands, p.showModal, p.hideModal, spans), 0, 1, true)
+		if hasFocus {
+			p.setFocusFn(details)
+		}
 		log.Printf("selected row(original): %d", row)
 	})
 	tableContainer.
@@ -531,7 +537,9 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		SetContent(NewMetricDataForTable(store.GetFilteredMetrics())).
 		SetFixed(1, 0)
 	store.SetOnMetricAdded(func() {
-		table.Select(table.GetSelection())
+		if details.GetItemCount() == 0 {
+			table.Select(table.GetSelection())
+		}
 	})
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlL {
@@ -594,11 +602,19 @@ func (p *TUIPages) createMetricsPage(store *telemetry.Store) *tview.Flex {
 		if selected == nil {
 			return
 		}
+		hasFocus := details.HasFocus()
 		details.Clear()
 		details.AddItem(getMetricInfoTree(commands, p.showModal, p.hideModal, selected), 0, 1, true)
+		if hasFocus {
+			p.setFocusFn(details)
+		}
 		// TODO: async rendering with spinner
+		hasFocus = chart.HasFocus()
 		chart.Clear()
 		chart.AddItem(drawMetricChartByRow(commands, store, row-1), 0, 1, true)
+		if hasFocus {
+			p.setFocusFn(chart)
+		}
 	})
 
 	tableContainer.
@@ -736,7 +752,9 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		SetContent(ldft).
 		SetFixed(1, 0)
 	store.SetOnLogAdded(func() {
-		table.Select(table.GetSelection())
+		if details.GetItemCount() == 0 {
+			table.Select(table.GetSelection())
+		}
 	})
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -813,12 +831,16 @@ func (p *TUIPages) createLogPage(store *telemetry.Store) *tview.Flex {
 		if selected == nil {
 			return
 		}
+		hasFocus := details.HasFocus()
 		details.Clear()
 		details.AddItem(getLogInfoTree(commands, p.showModal, p.hideModal, selected, store.GetTraceCache(), func(traceID string) {
 			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), func(pr tview.Primitive) {
 				p.setFocusFn(pr)
 			})
 		}), 0, 1, true)
+		if hasFocus {
+			p.setFocusFn(details)
+		}
 		log.Printf("selected row(original): %d", row)
 
 		resolved = json.PrettyJSON(selected.GetResolvedBody())
