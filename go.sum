@@ -652,8 +652,8 @@ github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 h1:QldyIu/L63oPpyvQmHg
 github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778/go.mod h1:2MuV+tbUrU1zIOPMxZ5EncGwgmMJsa+9ucAQZXxsObs=
 github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859 h1:TPrtTTD4gqQIj9g+4hAIa3Va2DkYBTOdOni/xh9RZak=
 github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859/go.mod h1:gDx5dss6A/czppfsA5jQ0J5jxYpfhojLVgiF5ArbIE8=
-github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20251012084101-5473586a5002 h1:KK8PDcjwXr2PfBwzWZsfKTBJsshGKKdxFSk+Zsm/OTE=
-github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20251012084101-5473586a5002/go.mod h1:zSLJXcboDcithRs1dy2Oecz1EbFv4u1waZYGo9zFfpk=
+github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20251103072247-808d6eede6ed h1:DyWPlQZn1WYPdpP8WuTZzFw39Y5CGCNJZzphpJiU9pc=
+github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20251103072247-808d6eede6ed/go.mod h1:3beFA04mE96961Dju/vudytv/1IE+NZ9IBHbRWTWttE=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
