@@ -12,8 +12,6 @@ type ShowModalFunc func(tview.Primitive, string) *tview.TextView
 
 type HideModalFunc func(tview.Primitive)
 
-const MODAL_TITLE = "Scroll (Ctrl+J, Ctrl+K)"
-
 func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hideFn HideModalFunc) {
 	var currentModalNode *tview.TreeNode = nil
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
@@ -34,7 +32,6 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hi
 			nodeText = parts[0] + ": " + value
 		}
 		textView := showFn(tree, nodeText)
-		textView.SetTitle(MODAL_TITLE)
 		currentModalNode = node
 		tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
@@ -82,7 +79,6 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn
 			text := cell.Text
 			text = json.PrettyJSON(text)
 			textView := showFn(table, text)
-			textView.SetTitle(MODAL_TITLE)
 			table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 				switch event.Key() {
 				case tcell.KeyCtrlJ:

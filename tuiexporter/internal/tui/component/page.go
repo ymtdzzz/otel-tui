@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gdamore/tcell/v2"
@@ -10,6 +9,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	clog "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/log"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/metric"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/modal"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/trace"
 )
 
@@ -35,7 +35,9 @@ type TUIPages struct {
 	topology          *tview.Flex
 	metrics           tview.Primitive
 	logs              tview.Primitive
-	modal             *tview.Flex
+	modal             tview.Primitive
+	showModalFn       layout.ShowModalFunc
+	hideModalFn       layout.HideModalFunc
 	current           string
 	setFocusFn        func(p tview.Primitive)
 	setTextTopologyFn func(text string) *tview.TextView
@@ -60,20 +62,6 @@ func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TU
 // GetPages returns the pages
 func (p *TUIPages) GetPages() *tview.Pages {
 	return p.pages
-}
-
-func (p *TUIPages) showModal(current tview.Primitive, text string) *tview.TextView {
-	textView := p.updateModelPage(text)
-	p.pages.ShowPage(PAGE_MODAL)
-	p.pages.SendToFront(PAGE_MODAL)
-	p.setFocusFn(current)
-	return textView
-}
-
-func (p *TUIPages) hideModal(current tview.Primitive) {
-	p.pages.SendToBack(PAGE_MODAL)
-	p.pages.HidePage(PAGE_MODAL)
-	p.setFocusFn(current)
 }
 
 // TogglePage toggles Traces & Logs page.
@@ -113,14 +101,24 @@ func (p *TUIPages) switchToPage(name string) {
 }
 
 func (p *TUIPages) registerPages(store *telemetry.Store) {
-	modal, _ := p.createModalPage("")
-	p.modal = modal
-	p.pages.AddPage(PAGE_MODAL, modal, true, true)
+	// modal, _ := p.createModalPage("")
+	// p.modal = modal
+	modal := modal.NewModalPage(p.setFocusFn)
+	p.modal = modal.GetPrimitive()
+	p.pages.AddPage(PAGE_MODAL, p.modal, true, true)
+	p.showModalFn = modal.ShowModalFunc(func() {
+		p.pages.ShowPage(PAGE_MODAL)
+		p.pages.SendToFront(PAGE_MODAL)
+	})
+	p.hideModalFn = modal.HideModalFunc(func() {
+		p.pages.SendToBack(PAGE_MODAL)
+		p.pages.HidePage(PAGE_MODAL)
+	})
 
 	traces := trace.NewTracePage(
 		p.setFocusFn,
-		p.showModal,
-		p.hideModal,
+		p.showModalFn,
+		p.hideModalFn,
 		func(row, _ int) {
 			p.showTimelineByRow(store, row-1)
 		},
@@ -140,8 +138,8 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 
 	metrics := metric.NewMetricPage(
 		p.setFocusFn,
-		p.showModal,
-		p.hideModal,
+		p.showModalFn,
+		p.hideModalFn,
 		store,
 	)
 	metricsPage := metrics.GetPrimitive()
@@ -150,8 +148,8 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 
 	logs := clog.NewLogPage(
 		p.setFocusFn,
-		p.showModal,
-		p.hideModal,
+		p.showModalFn,
+		p.hideModalFn,
 		func(traceID string) {
 			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), p.setFocusFn)
 		},
@@ -230,26 +228,6 @@ func (p *TUIPages) updateTopology(cache *telemetry.TraceCache) {
 	p.setTextTopologyFn(graph)
 }
 
-func (p *TUIPages) createModalPage(text string) (*tview.Flex, *tview.TextView) {
-	textView := tview.NewTextView()
-	textView.SetBorder(true)
-	fmt.Fprint(textView, text)
-	return tview.NewFlex().SetDirection(tview.FlexColumn).
-		AddItem(nil, 0, 2, false).
-		AddItem(nil, 0, 2, false).
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(nil, 0, 2, false).
-			AddItem(nil, 0, 1, false).
-			AddItem(textView, 0, 1, false), 0, 3, false), textView
-}
-
-func (p *TUIPages) updateModelPage(text string) *tview.TextView {
-	modal, textView := p.createModalPage(text)
-	p.modal = modal
-	p.pages.AddPage(PAGE_MODAL, modal, true, false)
-	return textView
-}
-
 func (p *TUIPages) showTimelineByRow(store *telemetry.Store, row int) {
 	if store == nil {
 		return
@@ -268,8 +246,8 @@ func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lc
 	timeline := tview.NewFlex().SetDirection(tview.FlexRow)
 	tl := DrawTimeline(
 		p.commandsTimeline,
-		p.showModal,
-		p.hideModal,
+		p.showModalFn,
+		p.hideModalFn,
 		traceID,
 		tcache,
 		lcache,
