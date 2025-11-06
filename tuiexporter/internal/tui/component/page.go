@@ -1,8 +1,6 @@
 package component
 
 import (
-	"log"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
@@ -10,6 +8,7 @@ import (
 	clog "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/log"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/metric"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/modal"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/topology"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/trace"
 )
 
@@ -32,7 +31,7 @@ type TUIPages struct {
 	pages             *tview.Pages
 	traces            tview.Primitive
 	timeline          *tview.Flex
-	topology          *tview.Flex
+	topology          *topology.TopologyPage
 	metrics           tview.Primitive
 	logs              tview.Primitive
 	modal             tview.Primitive
@@ -73,7 +72,7 @@ func (p *TUIPages) TogglePage() {
 		p.switchToPage(layout.PAGE_LOGS)
 	case layout.PAGE_LOGS:
 		p.switchToPage(layout.PAGE_TRACE_TOPOLOGY)
-		p.updateTopology(p.store.GetTraceCache())
+		p.topology.UpdateTopology()
 	default:
 		p.switchToPage(layout.PAGE_TRACES)
 	}
@@ -83,7 +82,7 @@ func (p *TUIPages) TogglePageReverse() {
 	switch p.current {
 	case layout.PAGE_TRACES:
 		p.switchToPage(layout.PAGE_TRACE_TOPOLOGY)
-		p.updateTopology(p.store.GetTraceCache())
+		p.topology.UpdateTopology()
 	case layout.PAGE_METRICS:
 		p.switchToPage(layout.PAGE_TRACES)
 	case layout.PAGE_LOGS:
@@ -132,9 +131,9 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	p.timeline = timeline
 	p.pages.AddPage(PAGE_TIMELINE, timeline, true, false)
 
-	topology := p.createTraceTopologyPage(store.GetTraceCache())
+	topology := topology.NewTopologyPage(store.GetTraceCache())
 	p.topology = topology
-	p.pages.AddPage(layout.PAGE_TRACE_TOPOLOGY, topology, true, false)
+	p.pages.AddPage(layout.PAGE_TRACE_TOPOLOGY, topology.GetPrimitive(), true, false)
 
 	metrics := metric.NewMetricPage(
 		p.setFocusFn,
@@ -175,57 +174,6 @@ func (p *TUIPages) createTimelinePage() *tview.Flex {
 	p.commandsTimeline = layout.NewCommandList()
 
 	return page
-}
-
-func (p *TUIPages) createTraceTopologyPage(cache *telemetry.TraceCache) *tview.Flex {
-	commands := layout.NewCommandList()
-	page := tview.NewFlex().SetDirection(tview.FlexRow)
-	page.SetBorder(false)
-
-	topo := tview.NewTextView().
-		SetWrap(false).
-		SetRegions(false).
-		SetDynamicColors(false)
-	topo.SetBorder(true).SetTitle("Topology")
-	page.AddItem(topo, 0, 1, true)
-
-	p.setTextTopologyFn = topo.SetText
-
-	topo.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlR {
-			p.updateTopology(cache)
-			return nil
-		}
-
-		return event
-	})
-	layout.RegisterCommandList(commands, topo, nil, layout.KeyMaps{
-		{
-			Key:         tcell.NewEventKey(tcell.KeyRune, 'R', tcell.ModCtrl),
-			Description: "Reload",
-		},
-		{
-			Arrow:       true,
-			Description: "Scroll view",
-		},
-	})
-
-	return layout.AttachTab(layout.AttachCommandList(commands, page), layout.PAGE_TRACE_TOPOLOGY)
-}
-
-func (p *TUIPages) updateTopology(cache *telemetry.TraceCache) {
-	p.setTextTopologyFn("Loading...")
-	graph, err := cache.DrawSpanDependencies()
-	if err != nil {
-		p.setTextTopologyFn("Failed to render the trace topology view")
-		log.Printf("Failed to render the trace topology view: %v", err)
-		return
-	}
-	if len(graph) <= 1 {
-		p.setTextTopologyFn("No data")
-		return
-	}
-	p.setTextTopologyFn(graph)
 }
 
 func (p *TUIPages) showTimelineByRow(store *telemetry.Store, row int) {
