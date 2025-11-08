@@ -14,8 +14,6 @@ type detail struct {
 	commands       *tview.TextView
 	view           *tview.Flex
 	tree           *tview.TreeView
-	showModalFn    layout.ShowModalFunc
-	hideModalFn    layout.HideModalFunc
 	drawTimelineFn func(traceID string)
 	resizeManagers []*layout.ResizeManager
 	tcache         *telemetry.TraceCache
@@ -23,8 +21,6 @@ type detail struct {
 
 func newDetail(
 	commands *tview.TextView,
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	drawTimelineFn func(traceID string),
 	resizeManagers []*layout.ResizeManager,
 	tcache *telemetry.TraceCache,
@@ -35,8 +31,6 @@ func newDetail(
 	detail := &detail{
 		commands:       commands,
 		view:           container,
-		showModalFn:    showModalFn,
-		hideModalFn:    hideModalFn,
 		drawTimelineFn: drawTimelineFn,
 		resizeManagers: resizeManagers,
 		tcache:         tcache,
@@ -146,7 +140,7 @@ func (d *detail) getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	layout.AttachModalForTreeAttributes(tree, d.showModalFn, d.hideModalFn)
+	layout.AttachModalForTreeAttributes(tree)
 
 	return tree
 }

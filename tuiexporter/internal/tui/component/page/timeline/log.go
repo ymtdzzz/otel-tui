@@ -12,31 +12,25 @@ import (
 )
 
 type logPane struct {
-	commands    *tview.TextView
-	tableView   *tview.Table
-	showModalFn layout.ShowModalFunc
-	hideModalFn layout.HideModalFunc
-	lcache      *telemetry.LogCache
-	logData     *table.LogDataForTable
-	allLogs     bool
+	commands  *tview.TextView
+	tableView *tview.Table
+	lcache    *telemetry.LogCache
+	logData   *table.LogDataForTable
+	allLogs   bool
 }
 
 func newLogPane(
 	commands *tview.TextView,
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	lcache *telemetry.LogCache,
 ) *logPane {
 	container := tview.NewTable().SetBorders(false).SetSelectable(true, false)
 
 	return &logPane{
-		commands:    commands,
-		tableView:   container,
-		showModalFn: showModalFn,
-		hideModalFn: hideModalFn,
-		lcache:      lcache,
-		logData:     nil,
-		allLogs:     false,
+		commands:  commands,
+		tableView: container,
+		lcache:    lcache,
+		logData:   nil,
+		allLogs:   false,
 	}
 }
 
@@ -60,7 +54,7 @@ func (l *logPane) updateLog(traceID, spanID string) {
 		}
 		l.logData = &logData
 		l.tableView.SetContent(&logData)
-		layout.AttachModalForTableRows(l.tableView, &logData, l.showModalFn, l.hideModalFn)
+		layout.AttachModalForTableRows(l.tableView, &logData)
 	}
 	l.tableView.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L: toggle collapse, A: toggle filter by span)", logCount))
 	l.updateCommands()

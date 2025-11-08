@@ -20,8 +20,6 @@ type TracePage struct {
 }
 
 func NewTracePage(
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	onSelectTableRow func(row, column int),
 	store *telemetry.Store,
 ) *TracePage {
@@ -29,7 +27,7 @@ func NewTracePage(
 	container := tview.NewFlex().SetDirection(tview.FlexColumn)
 
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
-	detail := newDetail(commands, showModalFn, hideModalFn, resizeManager)
+	detail := newDetail(commands, resizeManager)
 	table := newTable(commands, onSelectTableRow, store, detail, resizeManager)
 
 	resizeManager.Register(

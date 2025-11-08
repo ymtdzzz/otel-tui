@@ -6,13 +6,14 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/json"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 type ShowModalFunc func(tview.Primitive, string) *tview.TextView
 
 type HideModalFunc func(tview.Primitive)
 
-func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hideFn HideModalFunc) {
+func AttachModalForTreeAttributes(tree *tview.TreeView) {
 	var currentModalNode *tview.TreeNode = nil
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		if len(node.GetChildren()) > 0 {
@@ -20,7 +21,7 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hi
 			return
 		}
 		if currentModalNode == node {
-			hideFn(tree)
+			navigation.HideModal(tree)
 			currentModalNode = nil
 			return
 		}
@@ -31,7 +32,7 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hi
 			value = json.PrettyJSON(value)
 			nodeText = parts[0] + ": " + value
 		}
-		textView := showFn(tree, nodeText)
+		textView := navigation.ShowModal(tree, nodeText)
 		currentModalNode = node
 		tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
@@ -49,7 +50,7 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, showFn ShowModalFunc, hi
 	})
 	tree.SetChangedFunc(func(node *tview.TreeNode) {
 		if currentModalNode != nil {
-			hideFn(tree)
+			navigation.HideModal(tree)
 			currentModalNode = nil
 		}
 	})
@@ -61,7 +62,7 @@ type tableModalMapper interface {
 	GetColumnIdx() int
 }
 
-func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn ShowModalFunc, hideFn HideModalFunc) {
+func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper) {
 	if mapper == nil {
 		return
 	}
@@ -70,7 +71,7 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn
 
 	table.SetSelectedFunc(func(row, column int) {
 		if currentRow == row {
-			hideFn(table)
+			navigation.HideModal(table)
 			currentRow = -1
 			return
 		}
@@ -78,7 +79,7 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn
 		if cell := table.GetCell(row, mapper.GetColumnIdx()); cell != nil {
 			text := cell.Text
 			text = json.PrettyJSON(text)
-			textView := showFn(table, text)
+			textView := navigation.ShowModal(table, text)
 			table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 				switch event.Key() {
 				case tcell.KeyCtrlJ:
@@ -96,7 +97,7 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, showFn
 	})
 	table.SetSelectionChangedFunc(func(row, column int) {
 		if currentRow != -1 {
-			hideFn(table)
+			navigation.HideModal(table)
 			currentRow = -1
 		}
 	})

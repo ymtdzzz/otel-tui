@@ -23,8 +23,6 @@ type MetricPage struct {
 }
 
 func NewMetricPage(
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	store *telemetry.Store,
 ) *MetricPage {
 	commands := layout.NewCommandList()
@@ -33,7 +31,7 @@ func NewMetricPage(
 
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
 	sideResizeManager := layout.NewResizeManager(layout.ResizeDirectionVertical)
-	detail := newDetail(commands, showModalFn, hideModalFn, []*layout.ResizeManager{
+	detail := newDetail(commands, []*layout.ResizeManager{
 		sideResizeManager,
 		resizeManager,
 	})

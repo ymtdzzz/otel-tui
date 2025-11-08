@@ -65,13 +65,8 @@ func Test_attachModalForTreeAttributes(t *testing.T) {
 			tree.SetRoot(root)
 
 			var modalText string
-			showFn := func(_ tview.Primitive, text string) *tview.TextView {
-				modalText = text
-				return tview.NewTextView()
-			}
-			hideFn := func(tview.Primitive) {}
 
-			AttachModalForTreeAttributes(tree, showFn, hideFn)
+			AttachModalForTreeAttributes(tree)
 			tree.SetCurrentNode(node)
 
 			event := tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone)

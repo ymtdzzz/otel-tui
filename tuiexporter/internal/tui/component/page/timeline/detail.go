@@ -15,15 +15,11 @@ type detail struct {
 	commands      *tview.TextView
 	view          *tview.Flex
 	tree          *tview.TreeView
-	showModalFn   layout.ShowModalFunc
-	hideModalFn   layout.HideModalFunc
 	resizeManager *layout.ResizeManager
 }
 
 func newDetail(
 	commands *tview.TextView,
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	resizeManager *layout.ResizeManager,
 ) *detail {
 	container := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -32,8 +28,6 @@ func newDetail(
 	detail := &detail{
 		commands:      commands,
 		view:          container,
-		showModalFn:   showModalFn,
-		hideModalFn:   hideModalFn,
 		resizeManager: resizeManager,
 	}
 
@@ -211,7 +205,7 @@ func (d *detail) getSpanInfoTree(span *telemetry.SpanData) *tview.TreeView {
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	layout.AttachModalForTreeAttributes(tree, d.showModalFn, d.hideModalFn)
+	layout.AttachModalForTreeAttributes(tree)
 
 	return tree
 }

@@ -4,18 +4,11 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 )
-
-var noopShowModalFn layout.ShowModalFunc = func(p tview.Primitive, s string) *tview.TextView {
-	return tview.NewTextView()
-}
-
-var noopHideModalFn layout.HideModalFunc = func(p tview.Primitive) {}
 
 var noopDrawTimelineFn func(traceID string) = func(traceID string) {}
 
@@ -39,7 +32,7 @@ func TestGetLogInfoTree(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	detail := newDetail(layout.NewCommandList(), noopShowModalFn, noopHideModalFn, noopDrawTimelineFn, []*layout.ResizeManager{}, nil)
+	detail := newDetail(layout.NewCommandList(), noopDrawTimelineFn, []*layout.ResizeManager{}, nil)
 	detail.update(logs[0])
 
 	detail.view.SetRect(0, 0, sw, sh)

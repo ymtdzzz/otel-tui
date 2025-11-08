@@ -4,18 +4,11 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 )
-
-var noopShowModalFn layout.ShowModalFunc = func(p tview.Primitive, s string) *tview.TextView {
-	return tview.NewTextView()
-}
-
-var noopHideModalFn layout.HideModalFunc = func(p tview.Primitive) {}
 
 func TestDrawTreeWithServiceName(t *testing.T) {
 	// traceid: 1
@@ -55,7 +48,7 @@ func TestDrawTreeWithServiceName(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	detail := newDetail(layout.NewCommandList(), noopShowModalFn, noopHideModalFn, layout.NewResizeManager(layout.ResizeDirectionHorizontal))
+	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
 	detail.update(spans)
 
 	detail.view.SetRect(0, 0, sw, sh)
@@ -122,7 +115,7 @@ func TestDrawTreeWithoutServiceName(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	detail := newDetail(layout.NewCommandList(), noopShowModalFn, noopHideModalFn, layout.NewResizeManager(layout.ResizeDirectionHorizontal))
+	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
 	detail.update(spans)
 
 	detail.view.SetRect(0, 0, sw, sh)
@@ -141,7 +134,7 @@ func TestDrawTreeWithoutSpans(t *testing.T) {
 	screen.Init()
 	screen.SetSize(sw, sh)
 
-	detail := newDetail(layout.NewCommandList(), noopShowModalFn, noopHideModalFn, layout.NewResizeManager(layout.ResizeDirectionHorizontal))
+	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
 	detail.update([]*telemetry.SpanData{})
 
 	detail.view.SetRect(0, 0, sw, sh)

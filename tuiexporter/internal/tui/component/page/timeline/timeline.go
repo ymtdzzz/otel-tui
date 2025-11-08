@@ -29,8 +29,6 @@ type TimelinePage struct {
 }
 
 func NewTimelinePage(
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	switchToPageFn func(),
 	store *telemetry.Store,
 	onEscape func(),
@@ -44,8 +42,8 @@ func NewTimelinePage(
 	base.AddItem(container, 0, 1, true)
 
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
-	detail := newDetail(commands, showModalFn, hideModalFn, resizeManager)
-	logPane := newLogPane(commands, showModalFn, hideModalFn, store.GetLogCache())
+	detail := newDetail(commands, resizeManager)
+	logPane := newLogPane(commands, store.GetLogCache())
 	grid := newGrid(commands, store.GetTraceCache(), resizeManager, detail, logPane)
 
 	resizeManager.Register(

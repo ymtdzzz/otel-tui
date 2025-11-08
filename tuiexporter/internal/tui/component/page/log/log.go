@@ -23,8 +23,6 @@ type LogPage struct {
 }
 
 func NewLogPage(
-	showModalFn layout.ShowModalFunc,
-	hideModalFn layout.HideModalFunc,
 	drawTimelineFn func(traceID string),
 	store *telemetry.Store,
 ) *LogPage {
@@ -34,7 +32,7 @@ func NewLogPage(
 
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionVertical)
 	mainResizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
-	detail := newDetail(commands, showModalFn, hideModalFn, drawTimelineFn, []*layout.ResizeManager{
+	detail := newDetail(commands, drawTimelineFn, []*layout.ResizeManager{
 		mainResizeManager,
 		resizeManager,
 	}, store.GetTraceCache())
