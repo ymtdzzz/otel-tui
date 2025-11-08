@@ -127,7 +127,7 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManagers []*lay
 	for _, rm := range resizeManagers {
 		keyMaps.Merge(rm.KeyMaps())
 	}
-	layout.RegisterCommandList2(commands, t.table, nil, keyMaps)
+	layout.RegisterCommandList(commands, t.table, nil, keyMaps)
 }
 
 func (t *table) onSelectionChangedFunc() func(row, col int) {

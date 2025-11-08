@@ -443,7 +443,7 @@ func (c *chart) updateCommands(keyMaps layout.KeyMaps) {
 	for _, rm := range c.resizeManagers {
 		keyMaps.Merge(rm.KeyMaps())
 	}
-	layout.RegisterCommandList2(c.commands, c.ch, nil, keyMaps)
+	layout.RegisterCommandList(c.commands, c.ch, nil, keyMaps)
 }
 
 // uint64ToInt converts uint64 into int. When the input is larger than math.MaxInt, it returns math.MaxInt.

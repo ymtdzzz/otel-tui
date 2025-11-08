@@ -348,5 +348,5 @@ func (d *detail) updateCommands() {
 	for _, rm := range d.resizeManagers {
 		keyMaps.Merge(rm.KeyMaps())
 	}
-	layout.RegisterCommandList2(d.commands, d.tree, nil, keyMaps)
+	layout.RegisterCommandList(d.commands, d.tree, nil, keyMaps)
 }

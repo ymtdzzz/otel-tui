@@ -1,21 +1,18 @@
 package component
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	clog "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/log"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/metric"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/modal"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/timeline"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/topology"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/trace"
 )
 
 const (
-	PAGE_TIMELINE = "Timeline"
-	PAGE_MODAL    = "Modal"
-
 	DEFAULT_HORIZONTAL_PROPORTION_TRACE_DETAILS = 20
 	DEFAULT_HORIZONTAL_PROPORTION_TRACE_TABLE   = 30
 	DEFAULT_HORIZONTAL_PROPORTION_METRIC_SIDE   = 25
@@ -30,7 +27,7 @@ type TUIPages struct {
 	store             *telemetry.Store
 	pages             *tview.Pages
 	traces            tview.Primitive
-	timeline          *tview.Flex
+	timeline          *timeline.TimelinePage
 	topology          *topology.TopologyPage
 	metrics           tview.Primitive
 	logs              tview.Primitive
@@ -100,18 +97,16 @@ func (p *TUIPages) switchToPage(name string) {
 }
 
 func (p *TUIPages) registerPages(store *telemetry.Store) {
-	// modal, _ := p.createModalPage("")
-	// p.modal = modal
 	modal := modal.NewModalPage(p.setFocusFn)
 	p.modal = modal.GetPrimitive()
-	p.pages.AddPage(PAGE_MODAL, p.modal, true, true)
+	p.pages.AddPage(layout.PAGE_MODAL, p.modal, true, true)
 	p.showModalFn = modal.ShowModalFunc(func() {
-		p.pages.ShowPage(PAGE_MODAL)
-		p.pages.SendToFront(PAGE_MODAL)
+		p.pages.ShowPage(layout.PAGE_MODAL)
+		p.pages.SendToFront(layout.PAGE_MODAL)
 	})
 	p.hideModalFn = modal.HideModalFunc(func() {
-		p.pages.SendToBack(PAGE_MODAL)
-		p.pages.HidePage(PAGE_MODAL)
+		p.pages.SendToBack(layout.PAGE_MODAL)
+		p.pages.HidePage(layout.PAGE_MODAL)
 	})
 
 	traces := trace.NewTracePage(
@@ -119,7 +114,7 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 		p.showModalFn,
 		p.hideModalFn,
 		func(row, _ int) {
-			p.showTimelineByRow(store, row-1)
+			p.timeline.ShowTimelineByRow(row - 1)
 		},
 		store,
 	)
@@ -127,9 +122,20 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	p.traces = tracesPage
 	p.pages.AddPage(layout.PAGE_TRACES, tracesPage, true, true)
 
-	timeline := p.createTimelinePage()
+	timeline := timeline.NewTimelinePage(
+		p.setFocusFn,
+		p.showModalFn,
+		p.hideModalFn,
+		func() {
+			p.switchToPage(layout.PAGE_TIMELINE)
+		},
+		store,
+		func() {
+			p.switchToPage(layout.PAGE_TRACES)
+		},
+	)
 	p.timeline = timeline
-	p.pages.AddPage(PAGE_TIMELINE, timeline, true, false)
+	p.pages.AddPage(layout.PAGE_TIMELINE, timeline.GetPrimitive(), true, false)
 
 	topology := topology.NewTopologyPage(store.GetTraceCache())
 	p.topology = topology
@@ -150,61 +156,11 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 		p.showModalFn,
 		p.hideModalFn,
 		func(traceID string) {
-			p.showTimeline(traceID, store.GetTraceCache(), store.GetLogCache(), p.setFocusFn)
+			p.timeline.DrawTimeline(traceID)
 		},
 		store,
 	)
 	logsPage := logs.GetPrimitive()
 	p.logs = logsPage
 	p.pages.AddPage(layout.PAGE_LOGS, logsPage, true, false)
-}
-
-func (p *TUIPages) createTimelinePage() *tview.Flex {
-	page := tview.NewFlex().SetDirection(tview.FlexRow)
-	page.Box.SetBorder(false)
-	page.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEsc {
-			p.switchToPage(layout.PAGE_TRACES)
-			return nil
-		}
-		return event
-	})
-
-	// set TextView to draw the keymaps
-	p.commandsTimeline = layout.NewCommandList()
-
-	return page
-}
-
-func (p *TUIPages) showTimelineByRow(store *telemetry.Store, row int) {
-	if store == nil {
-		return
-	}
-	p.showTimeline(
-		store.GetTraceIDByFilteredIdx(row),
-		store.GetTraceCache(),
-		store.GetLogCache(),
-		func(pr tview.Primitive) {
-			p.setFocusFn(pr)
-		})
-}
-
-func (p *TUIPages) showTimeline(traceID string, tcache *telemetry.TraceCache, lcache *telemetry.LogCache, setFocusFn func(pr tview.Primitive)) {
-	p.timeline.Clear()
-	timeline := tview.NewFlex().SetDirection(tview.FlexRow)
-	tl := DrawTimeline(
-		p.commandsTimeline,
-		p.showModalFn,
-		p.hideModalFn,
-		traceID,
-		tcache,
-		lcache,
-		setFocusFn,
-	)
-	timeline.AddItem(tl, 0, 1, true)
-
-	timeline = layout.AttachCommandList(p.commandsTimeline, timeline)
-
-	p.timeline.AddItem(timeline, 0, 1, true)
-	p.switchToPage(PAGE_TIMELINE)
 }

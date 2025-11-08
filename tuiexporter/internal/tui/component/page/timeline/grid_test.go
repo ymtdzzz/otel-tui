@@ -1,12 +1,12 @@
-package component
+package timeline
 
 import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
+	"gotest.tools/v3/assert"
 )
 
 func TestNewSpanTreeWithServiceName(t *testing.T) {
@@ -38,19 +38,20 @@ func TestNewSpanTreeWithServiceName(t *testing.T) {
 
 	store.AddSpan(&payload)
 
-	st, d := newSpanTree(testdata.Spans[0].TraceID().String(), store.GetTraceCache())
+	grid := newGrid(nil, nil, store.GetTraceCache(), nil, nil, nil)
+	st, d := grid.newSpanTree(testdata.Spans[0].TraceID().String())
 
 	// duration assertion
 	assert.Equal(t, 200*time.Millisecond, d)
 
 	// node assertion
 	assert.Equal(t, 2, len(st))
-	assert.Equal(t, sds[0].Span, st[0].span.Span)
-	assert.Equal(t, sds[1].Span, st[0].children[0].span.Span)
-	assert.Equal(t, sds[2].Span, st[0].children[0].children[0].span.Span)
-	assert.Equal(t, sds[3].Span, st[0].children[1].span.Span)
-	assert.Equal(t, sds[4].Span, st[1].span.Span)
-	assert.Equal(t, sds[5].Span, st[1].children[0].span.Span)
+	assert.Equal(t, *sds[0].Span, *st[0].span.Span)
+	assert.Equal(t, *sds[1].Span, *st[0].children[0].span.Span)
+	assert.Equal(t, *sds[2].Span, *st[0].children[0].children[0].span.Span)
+	assert.Equal(t, *sds[3].Span, *st[0].children[1].span.Span)
+	assert.Equal(t, *sds[4].Span, *st[1].span.Span)
+	assert.Equal(t, *sds[5].Span, *st[1].children[0].span.Span)
 }
 
 func TestNewSpanTreeWithoutServiceName(t *testing.T) {
@@ -83,19 +84,20 @@ func TestNewSpanTreeWithoutServiceName(t *testing.T) {
 
 	store.AddSpan(&payload)
 
-	st, d := newSpanTree(testdata.Spans[0].TraceID().String(), store.GetTraceCache())
+	grid := newGrid(nil, nil, store.GetTraceCache(), nil, nil, nil)
+	st, d := grid.newSpanTree(testdata.Spans[0].TraceID().String())
 
 	// duration assertion
 	assert.Equal(t, 200*time.Millisecond, d)
 
 	// node assertion
 	assert.Equal(t, 2, len(st))
-	assert.Equal(t, sds[0].Span, st[0].span.Span)
-	assert.Equal(t, sds[1].Span, st[0].children[0].span.Span)
-	assert.Equal(t, sds[2].Span, st[0].children[0].children[0].span.Span)
-	assert.Equal(t, sds[3].Span, st[0].children[1].span.Span)
-	assert.Equal(t, sds[4].Span, st[1].span.Span)
-	assert.Equal(t, sds[5].Span, st[1].children[0].span.Span)
+	assert.Equal(t, *sds[0].Span, *st[0].span.Span)
+	assert.Equal(t, *sds[1].Span, *st[0].children[0].span.Span)
+	assert.Equal(t, *sds[2].Span, *st[0].children[0].children[0].span.Span)
+	assert.Equal(t, *sds[3].Span, *st[0].children[1].span.Span)
+	assert.Equal(t, *sds[4].Span, *st[1].span.Span)
+	assert.Equal(t, *sds[5].Span, *st[1].children[0].span.Span)
 }
 
 func TestRoundDownDuration(t *testing.T) {

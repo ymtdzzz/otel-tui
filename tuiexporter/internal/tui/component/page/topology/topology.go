@@ -55,7 +55,7 @@ func (p *TopologyPage) registerCommands(commands *tview.TextView) {
 			},
 		},
 	}
-	layout.RegisterCommandList2(commands, p.topo, nil, keyMaps)
+	layout.RegisterCommandList(commands, p.topo, nil, keyMaps)
 }
 
 func (p *TopologyPage) UpdateTopology() {

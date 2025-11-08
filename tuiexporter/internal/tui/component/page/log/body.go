@@ -36,5 +36,5 @@ func (b *body) update(body string) {
 func (b *body) registerCommands(commands *tview.TextView, resizeManager *layout.ResizeManager) {
 	keyMaps := layout.KeyMaps{}
 	keyMaps.Merge(resizeManager.KeyMaps())
-	layout.RegisterCommandList2(commands, b.view, nil, keyMaps)
+	layout.RegisterCommandList(commands, b.view, nil, keyMaps)
 }

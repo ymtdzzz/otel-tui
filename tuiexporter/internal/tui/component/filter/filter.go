@@ -78,7 +78,7 @@ func (f *Filter) onDoneFunc() func(key tcell.Key) {
 }
 
 func (f *Filter) registerCommands(commands *tview.TextView) {
-	layout.RegisterCommandList2(commands, f.view, nil, layout.KeyMaps{
+	layout.RegisterCommandList(commands, f.view, nil, layout.KeyMaps{
 		{
 			Key:         tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
 			Description: "Cancel",

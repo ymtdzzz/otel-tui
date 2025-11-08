@@ -114,5 +114,5 @@ func (d *detail) updateCommands() {
 		},
 	}
 	keyMaps.Merge(d.resizeManager.KeyMaps())
-	layout.RegisterCommandList2(d.commands, d.tree, nil, keyMaps)
+	layout.RegisterCommandList(d.commands, d.tree, nil, keyMaps)
 }

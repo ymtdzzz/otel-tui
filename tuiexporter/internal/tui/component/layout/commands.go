@@ -84,28 +84,14 @@ func AttachCommandList(commands *tview.TextView, p tview.Primitive) *tview.Flex 
 	return base
 }
 
-func RegisterCommandList(commands *tview.TextView, c Focusable, origFocusFn func(), keys KeyMaps) {
+func RegisterCommandList(commands *tview.TextView, c FocusableBox, origFocusFn func(), keys KeyMaps) {
 	if commands == nil {
 		return
 	}
 
 	c.SetFocusFunc(func() {
 		commands.SetText(keys.keyTexts())
-
-		if origFocusFn != nil {
-			origFocusFn()
-		}
-	})
-}
-
-func RegisterCommandList2(commands *tview.TextView, c FocusableBox, origFocusFn func(), keys KeyMaps) {
-	if commands == nil {
-		return
-	}
-
-	c.SetFocusFunc(func() {
-		log.Println("triggered SetFocusFunc in RegisterCommandList2")
-		commands.SetText(keys.keyTexts())
+		log.Printf("triggered SetFocusFunc in RegisterCommandList2. commands: %s\n", commands.GetText(false))
 
 		if origFocusFn != nil {
 			origFocusFn()

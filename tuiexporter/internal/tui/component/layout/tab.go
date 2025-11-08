@@ -7,6 +7,8 @@ const (
 	PAGE_METRICS        = "Metrics"
 	PAGE_LOGS           = "Logs"
 	PAGE_TRACE_TOPOLOGY = "TraceTopology"
+	PAGE_TIMELINE       = "Timeline"
+	PAGE_MODAL          = "Modal"
 )
 
 func AttachTab(p tview.Primitive, name string) *tview.Flex {
