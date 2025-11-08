@@ -9,10 +9,6 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
-type ShowModalFunc func(tview.Primitive, string) *tview.TextView
-
-type HideModalFunc func(tview.Primitive)
-
 func AttachModalForTreeAttributes(tree *tview.TreeView) {
 	var currentModalNode *tview.TreeNode = nil
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {

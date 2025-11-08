@@ -2,7 +2,6 @@ package modal
 
 import (
 	"github.com/rivo/tview"
-	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
@@ -39,7 +38,7 @@ func (m *ModalPage) GetPrimitive() tview.Primitive {
 	return m.view
 }
 
-func (m *ModalPage) ShowModalFunc(showModalPageFn func()) layout.ShowModalFunc {
+func (m *ModalPage) ShowModalFunc(showModalPageFn func()) func(current tview.Primitive, text string) *tview.TextView {
 	return func(current tview.Primitive, text string) *tview.TextView {
 		m.SetText(text)
 		showModalPageFn()
@@ -48,7 +47,7 @@ func (m *ModalPage) ShowModalFunc(showModalPageFn func()) layout.ShowModalFunc {
 	}
 }
 
-func (m *ModalPage) HideModalFunc(hideModalPageFn func()) layout.HideModalFunc {
+func (m *ModalPage) HideModalFunc(hideModalPageFn func()) func(current tview.Primitive) {
 	return func(current tview.Primitive) {
 		hideModalPageFn()
 		navigation.Focus(current)

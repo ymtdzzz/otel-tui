@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 func Test_attachModalForTreeAttributes(t *testing.T) {
@@ -65,6 +66,12 @@ func Test_attachModalForTreeAttributes(t *testing.T) {
 			tree.SetRoot(root)
 
 			var modalText string
+			showFn := func(_ tview.Primitive, text string) *tview.TextView {
+				modalText = text
+				return tview.NewTextView()
+			}
+			hideFn := func(tview.Primitive) {}
+			navigation.Init(nil, showFn, hideFn)
 
 			AttachModalForTreeAttributes(tree)
 			tree.SetCurrentNode(node)
