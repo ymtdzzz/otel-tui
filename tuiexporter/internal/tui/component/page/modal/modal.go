@@ -3,17 +3,17 @@ package modal
 import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const ModalTitle = "Scroll (Ctrl+J, Ctrl+K)"
 
 type ModalPage struct {
-	setFocusFn func(primitive tview.Primitive)
-	view       *tview.Flex
-	textView   *tview.TextView
+	view     *tview.Flex
+	textView *tview.TextView
 }
 
-func NewModalPage(setFocusFn func(primitive tview.Primitive)) *ModalPage {
+func NewModalPage() *ModalPage {
 	textView := tview.NewTextView()
 	textView.SetBorder(true).SetTitle(ModalTitle)
 
@@ -26,9 +26,8 @@ func NewModalPage(setFocusFn func(primitive tview.Primitive)) *ModalPage {
 			AddItem(textView, 0, 1, false), 0, 3, false)
 
 	return &ModalPage{
-		setFocusFn: setFocusFn,
-		view:       container,
-		textView:   textView,
+		view:     container,
+		textView: textView,
 	}
 }
 
@@ -44,7 +43,7 @@ func (m *ModalPage) ShowModalFunc(showModalPageFn func()) layout.ShowModalFunc {
 	return func(current tview.Primitive, text string) *tview.TextView {
 		m.SetText(text)
 		showModalPageFn()
-		m.setFocusFn(current)
+		navigation.Focus(current)
 		return m.textView
 	}
 }
@@ -52,6 +51,6 @@ func (m *ModalPage) ShowModalFunc(showModalPageFn func()) layout.ShowModalFunc {
 func (m *ModalPage) HideModalFunc(hideModalPageFn func()) layout.HideModalFunc {
 	return func(current tview.Primitive) {
 		hideModalPageFn()
-		m.setFocusFn(current)
+		navigation.Focus(current)
 	}
 }

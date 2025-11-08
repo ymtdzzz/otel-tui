@@ -5,6 +5,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const (
@@ -13,14 +14,12 @@ const (
 )
 
 type TracePage struct {
-	setFocusFn func(primitive tview.Primitive)
-	view       *tview.Flex
-	table      *table
-	detail     *detail
+	view   *tview.Flex
+	table  *table
+	detail *detail
 }
 
 func NewTracePage(
-	setFocusFn func(primitive tview.Primitive),
 	showModalFn layout.ShowModalFunc,
 	hideModalFn layout.HideModalFunc,
 	onSelectTableRow func(row, column int),
@@ -31,7 +30,7 @@ func NewTracePage(
 
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
 	detail := newDetail(commands, showModalFn, hideModalFn, resizeManager)
-	table := newTable(commands, setFocusFn, onSelectTableRow, store, detail, resizeManager)
+	table := newTable(commands, onSelectTableRow, store, detail, resizeManager)
 
 	resizeManager.Register(
 		container,
@@ -46,10 +45,9 @@ func NewTracePage(
 		AddItem(detail.view, 0, defaultDetailProportion, false)
 
 	trace := &TracePage{
-		setFocusFn: setFocusFn,
-		view:       container,
-		table:      table,
-		detail:     detail,
+		view:   container,
+		table:  table,
+		detail: detail,
 	}
 
 	trace.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDTraces)
@@ -75,10 +73,10 @@ func (p *TracePage) registerCommands() {
 		if !p.table.filter.View().HasFocus() {
 			switch event.Rune() {
 			case 'd':
-				p.setFocusFn(p.detail.view)
+				navigation.Focus(p.detail.view)
 				return nil
 			case 't':
-				p.setFocusFn(p.table.view)
+				navigation.Focus(p.table.view)
 				return nil
 			}
 		}

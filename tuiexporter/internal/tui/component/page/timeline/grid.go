@@ -10,6 +10,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -28,7 +29,6 @@ type spanTreeNode struct {
 
 type grid struct {
 	commands      *tview.TextView
-	setFocusFn    func(primitive tview.Primitive)
 	gridView      *tview.Grid
 	tcache        *telemetry.TraceCache
 	snameWidth    int
@@ -45,7 +45,6 @@ type grid struct {
 
 func newGrid(
 	commands *tview.TextView,
-	setFocusFn func(primitive tview.Primitive),
 	tcache *telemetry.TraceCache,
 	resizeManager *layout.ResizeManager,
 	detail *detail,
@@ -59,7 +58,6 @@ func newGrid(
 
 	grid := &grid{
 		commands:      commands,
-		setFocusFn:    setFocusFn,
 		gridView:      container,
 		tcache:        tcache,
 		snameWidth:    snameWidth,
@@ -135,7 +133,7 @@ func (g *grid) placeSpans() {
 	g.nodes = nodes
 	g.items = tvs
 	if g.getCurrentSpan() != nil {
-		g.setFocusFn(g.items[g.currentRow])
+		navigation.Focus(g.items[g.currentRow])
 	}
 
 	rows := make([]int, g.totalRow+2)
@@ -146,7 +144,7 @@ func (g *grid) placeSpans() {
 	log.Printf("totalRow: %d, tviews: %+v", g.totalRow, tvs)
 
 	if g.getCurrentSpan() != nil {
-		g.setFocusFn(g.items[g.currentRow])
+		navigation.Focus(g.items[g.currentRow])
 	}
 }
 
@@ -284,7 +282,7 @@ func (g *grid) updateCommands() {
 			Handler: func(event *tcell.EventKey) *tcell.EventKey {
 				if g.currentRow < g.totalRow-1 {
 					g.currentRow++
-					g.setFocusFn(g.items[g.currentRow])
+					navigation.Focus(g.items[g.currentRow])
 
 					currentSpan := g.getCurrentSpan()
 					g.detail.update(currentSpan)
@@ -301,7 +299,7 @@ func (g *grid) updateCommands() {
 			Handler: func(event *tcell.EventKey) *tcell.EventKey {
 				if g.currentRow > 0 {
 					g.currentRow--
-					g.setFocusFn(g.items[g.currentRow])
+					navigation.Focus(g.items[g.currentRow])
 
 					currentSpan := g.getCurrentSpan()
 					g.detail.update(currentSpan)
@@ -347,7 +345,7 @@ func (g *grid) updateCommands() {
 	keyMaps.Merge(g.resizeManager.KeyMaps())
 	layout.RegisterCommandList(g.commands, g.gridView, func() {
 		if g.getCurrentSpan() != nil {
-			g.setFocusFn(g.items[g.currentRow])
+			navigation.Focus(g.items[g.currentRow])
 		}
 	}, keyMaps)
 }

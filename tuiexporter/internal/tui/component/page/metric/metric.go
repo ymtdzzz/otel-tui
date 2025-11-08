@@ -5,6 +5,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const (
@@ -15,15 +16,13 @@ const (
 )
 
 type MetricPage struct {
-	setFocusFn func(primitive tview.Primitive)
-	view       *tview.Flex
-	table      *table
-	detail     *detail
-	chart      *chart
+	view   *tview.Flex
+	table  *table
+	detail *detail
+	chart  *chart
 }
 
 func NewMetricPage(
-	setFocusFn func(primitive tview.Primitive),
 	showModalFn layout.ShowModalFunc,
 	hideModalFn layout.HideModalFunc,
 	store *telemetry.Store,
@@ -42,7 +41,7 @@ func NewMetricPage(
 		sideResizeManager,
 		resizeManager,
 	})
-	table := newTable(commands, setFocusFn, store, detail, chart, []*layout.ResizeManager{resizeManager})
+	table := newTable(commands, store, detail, chart, []*layout.ResizeManager{resizeManager})
 
 	resizeManager.Register(
 		container,
@@ -67,11 +66,10 @@ func NewMetricPage(
 		AddItem(sideContainer, 0, defaultSideProportion, false)
 
 	metric := &MetricPage{
-		setFocusFn: setFocusFn,
-		view:       container,
-		table:      table,
-		detail:     detail,
-		chart:      chart,
+		view:   container,
+		table:  table,
+		detail: detail,
+		chart:  chart,
 	}
 
 	metric.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDMetrics)
@@ -98,13 +96,13 @@ func (p *MetricPage) registerCommands() {
 		if !p.table.filter.View().HasFocus() {
 			switch event.Rune() {
 			case 'd':
-				p.setFocusFn(p.detail.view)
+				navigation.Focus(p.detail.view)
 				return nil
 			case 'm':
-				p.setFocusFn(p.table.view)
+				navigation.Focus(p.table.view)
 				return nil
 			case 'c':
-				p.setFocusFn(p.chart.view)
+				navigation.Focus(p.chart.view)
 				return nil
 			}
 		}

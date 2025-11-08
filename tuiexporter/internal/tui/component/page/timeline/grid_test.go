@@ -38,7 +38,7 @@ func TestNewSpanTreeWithServiceName(t *testing.T) {
 
 	store.AddSpan(&payload)
 
-	grid := newGrid(nil, nil, store.GetTraceCache(), nil, nil, nil)
+	grid := newGrid(nil, store.GetTraceCache(), nil, nil, nil)
 	st, d := grid.newSpanTree(testdata.Spans[0].TraceID().String())
 
 	// duration assertion
@@ -84,7 +84,7 @@ func TestNewSpanTreeWithoutServiceName(t *testing.T) {
 
 	store.AddSpan(&payload)
 
-	grid := newGrid(nil, nil, store.GetTraceCache(), nil, nil, nil)
+	grid := newGrid(nil, store.GetTraceCache(), nil, nil, nil)
 	st, d := grid.newSpanTree(testdata.Spans[0].TraceID().String())
 
 	// duration assertion

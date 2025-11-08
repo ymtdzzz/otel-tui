@@ -24,16 +24,14 @@ type TUIPages struct {
 	showModalFn layout.ShowModalFunc
 	hideModalFn layout.HideModalFunc
 	current     string
-	setFocusFn  func(p tview.Primitive)
 }
 
-func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TUIPages {
+func NewTUIPages(store *telemetry.Store) *TUIPages {
 	pages := tview.NewPages()
 	tp := &TUIPages{
-		store:      store,
-		pages:      pages,
-		current:    layout.PageIDTraces,
-		setFocusFn: setFocusFn,
+		store:   store,
+		pages:   pages,
+		current: layout.PageIDTraces,
 	}
 
 	tp.registerPages(store)
@@ -83,7 +81,7 @@ func (p *TUIPages) switchToPage(name string) {
 }
 
 func (p *TUIPages) registerPages(store *telemetry.Store) {
-	modal := modal.NewModalPage(p.setFocusFn)
+	modal := modal.NewModalPage()
 	p.modal = modal.GetPrimitive()
 	p.pages.AddPage(layout.PageIDModal, p.modal, true, true)
 	p.showModalFn = modal.ShowModalFunc(func() {
@@ -96,7 +94,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	})
 
 	traces := trace.NewTracePage(
-		p.setFocusFn,
 		p.showModalFn,
 		p.hideModalFn,
 		func(row, _ int) {
@@ -109,7 +106,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	p.pages.AddPage(layout.PageIDTraces, tracesPage, true, true)
 
 	timeline := timeline.NewTimelinePage(
-		p.setFocusFn,
 		p.showModalFn,
 		p.hideModalFn,
 		func() {
@@ -128,7 +124,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	p.pages.AddPage(layout.PageIDTraceTopology, topology.GetPrimitive(), true, false)
 
 	metrics := metric.NewMetricPage(
-		p.setFocusFn,
 		p.showModalFn,
 		p.hideModalFn,
 		store,
@@ -138,7 +133,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	p.pages.AddPage(layout.PageIDMetrics, metricsPage, true, false)
 
 	logs := clog.NewLogPage(
-		p.setFocusFn,
 		p.showModalFn,
 		p.hideModalFn,
 		func(traceID string) {

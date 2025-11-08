@@ -5,6 +5,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const (
@@ -13,7 +14,6 @@ const (
 )
 
 type TimelinePage struct {
-	setFocusFn     func(primitive tview.Primitive)
 	switchToPageFn func()
 	commands       *tview.TextView
 	base           *tview.Flex
@@ -29,7 +29,6 @@ type TimelinePage struct {
 }
 
 func NewTimelinePage(
-	setFocusFn func(primitive tview.Primitive),
 	showModalFn layout.ShowModalFunc,
 	hideModalFn layout.HideModalFunc,
 	switchToPageFn func(),
@@ -47,7 +46,7 @@ func NewTimelinePage(
 	resizeManager := layout.NewResizeManager(layout.ResizeDirectionHorizontal)
 	detail := newDetail(commands, showModalFn, hideModalFn, resizeManager)
 	logPane := newLogPane(commands, showModalFn, hideModalFn, store.GetLogCache())
-	grid := newGrid(commands, setFocusFn, store.GetTraceCache(), resizeManager, detail, logPane)
+	grid := newGrid(commands, store.GetTraceCache(), resizeManager, detail, logPane)
 
 	resizeManager.Register(
 		mainContainer,
@@ -59,7 +58,6 @@ func NewTimelinePage(
 	)
 
 	timeline := &TimelinePage{
-		setFocusFn:     setFocusFn,
 		switchToPageFn: switchToPageFn,
 		commands:       commands,
 		base:           base,
@@ -104,7 +102,7 @@ func (p *TimelinePage) DrawTimeline(traceID string) {
 	p.updateContainer()
 
 	p.switchToPageFn()
-	p.setFocusFn(p.grid.gridView)
+	navigation.Focus(p.grid.gridView)
 }
 
 func (p *TimelinePage) registerCommands() {
@@ -112,21 +110,21 @@ func (p *TimelinePage) registerCommands() {
 		{
 			Key: tcell.NewEventKey(tcell.KeyRune, 'd', tcell.ModNone),
 			Handler: func(event *tcell.EventKey) *tcell.EventKey {
-				p.setFocusFn(p.detail.view)
+				navigation.Focus(p.detail.view)
 				return nil
 			},
 		},
 		{
 			Key: tcell.NewEventKey(tcell.KeyRune, 't', tcell.ModNone),
 			Handler: func(event *tcell.EventKey) *tcell.EventKey {
-				p.setFocusFn(p.grid.gridView)
+				navigation.Focus(p.grid.gridView)
 				return nil
 			},
 		},
 		{
 			Key: tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModNone),
 			Handler: func(event *tcell.EventKey) *tcell.EventKey {
-				p.setFocusFn(p.logPane.tableView)
+				navigation.Focus(p.logPane.tableView)
 				return nil
 			},
 		},

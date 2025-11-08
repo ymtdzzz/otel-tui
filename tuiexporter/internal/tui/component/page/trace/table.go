@@ -8,22 +8,21 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/filter"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 	ctable "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/table"
 )
 
 type table struct {
-	setFocusFn func(primitive tview.Primitive)
-	store      *telemetry.Store
-	view       *tview.Flex
-	table      *tview.Table
-	spanData   *ctable.SpanDataForTable
-	filter     *filter.Filter
-	detail     *detail
+	store    *telemetry.Store
+	view     *tview.Flex
+	table    *tview.Table
+	spanData *ctable.SpanDataForTable
+	filter   *filter.Filter
+	detail   *detail
 }
 
 func newTable(
 	commands *tview.TextView,
-	setFocusFn func(primitive tview.Primitive),
 	onSelectTableRow func(row, column int),
 	store *telemetry.Store,
 	detail *detail,
@@ -45,7 +44,7 @@ func newTable(
 			store.ApplyFilterTraces(inputConfirmed, sortType)
 		},
 		func() {
-			setFocusFn(t)
+			navigation.Focus(t)
 		},
 		nil,
 		func(inputConfirmed string, sortType telemetry.SortType) {
@@ -60,13 +59,12 @@ func newTable(
 	})
 
 	stable := &table{
-		setFocusFn: setFocusFn,
-		store:      store,
-		view:       container,
-		table:      t,
-		spanData:   &spanData,
-		filter:     filter,
-		detail:     detail,
+		store:    store,
+		view:     container,
+		table:    t,
+		spanData: &spanData,
+		filter:   filter,
+		detail:   detail,
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
@@ -87,7 +85,7 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManager *layout
 			Description: "Search traces",
 			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
 				if !t.filter.View().HasFocus() {
-					t.setFocusFn(t.filter.View())
+					navigation.Focus(t.filter.View())
 				}
 				return nil
 			},

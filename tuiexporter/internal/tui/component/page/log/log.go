@@ -5,6 +5,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const (
@@ -15,15 +16,13 @@ const (
 )
 
 type LogPage struct {
-	setFocusFn func(primitive tview.Primitive)
-	view       *tview.Flex
-	table      *table
-	detail     *detail
-	body       *body
+	view   *tview.Flex
+	table  *table
+	detail *detail
+	body   *body
 }
 
 func NewLogPage(
-	setFocusFn func(primitive tview.Primitive),
 	showModalFn layout.ShowModalFunc,
 	hideModalFn layout.HideModalFunc,
 	drawTimelineFn func(traceID string),
@@ -40,7 +39,7 @@ func NewLogPage(
 		resizeManager,
 	}, store.GetTraceCache())
 	body := newBody(commands, resizeManager)
-	table := newTable(commands, setFocusFn, store, detail, body, []*layout.ResizeManager{
+	table := newTable(commands, store, detail, body, []*layout.ResizeManager{
 		mainResizeManager,
 		resizeManager,
 	})
@@ -68,11 +67,10 @@ func NewLogPage(
 		AddItem(body.view, 0, defaultBodyProportion, false)
 
 	logPage := &LogPage{
-		setFocusFn: setFocusFn,
-		view:       container,
-		table:      table,
-		detail:     detail,
-		body:       body,
+		view:   container,
+		table:  table,
+		detail: detail,
+		body:   body,
 	}
 
 	logPage.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDLogs)
@@ -99,13 +97,13 @@ func (p *LogPage) registerCommands() {
 		if !p.table.filter.View().HasFocus() {
 			switch event.Rune() {
 			case 'd':
-				p.setFocusFn(p.detail.view)
+				navigation.Focus(p.detail.view)
 				return nil
 			case 'o':
-				p.setFocusFn(p.table.view)
+				navigation.Focus(p.table.view)
 				return nil
 			case 'b':
-				p.setFocusFn(p.body.view)
+				navigation.Focus(p.body.view)
 				return nil
 			}
 		}

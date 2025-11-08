@@ -10,11 +10,11 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/filter"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 	ctable "github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/table"
 )
 
 type table struct {
-	setFocusFn      func(primitive tview.Primitive)
 	store           *telemetry.Store
 	view            *tview.Flex
 	table           *tview.Table
@@ -27,7 +27,6 @@ type table struct {
 
 func newTable(
 	commands *tview.TextView,
-	setFocusFn func(primitive tview.Primitive),
 	store *telemetry.Store,
 	detail *detail,
 	body *body,
@@ -48,7 +47,7 @@ func newTable(
 			store.ApplyFilterLogs(inputConfirmed)
 		},
 		func() {
-			setFocusFn(t)
+			navigation.Focus(t)
 		},
 		nil,
 		nil,
@@ -61,14 +60,13 @@ func newTable(
 	})
 
 	stable := &table{
-		setFocusFn: setFocusFn,
-		store:      store,
-		view:       container,
-		table:      t,
-		logData:    &logData,
-		filter:     filter,
-		detail:     detail,
-		body:       body,
+		store:   store,
+		view:    container,
+		table:   t,
+		logData: &logData,
+		filter:  filter,
+		detail:  detail,
+		body:    body,
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
@@ -89,7 +87,7 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManagers []*lay
 			Description: "Search logs",
 			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
 				if !t.filter.View().HasFocus() {
-					t.setFocusFn(t.filter.View())
+					navigation.Focus(t.filter.View())
 				}
 				return nil
 			},

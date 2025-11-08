@@ -12,6 +12,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const refreshInterval = 500 * time.Millisecond
@@ -48,9 +49,10 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFi
 
 	log.Println("=== otel-tui exporter initialized ===")
 
-	tpages := component.NewTUIPages(store, func(p tview.Primitive) {
+	navigation.Init(func(p tview.Primitive) {
 		app.SetFocus(p)
 	})
+	tpages := component.NewTUIPages(store)
 	pages := tpages.GetPages()
 	tapp := &TUIApp{
 		initialInterval: initialInterval,
