@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/icza/gox/timex"
+	"github.com/jonboulle/clockwork"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -159,6 +160,7 @@ func (l *LogData) GetRawData() string {
 // Store is a store of trace spans
 type Store struct {
 	mut                 sync.Mutex
+	clockwork           clockwork.Clock
 	filterSvc           string
 	filterMetric        string
 	filterLog           string
@@ -183,9 +185,10 @@ type Store struct {
 }
 
 // NewStore creates a new store
-func NewStore() *Store {
+func NewStore(clock clockwork.Clock) *Store {
 	return &Store{
 		mut:                 sync.Mutex{},
+		clockwork:           clock,
 		svcspans:            SvcSpans{},
 		svcspansFiltered:    SvcSpans{},
 		tracecache:          NewTraceCache(),
@@ -359,7 +362,7 @@ func (s *Store) GetFilteredServiceSpansByIdx(idx int) []*SpanData {
 func (s *Store) RecalculateServiceRootSpanByIdx(idx int) {
 	s.mut.Lock()
 	defer func() {
-		s.updatedAt = time.Now()
+		s.updatedAt = s.clockwork.Now()
 		s.mut.Unlock()
 	}()
 
@@ -410,7 +413,7 @@ func (s *Store) GetFilteredLogByIdx(idx int) *LogData {
 func (s *Store) AddSpan(traces *ptrace.Traces) {
 	s.mut.Lock()
 	defer func() {
-		s.updatedAt = time.Now()
+		s.updatedAt = s.clockwork.Now()
 		s.mut.Unlock()
 	}()
 
@@ -427,7 +430,7 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 					Span:         &span,
 					ResourceSpan: &rs,
 					ScopeSpans:   &ss,
-					ReceivedAt:   time.Now(),
+					ReceivedAt:   s.clockwork.Now(),
 				}
 				newtracesvc, replaceSpanID := s.tracecache.UpdateCache(sname, sd)
 				if newtracesvc {
@@ -460,7 +463,7 @@ func (s *Store) AddSpan(traces *ptrace.Traces) {
 func (s *Store) AddMetric(metrics *pmetric.Metrics) {
 	s.mut.Lock()
 	defer func() {
-		s.updatedAt = time.Now()
+		s.updatedAt = s.clockwork.Now()
 		s.mut.Unlock()
 	}()
 
@@ -477,7 +480,7 @@ func (s *Store) AddMetric(metrics *pmetric.Metrics) {
 					Metric:         &metric,
 					ResourceMetric: &rm,
 					ScopeMetric:    &sm,
-					ReceivedAt:     time.Now(),
+					ReceivedAt:     s.clockwork.Now(),
 				}
 				s.metrics = append(s.metrics, sd)
 				s.metriccache.UpdateCache(sname, sd)
@@ -504,7 +507,7 @@ func (s *Store) AddMetric(metrics *pmetric.Metrics) {
 func (s *Store) AddLog(logs *plog.Logs) {
 	s.mut.Lock()
 	defer func() {
-		s.updatedAt = time.Now()
+		s.updatedAt = s.clockwork.Now()
 		s.mut.Unlock()
 	}()
 
@@ -520,7 +523,7 @@ func (s *Store) AddLog(logs *plog.Logs) {
 					Log:         &lr,
 					ResourceLog: &rl,
 					ScopeLog:    &sl,
-					ReceivedAt:  time.Now(),
+					ReceivedAt:  s.clockwork.Now(),
 				}
 				s.logs = append(s.logs, ld)
 				s.logcache.UpdateCache(ld)
@@ -547,7 +550,7 @@ func (s *Store) AddLog(logs *plog.Logs) {
 func (s *Store) Flush() {
 	s.mut.Lock()
 	defer func() {
-		s.updatedAt = time.Now()
+		s.updatedAt = s.clockwork.Now()
 		s.mut.Unlock()
 	}()
 
@@ -560,7 +563,7 @@ func (s *Store) Flush() {
 	s.logs = []*LogData{}
 	s.logsFiltered = []*LogData{}
 	s.logcache.flush()
-	s.updatedAt = time.Now()
+	s.updatedAt = s.clockwork.Now()
 
 	for _, f := range s.onFlushed {
 		f()

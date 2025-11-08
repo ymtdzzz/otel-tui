@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui"
 	"go.opentelemetry.io/collector/component"
@@ -25,7 +26,7 @@ func newTuiExporter(config *Config) (*tuiExporter, error) {
 		initialInterval = 1 * time.Second
 	}
 
-	app, err := tui.NewTUIApp(telemetry.NewStore(), initialInterval, config.DebugLogFilePath)
+	app, err := tui.NewTUIApp(telemetry.NewStore(clockwork.NewRealClock()), initialInterval, config.DebugLogFilePath)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 type detail struct {
@@ -36,13 +37,18 @@ func newDetail(
 
 func (d *detail) flush() {
 	d.view.Clear()
+	d.tree.SetRoot(nil)
 }
 
 func (d *detail) update(spans []*telemetry.SpanData) {
+	hasFocus := d.view.HasFocus()
 	d.view.Clear()
 	d.tree = d.getTraceInfoTree(spans)
 	d.updateCommands()
 	d.view.AddItem(d.tree, 0, 1, true)
+	if hasFocus {
+		navigation.Focus(d.view)
+	}
 }
 
 func (d *detail) getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {

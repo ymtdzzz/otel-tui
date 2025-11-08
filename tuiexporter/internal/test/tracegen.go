@@ -36,7 +36,7 @@ func GenerateOTLPTracesPayload(t *testing.T, traceID, resourceCount int, scopeCo
 
 	// Create and populate resource data
 	traceData.ResourceSpans().EnsureCapacity(resourceCount)
-	for resourceIndex := 0; resourceIndex < resourceCount; resourceIndex++ {
+	for resourceIndex := range resourceCount {
 		scopeCount := scopeCount[resourceIndex]
 		resourceSpan := traceData.ResourceSpans().AppendEmpty()
 		fillResource(t, resourceSpan.Resource(), resourceIndex)
@@ -44,7 +44,7 @@ func GenerateOTLPTracesPayload(t *testing.T, traceID, resourceCount int, scopeCo
 
 		// Create and populate instrumentation scope data
 		resourceSpan.ScopeSpans().EnsureCapacity(scopeCount)
-		for scopeIndex := 0; scopeIndex < scopeCount; scopeIndex++ {
+		for scopeIndex := range scopeCount {
 			spanCount := spanCount[resourceIndex][scopeIndex]
 			scopeSpan := resourceSpan.ScopeSpans().AppendEmpty()
 			fillScope(t, scopeSpan.Scope(), resourceIndex, scopeIndex)
@@ -52,7 +52,7 @@ func GenerateOTLPTracesPayload(t *testing.T, traceID, resourceCount int, scopeCo
 
 			//Create and populate spans
 			scopeSpan.Spans().EnsureCapacity(spanCount)
-			for spanIndex := 0; spanIndex < spanCount; spanIndex++ {
+			for spanIndex := range spanCount {
 				span := scopeSpan.Spans().AppendEmpty()
 				fillSpan(t, span, traceID, resourceIndex, scopeIndex, spanIndex, uniqueSpanIndex)
 				generatedSpans.Spans = append(generatedSpans.Spans, &span)

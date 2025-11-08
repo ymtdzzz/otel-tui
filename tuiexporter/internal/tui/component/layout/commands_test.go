@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestKeyMaps_keyTexts(t *testing.T) {
@@ -45,12 +46,28 @@ func TestKeyMaps_keyTexts(t *testing.T) {
 					Description: "quit",
 				},
 				{
+					Key:         tcell.NewEventKey(tcell.KeyRune, 'a', tcell.ModNone),
+					Arrow:       false,
+					Description: "",
+				},
+				{
 					Key:         tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone),
 					Arrow:       true,
 					Description: "navigate",
 				},
+				{
+					Key:         tcell.NewEventKey(tcell.KeyRight, 'b', tcell.ModNone),
+					Arrow:       true,
+					Description: "hidden key",
+					Hidden:      true,
+				},
+				{
+					Key:         tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone),
+					Arrow:       false,
+					Description: "narrow width",
+				},
 			},
-			want: " [yellow]q[white]: quit | [yellow]→←↑↓[white]: navigate",
+			want: " [yellow]q[white]: quit | [yellow]→←↑↓[white]: navigate | [yellow]Ctrl-H[white]: narrow width",
 		},
 	}
 
@@ -105,63 +122,150 @@ func TestAttachCommandList(t *testing.T) {
 	}
 }
 
-type mockFocusable struct {
+type MockFocusableBox struct {
+	mock.Mock
 	*tview.Box
-	focusFunc func()
 }
 
-func newMockFocusable() *mockFocusable {
-	return &mockFocusable{
-		Box: tview.NewBox(),
-	}
+func NewMockFocusableBox() *MockFocusableBox {
+	return &MockFocusableBox{Box: tview.NewBox()}
 }
 
-func (m *mockFocusable) SetFocusFunc(fn func()) *tview.Box {
-	m.focusFunc = fn
-	return m.Box
+// func (m *MockFocusableBox) SetFocusFunc(fn func()) *tview.Box {
+// 	m.Called(fn)
+// 	return m.Box
+// }
+//
+// func (m *MockFocusableBox) SetInputCapture(fn func(*tcell.EventKey) *tcell.EventKey) *tview.Box {
+// 	m.Called(fn)
+// 	return m.Box
+// }
+
+func (m *MockFocusableBox) Handle(event *tcell.EventKey) *tcell.EventKey {
+	m.Called(event)
+	return nil
+}
+
+func (m *MockFocusableBox) OriginalOnFocus() {
+	m.Called()
 }
 
 func TestRegisterCommandList(t *testing.T) {
-	tests := []struct {
-		name     string
-		commands *tview.TextView
-		keys     KeyMaps
-	}{
-		{
-			name:     "with nil commands",
-			commands: nil,
-			keys:     KeyMaps{},
-		},
-		{
-			name:     "with valid commands",
-			commands: tview.NewTextView(),
-			keys: KeyMaps{
+	t.Run("commands is nil", func(t *testing.T) {
+		mockBox := NewMockFocusableBox()
+		RegisterCommandList(nil, mockBox, nil, nil)
+
+		mockBox.AssertNotCalled(t, "SetFocusFunc")
+		mockBox.AssertNotCalled(t, "SetInputCapture")
+	})
+
+	t.Run("commands and keymaps exist", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			key                tcell.EventKey
+			desc               string
+			setOriginalOnFocus bool
+			wantCommandText    string
+		}{
+			{
+				name:               "quit by q key and call original on focus",
+				key:                *tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
+				desc:               "Quit",
+				setOriginalOnFocus: true,
+				wantCommandText:    "[yellow]q[white]: Quit",
+			},
+			{
+				name:               "Refresh by Ctrl-R key without original on focus",
+				key:                *tcell.NewEventKey(tcell.KeyCtrlR, ' ', tcell.ModNone),
+				desc:               "Refresh",
+				setOriginalOnFocus: false,
+				wantCommandText:    "[yellow]Ctrl-R[white]: Refresh",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockBox := NewMockFocusableBox()
+				commands := tview.NewTextView()
+				keys := KeyMaps{
+					{
+						Key:         &tt.key,
+						Description: tt.desc,
+						Handler:     mockBox.Handle,
+					},
+				}
+
+				mockBox.On("Handle", mock.AnythingOfType("*tcell.EventKey")).Once()
+				if tt.setOriginalOnFocus {
+					mockBox.On("OriginalOnFocus").Once()
+					RegisterCommandList(commands, mockBox, mockBox.OriginalOnFocus, keys)
+				} else {
+					RegisterCommandList(commands, mockBox, nil, keys)
+				}
+
+				mockBox.Focus(nil)
+				handler := mockBox.InputHandler()
+				handler(&tt.key, nil)
+
+				mockBox.AssertNumberOfCalls(t, "Handle", 1)
+				if tt.setOriginalOnFocus {
+					mockBox.AssertNumberOfCalls(t, "OriginalOnFocus", 1)
+				} else {
+					mockBox.AssertNotCalled(t, "OriginalOnFocus")
+				}
+				assert.Contains(t, commands.GetText(false), tt.wantCommandText)
+			})
+		}
+
+		t.Run("merged keymaps", func(t *testing.T) {
+			mockBox := NewMockFocusableBox()
+			commands := tview.NewTextView()
+			keys1 := KeyMaps{
 				{
 					Key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
-					Arrow:       false,
-					Description: "quit",
+					Description: "Quit",
+					Handler:     mockBox.Handle,
 				},
-			},
-		},
-	}
+			}
+			keys2 := KeyMaps{
+				{
+					Key:         tcell.NewEventKey(tcell.KeyCtrlR, ' ', tcell.ModNone),
+					Description: "Refresh",
+					Handler:     mockBox.Handle,
+				},
+			}
+			keys1.Merge(keys2)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			focusableMock := newMockFocusable()
-			origFocusFn := func() {}
-			RegisterCommandList(tt.commands, focusableMock, origFocusFn, tt.keys)
+			mockBox.On("Handle", mock.AnythingOfType("*tcell.EventKey")).Twice()
+			RegisterCommandList(commands, mockBox, nil, keys1)
 
-			if tt.commands == nil {
-				// focusableMock should not have focus function
-				assert.Nil(t, focusableMock.focusFunc)
-				return
+			mockBox.Focus(nil)
+			handler := mockBox.InputHandler()
+			handler(tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone), nil)
+			handler(tcell.NewEventKey(tcell.KeyCtrlR, ' ', tcell.ModNone), nil)
+
+			mockBox.AssertNumberOfCalls(t, "Handle", 2)
+			assert.Equal(t, " [yellow]q[white]: Quit | [yellow]Ctrl-R[white]: Refresh", commands.GetText(false))
+		})
+
+		t.Run("no matching key in keymaps", func(t *testing.T) {
+			mockBox := NewMockFocusableBox()
+			commands := tview.NewTextView()
+			keys := KeyMaps{
+				{
+					Key:         tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone),
+					Description: "Quit",
+					Handler:     mockBox.Handle,
+				},
 			}
 
-			assert.NotNil(t, focusableMock.focusFunc)
+			RegisterCommandList(commands, mockBox, nil, keys)
 
-			focusableMock.focusFunc()
-			text := tt.commands.GetText(false)
-			assert.Equal(t, tt.keys.keyTexts(), text)
+			mockBox.Focus(nil)
+			handler := mockBox.InputHandler()
+			handler(tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModNone), nil)
+
+			mockBox.AssertNotCalled(t, "Handle")
 		})
-	}
+	})
 }

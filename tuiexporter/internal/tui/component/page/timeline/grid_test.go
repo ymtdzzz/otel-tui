@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"gotest.tools/v3/assert"
@@ -19,7 +20,7 @@ func TestNewSpanTreeWithServiceName(t *testing.T) {
 	//        └- span: span-1-1-4
 	//      └- span: span-1-1-5 [root] multiple root span is allowed
 	//        └- span: span-1-1-6
-	store := telemetry.NewStore()
+	store := telemetry.NewStore(clockwork.NewRealClock())
 	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{6}})
 	sds := []*telemetry.SpanData{}
 	for _, span := range testdata.Spans {
@@ -64,7 +65,7 @@ func TestNewSpanTreeWithoutServiceName(t *testing.T) {
 	//        └- span: span-1-1-4
 	//      └- span: span-1-1-5 [root] multiple root span is allowed
 	//        └- span: span-1-1-6
-	store := telemetry.NewStore()
+	store := telemetry.NewStore(clockwork.NewRealClock())
 	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{6}})
 	testdata.RSpans[0].Resource().Attributes().Clear()
 	sds := []*telemetry.SpanData{}

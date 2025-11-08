@@ -55,7 +55,11 @@ func newTable(
 	spanData := ctable.NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), filter.SortType())
 	t.SetContent(&spanData)
 	store.SetOnSpanAdded(func() {
-		t.Select(t.GetSelection())
+		log.Println("Span added - updating table")
+		log.Printf("tree root: %+v", detail.tree.GetRoot())
+		if detail.tree.GetRoot() == nil {
+			t.Select(t.GetSelection())
+		}
 	})
 
 	stable := &table{

@@ -102,7 +102,7 @@ func (g *grid) prepareTimeline(duration time.Duration) {
 
 			// Write some text along the horizontal line.
 			unit, count := calculateTimelineUnit(duration)
-			for i := 0; i < count; i++ {
+			for i := range count {
 				ratio := float64(i) / float64(count)
 				label := roundDownDuration(unit * time.Duration(i)).String()
 				if i == 0 {
@@ -157,7 +157,7 @@ func (g *grid) placeSpan(
 	row++
 	label := node.label
 	prefix := ""
-	for i := 0; i < depth; i++ {
+	for i := range depth {
 		if i == depth-1 {
 			prefix = prefix + string(tview.BoxDrawingsLightUpAndRight)
 			break

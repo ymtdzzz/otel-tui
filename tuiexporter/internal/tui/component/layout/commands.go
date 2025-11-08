@@ -91,7 +91,7 @@ func RegisterCommandList(commands *tview.TextView, c FocusableBox, origFocusFn f
 
 	c.SetFocusFunc(func() {
 		commands.SetText(keys.keyTexts())
-		log.Printf("triggered SetFocusFunc in RegisterCommandList2. commands: %s\n", commands.GetText(false))
+		log.Printf("triggered SetFocusFunc in RegisterCommandList. commands: %s\n", commands.GetText(false))
 
 		if origFocusFn != nil {
 			origFocusFn()
