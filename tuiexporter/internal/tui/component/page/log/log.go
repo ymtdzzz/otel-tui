@@ -75,7 +75,7 @@ func NewLogPage(
 		body:       body,
 	}
 
-	logPage.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PAGE_LOGS)
+	logPage.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDLogs)
 
 	logPage.registerCommands()
 	store.RegisterOnFlushed(func() {

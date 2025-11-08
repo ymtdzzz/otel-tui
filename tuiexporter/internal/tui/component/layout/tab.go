@@ -3,24 +3,24 @@ package layout
 import "github.com/rivo/tview"
 
 const (
-	PAGE_TRACES         = "Traces"
-	PAGE_METRICS        = "Metrics"
-	PAGE_LOGS           = "Logs"
-	PAGE_TRACE_TOPOLOGY = "TraceTopology"
-	PAGE_TIMELINE       = "Timeline"
-	PAGE_MODAL          = "Modal"
+	PageIDTraces        = "Traces"
+	PageIDMetrics       = "Metrics"
+	PageIDLogs          = "Logs"
+	PageIDTraceTopology = "TraceTopology"
+	PageIDTimeline      = "Timeline"
+	PageIDModal         = "Modal"
 )
 
 func AttachTab(p tview.Primitive, name string) *tview.Flex {
 	var text string
 	switch name {
-	case PAGE_TRACES:
+	case PageIDTraces:
 		text = "< [yellow]Traces[white] | Metrics | Logs | Topology (beta) > (Tab to switch)"
-	case PAGE_METRICS:
+	case PageIDMetrics:
 		text = "< Traces | [yellow]Metrics[white] | Logs | Topology (beta) > (Tab to switch)"
-	case PAGE_LOGS:
+	case PageIDLogs:
 		text = "< Traces | Metrics | [yellow]Logs[white] | Topology (beta) > (Tab to switch)"
-	case PAGE_TRACE_TOPOLOGY:
+	case PageIDTraceTopology:
 		text = "< Traces | Metrics | Logs | [yellow]Topology (beta)[white] > (Tab to switch)"
 	}
 

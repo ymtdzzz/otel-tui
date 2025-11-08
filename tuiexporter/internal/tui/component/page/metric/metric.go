@@ -74,7 +74,7 @@ func NewMetricPage(
 		chart:      chart,
 	}
 
-	metric.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PAGE_METRICS)
+	metric.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDMetrics)
 
 	metric.registerCommands()
 	store.RegisterOnFlushed(func() {

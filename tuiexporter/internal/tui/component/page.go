@@ -12,33 +12,19 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/page/trace"
 )
 
-const (
-	DEFAULT_HORIZONTAL_PROPORTION_TRACE_DETAILS = 20
-	DEFAULT_HORIZONTAL_PROPORTION_TRACE_TABLE   = 30
-	DEFAULT_HORIZONTAL_PROPORTION_METRIC_SIDE   = 25
-	DEFAULT_HORIZONTAL_PROPORTION_METRIC_TABLE  = 25
-	DEFAULT_HORIZONTAL_PROPORTION_LOG_DETAILS   = 20
-	DEFAULT_HORIZONTAL_PROPORTION_LOG_TABLE     = 30
-	DEFAULT_VERTICAL_PROPORTION_LOG_MAIN        = 15
-	DEFAULT_VERTICAL_PROPORTION_LOG_BODY        = 3
-)
-
 type TUIPages struct {
-	store             *telemetry.Store
-	pages             *tview.Pages
-	traces            tview.Primitive
-	timeline          *timeline.TimelinePage
-	topology          *topology.TopologyPage
-	metrics           tview.Primitive
-	logs              tview.Primitive
-	modal             tview.Primitive
-	showModalFn       layout.ShowModalFunc
-	hideModalFn       layout.HideModalFunc
-	current           string
-	setFocusFn        func(p tview.Primitive)
-	setTextTopologyFn func(text string) *tview.TextView
-	// This is used when other components trigger to draw the timeline
-	commandsTimeline *tview.TextView
+	store       *telemetry.Store
+	pages       *tview.Pages
+	traces      tview.Primitive
+	timeline    *timeline.TimelinePage
+	topology    *topology.TopologyPage
+	metrics     tview.Primitive
+	logs        tview.Primitive
+	modal       tview.Primitive
+	showModalFn layout.ShowModalFunc
+	hideModalFn layout.HideModalFunc
+	current     string
+	setFocusFn  func(p tview.Primitive)
 }
 
 func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TUIPages {
@@ -46,7 +32,7 @@ func NewTUIPages(store *telemetry.Store, setFocusFn func(p tview.Primitive)) *TU
 	tp := &TUIPages{
 		store:      store,
 		pages:      pages,
-		current:    layout.PAGE_TRACES,
+		current:    layout.PageIDTraces,
 		setFocusFn: setFocusFn,
 	}
 
@@ -63,31 +49,31 @@ func (p *TUIPages) GetPages() *tview.Pages {
 // TogglePage toggles Traces & Logs page.
 func (p *TUIPages) TogglePage() {
 	switch p.current {
-	case layout.PAGE_TRACES:
-		p.switchToPage(layout.PAGE_METRICS)
-	case layout.PAGE_METRICS:
-		p.switchToPage(layout.PAGE_LOGS)
-	case layout.PAGE_LOGS:
-		p.switchToPage(layout.PAGE_TRACE_TOPOLOGY)
+	case layout.PageIDTraces:
+		p.switchToPage(layout.PageIDMetrics)
+	case layout.PageIDMetrics:
+		p.switchToPage(layout.PageIDLogs)
+	case layout.PageIDLogs:
+		p.switchToPage(layout.PageIDTraceTopology)
 		p.topology.UpdateTopology()
 	default:
-		p.switchToPage(layout.PAGE_TRACES)
+		p.switchToPage(layout.PageIDTraces)
 	}
 }
 
 func (p *TUIPages) TogglePageReverse() {
 	switch p.current {
-	case layout.PAGE_TRACES:
-		p.switchToPage(layout.PAGE_TRACE_TOPOLOGY)
+	case layout.PageIDTraces:
+		p.switchToPage(layout.PageIDTraceTopology)
 		p.topology.UpdateTopology()
-	case layout.PAGE_METRICS:
-		p.switchToPage(layout.PAGE_TRACES)
-	case layout.PAGE_LOGS:
-		p.switchToPage(layout.PAGE_METRICS)
-	case layout.PAGE_TRACE_TOPOLOGY:
-		p.switchToPage(layout.PAGE_LOGS)
+	case layout.PageIDMetrics:
+		p.switchToPage(layout.PageIDTraces)
+	case layout.PageIDLogs:
+		p.switchToPage(layout.PageIDMetrics)
+	case layout.PageIDTraceTopology:
+		p.switchToPage(layout.PageIDLogs)
 	default:
-		p.switchToPage(layout.PAGE_TRACES)
+		p.switchToPage(layout.PageIDTraces)
 	}
 }
 
@@ -99,14 +85,14 @@ func (p *TUIPages) switchToPage(name string) {
 func (p *TUIPages) registerPages(store *telemetry.Store) {
 	modal := modal.NewModalPage(p.setFocusFn)
 	p.modal = modal.GetPrimitive()
-	p.pages.AddPage(layout.PAGE_MODAL, p.modal, true, true)
+	p.pages.AddPage(layout.PageIDModal, p.modal, true, true)
 	p.showModalFn = modal.ShowModalFunc(func() {
-		p.pages.ShowPage(layout.PAGE_MODAL)
-		p.pages.SendToFront(layout.PAGE_MODAL)
+		p.pages.ShowPage(layout.PageIDModal)
+		p.pages.SendToFront(layout.PageIDModal)
 	})
 	p.hideModalFn = modal.HideModalFunc(func() {
-		p.pages.SendToBack(layout.PAGE_MODAL)
-		p.pages.HidePage(layout.PAGE_MODAL)
+		p.pages.SendToBack(layout.PageIDModal)
+		p.pages.HidePage(layout.PageIDModal)
 	})
 
 	traces := trace.NewTracePage(
@@ -120,26 +106,26 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	)
 	tracesPage := traces.GetPrimitive()
 	p.traces = tracesPage
-	p.pages.AddPage(layout.PAGE_TRACES, tracesPage, true, true)
+	p.pages.AddPage(layout.PageIDTraces, tracesPage, true, true)
 
 	timeline := timeline.NewTimelinePage(
 		p.setFocusFn,
 		p.showModalFn,
 		p.hideModalFn,
 		func() {
-			p.switchToPage(layout.PAGE_TIMELINE)
+			p.switchToPage(layout.PageIDTimeline)
 		},
 		store,
 		func() {
-			p.switchToPage(layout.PAGE_TRACES)
+			p.switchToPage(layout.PageIDTraces)
 		},
 	)
 	p.timeline = timeline
-	p.pages.AddPage(layout.PAGE_TIMELINE, timeline.GetPrimitive(), true, false)
+	p.pages.AddPage(layout.PageIDTimeline, timeline.GetPrimitive(), true, false)
 
 	topology := topology.NewTopologyPage(store.GetTraceCache())
 	p.topology = topology
-	p.pages.AddPage(layout.PAGE_TRACE_TOPOLOGY, topology.GetPrimitive(), true, false)
+	p.pages.AddPage(layout.PageIDTraceTopology, topology.GetPrimitive(), true, false)
 
 	metrics := metric.NewMetricPage(
 		p.setFocusFn,
@@ -149,7 +135,7 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	)
 	metricsPage := metrics.GetPrimitive()
 	p.metrics = metricsPage
-	p.pages.AddPage(layout.PAGE_METRICS, metricsPage, true, false)
+	p.pages.AddPage(layout.PageIDMetrics, metricsPage, true, false)
 
 	logs := clog.NewLogPage(
 		p.setFocusFn,
@@ -162,5 +148,5 @@ func (p *TUIPages) registerPages(store *telemetry.Store) {
 	)
 	logsPage := logs.GetPrimitive()
 	p.logs = logsPage
-	p.pages.AddPage(layout.PAGE_LOGS, logsPage, true, false)
+	p.pages.AddPage(layout.PageIDLogs, logsPage, true, false)
 }

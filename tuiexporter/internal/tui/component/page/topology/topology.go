@@ -33,7 +33,7 @@ func NewTopologyPage(cache *telemetry.TraceCache) *TopologyPage {
 		cache: cache,
 	}
 
-	page.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PAGE_TRACE_TOPOLOGY)
+	page.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDTraceTopology)
 
 	page.registerCommands(commands)
 

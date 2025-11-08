@@ -52,7 +52,7 @@ func NewTracePage(
 		detail:     detail,
 	}
 
-	trace.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PAGE_TRACES)
+	trace.view = layout.AttachTab(layout.AttachCommandList(commands, container), layout.PageIDTraces)
 
 	trace.registerCommands()
 	store.RegisterOnFlushed(func() {
