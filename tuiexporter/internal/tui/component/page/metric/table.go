@@ -55,7 +55,9 @@ func newTable(
 	metricData := ctable.NewMetricDataForTable(store.GetFilteredMetrics())
 	t.SetContent(&metricData)
 	store.SetOnMetricAdded(func() {
-		t.Select(t.GetSelection())
+		if detail.tree.GetRoot() == nil {
+			t.Select(t.GetSelection())
+		}
 	})
 
 	stable := &table{

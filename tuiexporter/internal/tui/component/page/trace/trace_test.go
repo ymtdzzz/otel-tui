@@ -44,7 +44,7 @@ func setupTracePage(t *testing.T) (*mockSelectTableRowHandler, *TracePage, tcell
 }
 
 func TestTracePage(t *testing.T) {
-	t.Run("initial render and receive first span", func(t *testing.T) {
+	t.Run("initial rendering and receive first span", func(t *testing.T) {
 		_, page, screen, store := setupTracePage(t)
 
 		got := test.GetScreenContent(t, screen)
@@ -199,102 +199,90 @@ func TestTracePage(t *testing.T) {
 				assert.Equal(t, want, got.String())
 			})
 
-			t.Run("move divider left", func(t *testing.T) {
-				_, page, screen, store := setupTracePage(t)
+			tests := []struct {
+				name            string
+				key             *tcell.EventKey
+				wantContentPath string
+			}{
+				{
+					name:            "left",
+					key:             tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone),
+					wantContentPath: "tui/component/page/trace/trace_table_key_handling_divider_left.txt",
+				},
+				{
+					name:            "right",
+					key:             tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone),
+					wantContentPath: "tui/component/page/trace/trace_table_key_handling_divider_right.txt",
+				},
+			}
 
-				payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
-				store.AddSpan(&payload)
+			for _, tt := range tests {
+				t.Run("move divider "+tt.name, func(t *testing.T) {
+					_, page, screen, store := setupTracePage(t)
 
-				handler := page.table.view.InputHandler()
-				for range 5 {
-					handler(tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone), nil)
-				}
+					payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
+					store.AddSpan(&payload)
 
-				page.view.Draw(screen)
-				screen.Sync()
+					handler := page.table.view.InputHandler()
+					for range 5 {
+						handler(tt.key, nil)
+					}
 
-				got := test.GetScreenContent(t, screen)
-				want := test.LoadTestdata(t, "tui/component/page/trace/trace_table_key_handling_divider_left.txt")
+					page.view.Draw(screen)
+					screen.Sync()
 
-				assert.Equal(t, want, got.String())
-			})
+					got := test.GetScreenContent(t, screen)
+					want := test.LoadTestdata(t, tt.wantContentPath)
 
-			t.Run("move divider right", func(t *testing.T) {
-				_, page, screen, store := setupTracePage(t)
-
-				payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
-				store.AddSpan(&payload)
-
-				page.table.table.Blur()
-				page.detail.view.Focus(func(p tview.Primitive) {
-					p.Focus(nil)
+					assert.Equal(t, want, got.String())
 				})
-
-				handler := page.detail.view.InputHandler()
-				for range 5 {
-					handler(tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone), nil)
-				}
-
-				page.view.Draw(screen)
-				screen.Sync()
-
-				got := test.GetScreenContent(t, screen)
-				want := test.LoadTestdata(t, "tui/component/page/trace/trace_table_key_handling_divider_right.txt")
-
-				assert.Equal(t, want, got.String())
-			})
+			}
 		})
 
 		t.Run("detail", func(t *testing.T) {
-			t.Run("move divider left", func(t *testing.T) {
-				_, page, screen, store := setupTracePage(t)
+			tests := []struct {
+				name            string
+				key             *tcell.EventKey
+				wantContentPath string
+			}{
+				{
+					name:            "left",
+					key:             tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone),
+					wantContentPath: "tui/component/page/trace/trace_detail_key_handling_divider_left.txt",
+				},
+				{
+					name:            "right",
+					key:             tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone),
+					wantContentPath: "tui/component/page/trace/trace_detail_key_handling_divider_right.txt",
+				},
+			}
 
-				payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
-				store.AddSpan(&payload)
+			for _, tt := range tests {
+				t.Run("move divider "+tt.name, func(t *testing.T) {
+					_, page, screen, store := setupTracePage(t)
 
-				page.table.table.Blur()
-				page.detail.view.Focus(func(p tview.Primitive) {
-					p.Focus(nil)
+					payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
+					store.AddSpan(&payload)
+
+					page.table.table.Blur()
+					page.detail.view.Focus(func(p tview.Primitive) {
+						p.Focus(nil)
+					})
+
+					handler := page.detail.view.InputHandler()
+					for range 5 {
+						handler(tt.key, nil)
+					}
+
+					page.view.Draw(screen)
+					screen.Sync()
+
+					got := test.GetScreenContent(t, screen)
+					want := test.LoadTestdata(t, tt.wantContentPath)
+
+					assert.Equal(t, want, got.String())
 				})
-
-				handler := page.detail.view.InputHandler()
-				for range 5 {
-					handler(tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone), nil)
-				}
-
-				page.view.Draw(screen)
-				screen.Sync()
-
-				got := test.GetScreenContent(t, screen)
-				want := test.LoadTestdata(t, "tui/component/page/trace/trace_detail_key_handling_divider_left.txt")
-
-				assert.Equal(t, want, got.String())
-			})
-
-			t.Run("move divider right", func(t *testing.T) {
-				_, page, screen, store := setupTracePage(t)
-
-				payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
-				store.AddSpan(&payload)
-
-				page.table.table.Blur()
-				page.detail.view.Focus(func(p tview.Primitive) {
-					p.Focus(nil)
-				})
-
-				handler := page.detail.view.InputHandler()
-				for range 5 {
-					handler(tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone), nil)
-				}
-
-				page.view.Draw(screen)
-				screen.Sync()
-
-				got := test.GetScreenContent(t, screen)
-				want := test.LoadTestdata(t, "tui/component/page/trace/trace_detail_key_handling_divider_right.txt")
-
-				assert.Equal(t, want, got.String())
-			})
+			}
 		})
 	})
 }

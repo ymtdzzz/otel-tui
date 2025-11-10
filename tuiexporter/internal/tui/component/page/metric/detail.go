@@ -7,6 +7,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -37,13 +38,18 @@ func newDetail(
 
 func (d *detail) flush() {
 	d.view.Clear()
+	d.tree.SetRoot(nil)
 }
 
 func (d *detail) update(m *telemetry.MetricData) {
+	hasFocus := d.view.HasFocus()
 	d.view.Clear()
 	d.tree = d.getMetricInfoTree(m)
 	d.updateCommands()
 	d.view.AddItem(d.tree, 0, 1, true)
+	if hasFocus {
+		navigation.Focus(d.view)
+	}
 }
 
 func (d *detail) getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
