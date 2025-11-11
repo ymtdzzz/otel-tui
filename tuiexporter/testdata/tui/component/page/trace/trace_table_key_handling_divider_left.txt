@@ -47,4 +47,4 @@
 ║                                                                                                            ║│                                                                                                            │
 ║                                                                                                            ║│                                                                                                            │
 ╚════════════════════════════════════════════════════════════════════════════════════════════════════════════╝└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- /: Search traces | Ctrl-S: Toggle sort (Latency) | Ctrl-F: Toggle full datetime | R: Recalculate service root span | Ctrl-K: Clear all data | Ctrl-H: Move divider left | Ctrl-L: Move divider right                       
+ /: Search traces | Ctrl-S: Toggle sort (Latency) | Ctrl-F: Toggle full datetime | R: Recalculate service root span | Ctrl-X: Clear all data | Ctrl-H: Move divider left | Ctrl-L: Move divider right                       

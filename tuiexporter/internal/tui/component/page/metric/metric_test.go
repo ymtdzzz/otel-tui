@@ -79,6 +79,31 @@ func TestMetricPage(t *testing.T) {
 		assert.Equal(t, true, page.detail.view.HasFocus())
 	})
 
+	t.Run("receive new span when the chart pane is focused", func(t *testing.T) {
+		page, screen, store := setupMetricPage(t)
+
+		payload, _ := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
+		store.AddMetric(&payload)
+
+		page.table.table.Blur()
+		page.chart.view.Focus(func(p tview.Primitive) {
+			p.Focus(func(p tview.Primitive) {
+				p.Focus(nil)
+			})
+		})
+
+		page.view.Draw(screen)
+		screen.Sync()
+
+		newPayload, _ := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
+		store.AddMetric(&newPayload)
+
+		page.view.Draw(screen)
+		screen.Sync()
+
+		assert.Equal(t, true, page.chart.view.HasFocus())
+	})
+
 	t.Run("key event handling", func(t *testing.T) {
 		t.Run("table", func(t *testing.T) {
 			t.Run("filter metrics", func(t *testing.T) {
@@ -149,7 +174,7 @@ func TestMetricPage(t *testing.T) {
 				store.AddMetric(&payload)
 
 				handler := page.table.view.InputHandler()
-				handler(tcell.NewEventKey(tcell.KeyCtrlK, ' ', tcell.ModNone), nil)
+				handler(tcell.NewEventKey(tcell.KeyCtrlX, ' ', tcell.ModNone), nil)
 
 				page.view.Draw(screen)
 				screen.Sync()
@@ -159,7 +184,7 @@ func TestMetricPage(t *testing.T) {
 
 				assert.Equal(t, want, got.String())
 
-				// After flush, when the next span is received, the detail pane renders its content
+				// After flush, when the next span is received, the detail and chart pane renders its content
 				newPayload, _ := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
 				store.AddMetric(&newPayload)
 

@@ -22,6 +22,7 @@ type chart struct {
 	commands       *tview.TextView
 	view           *tview.Flex
 	ch             *tview.Flex
+	focusTargets   []layout.FocusableBox
 	store          *telemetry.Store
 	resizeManagers []*layout.ResizeManager
 }
@@ -33,10 +34,15 @@ func newChart(
 ) *chart {
 	container := tview.NewFlex().SetDirection(tview.FlexRow)
 	container.SetTitle("Chart (c)").SetBorder(true)
+	ch := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	container.AddItem(ch, 0, 1, true)
 
 	c := &chart{
 		commands:       commands,
 		view:           container,
+		ch:             ch,
+		focusTargets:   []layout.FocusableBox{ch},
 		store:          store,
 		resizeManagers: resizeManagers,
 	}
@@ -47,15 +53,13 @@ func newChart(
 }
 
 func (c *chart) flush() {
-	c.view.Clear()
+	c.ch.Clear()
 }
 
 func (c *chart) update(m *telemetry.MetricData) {
-	c.view.Clear()
-	ch, keyMaps := c.drawMetricChartByRow(m)
-	c.ch = ch
+	c.ch.Clear()
+	keyMaps := c.drawMetricChartByRow(m)
 	c.updateCommands(keyMaps)
-	c.view.AddItem(ch, 0, 1, true)
 }
 
 type ByTimestamp []*pmetric.NumberDataPoint
@@ -66,9 +70,9 @@ func (a ByTimestamp) Less(i, j int) bool {
 	return a[i].Timestamp().AsTime().Before(a[j].Timestamp().AsTime())
 }
 
-func (c *chart) drawMetricChartByRow(m *telemetry.MetricData) (*tview.Flex, layout.KeyMaps) {
+func (c *chart) drawMetricChartByRow(m *telemetry.MetricData) layout.KeyMaps {
 	if m == nil {
-		return tview.NewFlex(), layout.KeyMaps{}
+		return layout.KeyMaps{}
 	}
 
 	switch m.Metric.Type() {
@@ -83,10 +87,10 @@ func (c *chart) drawMetricChartByRow(m *telemetry.MetricData) (*tview.Flex, layo
 	case pmetric.MetricTypeSummary:
 		return c.drawMetricNumberChart(m)
 	}
-	return nil, layout.KeyMaps{}
+	return layout.KeyMaps{}
 }
 
-func (c *chart) drawMetricHistogramChart(m *telemetry.MetricData) (*tview.Flex, layout.KeyMaps) {
+func (c *chart) drawMetricHistogramChart(m *telemetry.MetricData) layout.KeyMaps {
 	dpcount := m.Metric.Histogram().DataPoints().Len()
 	chs := make([]*tvxwidgets.BarChart, dpcount)
 	sides := make([]*tview.Flex, dpcount)
@@ -130,14 +134,17 @@ func (c *chart) drawMetricHistogramChart(m *telemetry.MetricData) (*tview.Flex, 
 		sides[dpi] = side
 	}
 
-	chart := tview.NewFlex().SetDirection(tview.FlexColumn)
 	if dpcount == 0 {
-		return chart, layout.KeyMaps{}
+		return layout.KeyMaps{}
 	}
 	idx := 0
-	chart.AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+	c.ch.AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+	c.focusTargets = []layout.FocusableBox{}
+	for _, ch := range chs {
+		c.focusTargets = append(c.focusTargets, ch)
+	}
 
-	return chart, layout.KeyMaps{
+	return layout.KeyMaps{
 		{
 			Key:         tcell.NewEventKey(tcell.KeyRight, ' ', tcell.ModNone),
 			Hidden:      true,
@@ -148,7 +155,7 @@ func (c *chart) drawMetricHistogramChart(m *telemetry.MetricData) (*tview.Flex, 
 				} else {
 					idx = 0
 				}
-				chart.Clear().AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+				c.ch.Clear().AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
 				return nil
 			},
 		},
@@ -162,19 +169,19 @@ func (c *chart) drawMetricHistogramChart(m *telemetry.MetricData) (*tview.Flex, 
 				} else {
 					idx = dpcount - 1
 				}
-				chart.Clear().AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
+				c.ch.Clear().AddItem(chs[idx], 0, 7, false).AddItem(sides[idx], 0, 3, false)
 				return nil
 			},
 		},
 	}
 }
 
-func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) (*tview.Flex, layout.KeyMaps) {
+func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) layout.KeyMaps {
 	sname := telemetry.GetServiceNameFromResource(m.ResourceMetric.Resource())
 	mcache := c.store.GetMetricCache()
 	ms, ok := mcache.GetMetricsBySvcAndMetricName(sname, m.Metric.Name())
 	if !ok {
-		return nil, layout.KeyMaps{}
+		return layout.KeyMaps{}
 	}
 
 	// attribute name and value map
@@ -259,13 +266,11 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) (*tview.Flex, lay
 		}
 	}
 
-	chart := tview.NewFlex().SetDirection(tview.FlexColumn)
-
 	// TODO: Delete it after implementing drawMetric* for all types
 	if !support {
 		txt := tview.NewTextView().SetText("This metric type is not supported")
-		chart.AddItem(txt, 0, 1, false)
-		return chart, layout.KeyMaps{}
+		c.ch.AddItem(txt, 0, 1, false)
+		return layout.KeyMaps{}
 	}
 
 	for k := range dataMap {
@@ -292,9 +297,10 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) (*tview.Flex, lay
 	legend := tview.NewFlex().SetDirection(tview.FlexRow)
 	legend.AddItem(txts, 0, 1, false)
 
-	chart.AddItem(ch, 0, 7, true).AddItem(legend, 0, 3, false)
+	c.ch.AddItem(ch, 0, 7, true).AddItem(legend, 0, 3, false)
+	c.focusTargets = []layout.FocusableBox{ch}
 
-	return chart, layout.KeyMaps{
+	return layout.KeyMaps{
 		{
 			Key:         tcell.NewEventKey(tcell.KeyRight, ' ', tcell.ModNone),
 			Hidden:      true,
@@ -443,7 +449,9 @@ func (c *chart) updateCommands(keyMaps layout.KeyMaps) {
 	for _, rm := range c.resizeManagers {
 		keyMaps.Merge(rm.KeyMaps())
 	}
-	layout.RegisterCommandList(c.commands, c.ch, nil, keyMaps)
+	for _, ft := range c.focusTargets {
+		layout.RegisterCommandList(c.commands, ft, nil, keyMaps)
+	}
 }
 
 // uint64ToInt converts uint64 into int. When the input is larger than math.MaxInt, it returns math.MaxInt.

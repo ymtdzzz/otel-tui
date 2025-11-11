@@ -124,7 +124,7 @@ func (t *table) registerCommands(commands *tview.TextView, resizeManager *layout
 			},
 		},
 		{
-			Key:         tcell.NewEventKey(tcell.KeyCtrlK, ' ', tcell.ModNone),
+			Key:         tcell.NewEventKey(tcell.KeyCtrlX, ' ', tcell.ModNone),
 			Description: "Clear all data",
 			Handler: func(_ *tcell.EventKey) *tcell.EventKey {
 				t.store.Flush()

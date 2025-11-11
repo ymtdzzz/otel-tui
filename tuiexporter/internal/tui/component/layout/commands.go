@@ -57,10 +57,6 @@ func getInt32Key(key *tcell.EventKey) int32 {
 	return int32(key.Key())
 }
 
-type Focusable interface {
-	SetFocusFunc(func()) *tview.Box
-}
-
 type FocusableBox interface {
 	SetFocusFunc(func()) *tview.Box
 	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey) *tview.Box

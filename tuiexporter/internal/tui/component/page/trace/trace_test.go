@@ -176,7 +176,7 @@ func TestTracePage(t *testing.T) {
 				store.AddSpan(&payload)
 
 				handler := page.table.view.InputHandler()
-				handler(tcell.NewEventKey(tcell.KeyCtrlK, ' ', tcell.ModNone), nil)
+				handler(tcell.NewEventKey(tcell.KeyCtrlX, ' ', tcell.ModNone), nil)
 
 				page.view.Draw(screen)
 				screen.Sync()
