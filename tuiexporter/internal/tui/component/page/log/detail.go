@@ -8,6 +8,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/datetime"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 type detail struct {
@@ -43,13 +44,18 @@ func newDetail(
 
 func (d *detail) flush() {
 	d.view.Clear()
+	d.tree.SetRoot(nil)
 }
 
 func (d *detail) update(l *telemetry.LogData) {
+	hasFocus := d.view.HasFocus()
 	d.view.Clear()
 	d.tree = d.getLogInfoTree(l)
 	d.updateCommands()
 	d.view.AddItem(d.tree, 0, 1, true)
+	if hasFocus {
+		navigation.Focus(d.view)
+	}
 }
 
 func (d *detail) getLogInfoTree(l *telemetry.LogData) *tview.TreeView {

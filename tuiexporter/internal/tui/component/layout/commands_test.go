@@ -244,7 +244,7 @@ func TestRegisterCommandList(t *testing.T) {
 			handler(tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModNone), nil)
 			handler(tcell.NewEventKey(tcell.KeyCtrlR, ' ', tcell.ModNone), nil)
 
-			mockBox.AssertNumberOfCalls(t, "Handle", 2)
+			mockBox.AssertExpectations(t)
 			assert.Equal(t, " [yellow]q[white]: Quit | [yellow]Ctrl-R[white]: Refresh", commands.GetText(false))
 		})
 

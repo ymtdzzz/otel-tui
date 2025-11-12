@@ -166,7 +166,7 @@ func TestTracePage(t *testing.T) {
 				page.view.Draw(screen)
 				screen.Sync()
 
-				mockHandler.AssertNumberOfCalls(t, "Handle", 1)
+				mockHandler.AssertExpectations(t)
 			})
 
 			t.Run("flush", func(t *testing.T) {
