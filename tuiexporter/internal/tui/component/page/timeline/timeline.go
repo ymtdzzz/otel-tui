@@ -95,7 +95,7 @@ func (p *TimelinePage) DrawTimeline(traceID string) {
 
 	span := p.grid.updateGrid(traceID)
 	p.detail.update(span)
-	p.logPane.updateLog(traceID, span.Span.TraceID().String())
+	p.logPane.updateLog(traceID, span.Span.SpanID().String())
 
 	p.updateContainer()
 
