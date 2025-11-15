@@ -62,3 +62,23 @@ func TestDrawMetricHistogramChart(t *testing.T) {
 		})
 	}
 }
+
+func TestChartInputCaptureAfterFlush(t *testing.T) {
+	_, m := test.GenerateOTLPHistogramMetricsPayload(t, 1, []int{1}, [][]int{{1}})
+	metric := &telemetry.MetricData{
+		Metric: m.Metrics[0],
+	}
+
+	chart := newChart(layout.NewCommandList(), nil, []*layout.ResizeManager{})
+	chart.update(metric)
+
+	chart.flush()
+
+	chart.update(metric)
+
+	gotInputCapture := chart.ch.GetInputCapture()
+	assert.NotNil(t, gotInputCapture)
+
+	got := gotInputCapture(tcell.NewEventKey(tcell.KeyRight, ' ', tcell.ModNone))
+	assert.Nil(t, got)
+}

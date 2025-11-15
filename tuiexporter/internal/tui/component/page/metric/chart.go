@@ -449,6 +449,7 @@ func (c *chart) updateCommands(keyMaps layout.KeyMaps) {
 	for _, rm := range c.resizeManagers {
 		keyMaps.Merge(rm.KeyMaps())
 	}
+	layout.RegisterCommandList(c.commands, c.ch, nil, keyMaps)
 	for _, ft := range c.focusTargets {
 		layout.RegisterCommandList(c.commands, ft, nil, keyMaps)
 	}
