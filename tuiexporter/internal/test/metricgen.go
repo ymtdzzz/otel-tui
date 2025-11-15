@@ -25,7 +25,7 @@ func GenerateOTLPGaugeMetricsPayload(t *testing.T, resourceCount int, scopeCount
 
 	// Create and populate resource data
 	metricData.ResourceMetrics().EnsureCapacity(resourceCount)
-	for resourceIndex := 0; resourceIndex < resourceCount; resourceIndex++ {
+	for resourceIndex := range resourceCount {
 		scopeCount := scopeCount[resourceIndex]
 		resourceMetric := metricData.ResourceMetrics().AppendEmpty()
 		fillResource(t, resourceMetric.Resource(), resourceIndex)
@@ -33,7 +33,7 @@ func GenerateOTLPGaugeMetricsPayload(t *testing.T, resourceCount int, scopeCount
 
 		// Create and populate instrumentation scope data
 		resourceMetric.ScopeMetrics().EnsureCapacity(scopeCount)
-		for scopeIndex := 0; scopeIndex < scopeCount; scopeIndex++ {
+		for scopeIndex := range scopeCount {
 			scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
 			fillScope(t, scopeMetric.Scope(), resourceIndex, scopeIndex)
 			generatedMetrics.SMetrics = append(generatedMetrics.SMetrics, &scopeMetric)
@@ -68,7 +68,7 @@ func GenerateOTLPHistogramMetricsPayload(t *testing.T, resourceCount int, scopeC
 
 	// Create and populate resource data
 	metricData.ResourceMetrics().EnsureCapacity(resourceCount)
-	for resourceIndex := 0; resourceIndex < resourceCount; resourceIndex++ {
+	for resourceIndex := range resourceCount {
 		scopeCount := scopeCount[resourceIndex]
 		resourceMetric := metricData.ResourceMetrics().AppendEmpty()
 		fillResource(t, resourceMetric.Resource(), resourceIndex)
@@ -76,7 +76,7 @@ func GenerateOTLPHistogramMetricsPayload(t *testing.T, resourceCount int, scopeC
 
 		// Create and populate instrumentation scope data
 		resourceMetric.ScopeMetrics().EnsureCapacity(scopeCount)
-		for scopeIndex := 0; scopeIndex < scopeCount; scopeIndex++ {
+		for scopeIndex := range scopeCount {
 			scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
 			fillScope(t, scopeMetric.Scope(), resourceIndex, scopeIndex)
 			generatedMetrics.SMetrics = append(generatedMetrics.SMetrics, &scopeMetric)

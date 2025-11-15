@@ -3,6 +3,7 @@ package telemetry
 import (
 	"testing"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -41,7 +42,7 @@ func TestSpanDataIsRoot(t *testing.T) {
 }
 
 func TestStoreGetter(t *testing.T) {
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	assert.Equal(t, store.tracecache, store.GetTraceCache())
 	assert.Equal(t, store.metriccache, store.GetMetricCache())
 	assert.Equal(t, store.logcache, store.GetLogCache())
@@ -66,7 +67,7 @@ func TestStoreSpanFilters(t *testing.T) {
 	//  └- resource: [Empty]
 	//    └- scope: test-scope-3-1
 	//      └- span: span-3-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 3, []int{2, 1, 1}, [][]int{{2, 1}, {1}, {1}})
 	traceID := testdata.Spans[0].TraceID().String()
 	testdata.RSpans[2].Resource().Attributes().Clear()
@@ -142,7 +143,7 @@ func TestStoreMetricFilters(t *testing.T) {
 	//    └- scope: test-scope-2-1
 	//      └- metric: metric-2-1-1
 	//        └- datapoint: dp-2-1-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	payload, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddMetric(&payload)
 
@@ -205,7 +206,7 @@ func TestStoreLogFilters(t *testing.T) {
 	//      └- span: span-2-1-1
 	//        └- log: log-2-1-1-1
 	//        └- log: log-2-1-1-2
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	payload, testdata := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	store.AddLog(&payload)
 
@@ -260,7 +261,7 @@ func TestStoreAddSpanWithoutRotation(t *testing.T) {
 	//  └- resource: test-service-2
 	//    └- scope: test-scope-2-1
 	//      └- span: span-2-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxServiceSpanCount = 2 // no rotation
 	before := store.updatedAt
 	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
@@ -328,7 +329,7 @@ func TestStoreAddSpanWithRotation(t *testing.T) {
 	//  └- resource: test-service-1
 	//    └- scope: test-scope-1-1
 	//      └- span: span-1-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxServiceSpanCount = 1
 	payload1, _ := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	payload2, testdata2 := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
@@ -380,7 +381,7 @@ func TestStoreAddSpanServiceSpanCalculation(t *testing.T) {
 	//  └- resource: test-service-1
 	//    └- scope: test-scope-1-1
 	//      └- span: span-1-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxServiceSpanCount = 1
 	payload1, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{3}, [][]int{{3, 0, 0}})
 	payload1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).SetParentSpanID(
@@ -432,7 +433,7 @@ func TestStoreAddSpanServiceSpanCalculationLimitation(t *testing.T) {
 	//  └- resource: test-service-1
 	//    └- scope: test-scope-1-1
 	//      └- span: span-1-1-2
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxServiceSpanCount = 1
 	payload1, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{3}, [][]int{{3, 0, 0}})
 	payload1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).SetParentSpanID(
@@ -507,7 +508,7 @@ func TestStoreAddMetricWithoutRotation(t *testing.T) {
 	//    └- scope: test-scope-2-1
 	//      └- metric: metric-2-1-1
 	//        └- datapoint: dp-2-1-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxMetricCount = 3 // no rotation
 	before := store.updatedAt
 	payload, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
@@ -551,7 +552,7 @@ func TestStoreAddMetricWithRotation(t *testing.T) {
 	//    └- scope: test-scope-2-1
 	//      └- metric: metric-2-1-1
 	//        └- datapoint: dp-2-1-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxMetricCount = 1 // no rotation
 	before := store.updatedAt
 	payload, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
@@ -595,7 +596,7 @@ func TestStoreAddLogWithoutRotation(t *testing.T) {
 	//      └- span: span-2-1-1
 	//        └- log: log-2-1-1-1
 	//        └- log: log-2-1-1-2
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxLogCount = 8 // no rotation
 	before := store.updatedAt
 	payload, testdata := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
@@ -646,7 +647,7 @@ func TestStoreAddLogWithRotation(t *testing.T) {
 	//      └- span: span-2-1-1
 	//        └- log: log-2-1-1-1
 	//        └- log: log-2-1-1-2
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxLogCount = 1
 	before := store.updatedAt
 	payload, testdata := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
@@ -712,7 +713,7 @@ func TestStoreFlush(t *testing.T) {
 	//    └- scope: test-scope-2-1
 	//      └- metric: metric-2-1-1
 	//        └- datapoint: dp-2-1-1-1
-	store := NewStore()
+	store := NewStore(clockwork.NewRealClock())
 	store.maxServiceSpanCount = 1
 	tp1, _ := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	tp2, _ := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
