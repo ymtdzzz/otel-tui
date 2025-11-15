@@ -73,6 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, test-exporter]
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v6
         with:
           path: coverages
