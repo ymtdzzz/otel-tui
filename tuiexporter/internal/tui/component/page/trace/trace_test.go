@@ -7,10 +7,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jonboulle/clockwork"
 	"github.com/rivo/tview"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
-	"gotest.tools/v3/assert"
 )
 
 type mockSelectTableRowHandler struct {
@@ -240,6 +240,23 @@ func TestTracePage(t *testing.T) {
 		})
 
 		t.Run("detail", func(t *testing.T) {
+			t.Run("flush", func(t *testing.T) {
+				_, page, _, store := setupTracePage(t)
+
+				payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
+				store.AddSpan(&payload)
+
+				page.detail.flush()
+				page.detail.commands.SetText("")
+
+				// Assert that SetFocusFunc is called even after flushing
+				page.detail.view.Focus(func(p tview.Primitive) {
+					p.Focus(nil)
+				})
+
+				assert.True(t, len(page.detail.commands.GetText(true)) > 0)
+			})
+
 			tests := []struct {
 				name            string
 				key             *tcell.EventKey

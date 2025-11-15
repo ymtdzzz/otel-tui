@@ -37,7 +37,6 @@ func newDetail(
 }
 
 func (d *detail) flush() {
-	d.view.Clear()
 	d.tree.SetRoot(nil)
 }
 

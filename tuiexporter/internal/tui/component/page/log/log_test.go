@@ -7,10 +7,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jonboulle/clockwork"
 	"github.com/rivo/tview"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
-	"gotest.tools/v3/assert"
 )
 
 type mockDrawTimelineHandler struct {
@@ -228,6 +228,23 @@ func TestLogPage(t *testing.T) {
 		})
 
 		t.Run("detail", func(t *testing.T) {
+			t.Run("flush", func(t *testing.T) {
+				_, page, _, store := setupLogPage(t)
+
+				payload, _ := test.GenerateOTLPLogsPayload(t, 1, 1, []int{1}, [][]int{{1}})
+				store.AddLog(&payload)
+
+				page.detail.flush()
+				page.detail.commands.SetText("")
+
+				// Assert that SetFocusFunc is called even after flushing
+				page.detail.view.Focus(func(p tview.Primitive) {
+					p.Focus(nil)
+				})
+
+				assert.True(t, len(page.detail.commands.GetText(true)) > 0)
+			})
+
 			t.Run("jump to trace", func(t *testing.T) {
 				mockHandler, page, _, store := setupLogPage(t)
 
