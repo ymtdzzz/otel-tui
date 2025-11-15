@@ -22,15 +22,21 @@ lint-exporter: ## Run static analysis for exporter
 test: ## run test ex.) make test OPT="-run TestXXX"
 	TZ=UTC go test -v "$(DIR)" "$(OPT)"
 
+test-coverage: ## Run test with coverage
+	$(MAKE) test OPT="-coverprofile=coverage.out"
+
+test-coverage-report: ## Run test with coverage and generate report
+	$(MAKE) test-coverage
+	go tool cover -html=coverage.out
+
 test-exporter: ## run test for exporter
 	$(MAKE) test DIR="./tuiexporter/..."
 
-test-coverage: ## Run test with coverage
-	$(MAKE) test OPT="-coverprofile=coverage.out"
-	go tool cover -html=coverage.out
-
 test-coverage-exporter: ## Run test with coverage for exporter
 	$(MAKE) test-coverage DIR="./tuiexporter/..."
+
+test-coverage-report-exporter: ## Run test with coverage for exporter and generate report
+	$(MAKE) test-coverage-report DIR="./tuiexporter/..."
 
 update-screenshot: ## Update screenshot for docs
 	@command -v vhs > /dev/null || (echo "vhs is needed. see: https://github.com/charmbracelet/vhs?tab=readme-ov-file#installation" && exit 1)
