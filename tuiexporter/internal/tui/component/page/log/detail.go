@@ -146,7 +146,7 @@ func (d *detail) getLogInfoTree(l *telemetry.LogData) *tview.TreeView {
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	layout.AttachModalForTreeAttributes(tree)
+	layout.AttachModalForTreeAttributes(tree, d.updateCommands)
 
 	return tree
 }

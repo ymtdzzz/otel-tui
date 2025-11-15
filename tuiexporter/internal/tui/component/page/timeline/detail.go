@@ -205,7 +205,7 @@ func (d *detail) getSpanInfoTree(span *telemetry.SpanData) *tview.TreeView {
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	layout.AttachModalForTreeAttributes(tree)
+	layout.AttachModalForTreeAttributes(tree, d.updateCommands)
 
 	return tree
 }

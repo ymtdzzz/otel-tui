@@ -333,7 +333,7 @@ func (d *detail) getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 		node.SetExpanded(!node.IsExpanded())
 	})
 
-	layout.AttachModalForTreeAttributes(tree)
+	layout.AttachModalForTreeAttributes(tree, d.updateCommands)
 
 	return tree
 }

@@ -44,3 +44,41 @@ func TestGetLogInfoTree(t *testing.T) {
 
 	assert.Equal(t, want, got.String())
 }
+
+func TestInputCaptureAfterModalCloses(t *testing.T) {
+	// traceid: 1
+	//  └- resource: test-service-1
+	//    └- scope: test-scope-1-1
+	//      └- span: span-1-1-1
+	//        └- log: log-1-1-1-1
+	//        └- log: log-1-1-1-2
+	_, testdata := test.GenerateOTLPLogsPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	logs := []*telemetry.LogData{
+		{
+			Log:         testdata.Logs[0],
+			ResourceLog: testdata.RLogs[0],
+			ScopeLog:    testdata.SLogs[0],
+		},
+	}
+
+	detail := newDetail(layout.NewCommandList(), noopDrawTimelineFn, []*layout.ResizeManager{
+		layout.NewResizeManager(layout.ResizeDirectionHorizontal),
+		layout.NewResizeManager(layout.ResizeDirectionVertical),
+	}, nil)
+	detail.update(logs[0])
+
+	handler := detail.tree.InputHandler()
+
+	// open modal
+	handler(tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone), nil)
+	handler(tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone), nil)
+	handler(tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone), nil)
+
+	// close modal
+	handler(tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone), nil)
+
+	got := detail.tree.GetInputCapture()(tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone))
+
+	// resize key should be captured
+	assert.Nil(t, got)
+}

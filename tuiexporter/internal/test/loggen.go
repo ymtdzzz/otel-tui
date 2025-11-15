@@ -33,7 +33,7 @@ func GenerateOTLPLogsPayload(t *testing.T, traceID, resourceCount int, scopeCoun
 
 	// Create and populate resource data
 	logData.ResourceLogs().EnsureCapacity(resourceCount)
-	for resourceIndex := 0; resourceIndex < resourceCount; resourceIndex++ {
+	for resourceIndex := range resourceCount {
 		scopeCount := scopeCount[resourceIndex]
 		resourceLog := logData.ResourceLogs().AppendEmpty()
 		fillResource(t, resourceLog.Resource(), resourceIndex)
@@ -41,7 +41,7 @@ func GenerateOTLPLogsPayload(t *testing.T, traceID, resourceCount int, scopeCoun
 
 		// Create and populate instrumentation scope data
 		resourceLog.ScopeLogs().EnsureCapacity(scopeCount)
-		for scopeIndex := 0; scopeIndex < scopeCount; scopeIndex++ {
+		for scopeIndex := range scopeCount {
 			spanCount := spanCount[resourceIndex][scopeIndex]
 			scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 			fillScope(t, scopeLog.Scope(), resourceIndex, scopeIndex)
@@ -49,7 +49,7 @@ func GenerateOTLPLogsPayload(t *testing.T, traceID, resourceCount int, scopeCoun
 
 			// Create and populate logs
 			scopeLog.LogRecords().EnsureCapacity(spanCount)
-			for spanIndex := 0; spanIndex < spanCount; spanIndex++ {
+			for spanIndex := range spanCount {
 				// 2 logs per span
 				record1 := scopeLog.LogRecords().AppendEmpty()
 				fillLog(t, record1, traceID, resourceIndex, scopeIndex, spanIndex, 0, uniqueSpanIndex)

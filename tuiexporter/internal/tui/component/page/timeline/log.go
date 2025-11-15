@@ -54,7 +54,7 @@ func (l *logPane) updateLog(traceID, spanID string) {
 		}
 		l.logData = &logData
 		l.tableView.SetContent(&logData)
-		layout.AttachModalForTableRows(l.tableView, &logData)
+		layout.AttachModalForTableRows(l.tableView, &logData, l.updateCommands)
 	}
 	l.tableView.SetBorder(true).SetTitle(fmt.Sprintf("Logs (l) -- %d logs found (L: toggle collapse, A: toggle filter by span)", logCount))
 	l.updateCommands()

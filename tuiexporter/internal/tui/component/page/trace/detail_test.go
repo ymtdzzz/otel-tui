@@ -146,3 +146,56 @@ func TestDrawTreeWithoutSpans(t *testing.T) {
 
 	assert.Equal(t, want, got.String())
 }
+
+func TestInputCaptureAfterModalClosed(t *testing.T) {
+	// traceid: 1
+	//  └- resource: test-service-1
+	//  | └- scope: test-scope-1-1
+	//  | | └- span: span-1-1-1
+	//  | | └- span: span-1-1-2
+	//  | └- scope: test-scope-1-2
+	//  |   └- span: span-1-2-3
+	//  └- resource: test-service-2
+	//    └- scope: test-scope-2-1
+	//      └- span: span-2-1-1
+	_, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
+	spans := []*telemetry.SpanData{}
+	spans = append(spans, &telemetry.SpanData{
+		Span:         testdata.Spans[0],
+		ResourceSpan: testdata.RSpans[0],
+		ScopeSpans:   testdata.SSpans[0],
+	})
+	spans = append(spans, &telemetry.SpanData{
+		Span:         testdata.Spans[1],
+		ResourceSpan: testdata.RSpans[0],
+		ScopeSpans:   testdata.SSpans[0],
+	})
+	spans = append(spans, &telemetry.SpanData{
+		Span:         testdata.Spans[2],
+		ResourceSpan: testdata.RSpans[0],
+		ScopeSpans:   testdata.SSpans[1],
+	})
+	spans = append(spans, &telemetry.SpanData{
+		Span:         testdata.Spans[3],
+		ResourceSpan: testdata.RSpans[1],
+		ScopeSpans:   testdata.SSpans[2],
+	})
+
+	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
+	detail.update(spans)
+
+	handler := detail.tree.InputHandler()
+
+	// open modal
+	handler(tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone), nil)
+	handler(tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone), nil)
+	handler(tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone), nil)
+
+	// close modal
+	handler(tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone), nil)
+
+	got := detail.tree.GetInputCapture()(tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone))
+
+	// resize key should be captured
+	assert.Nil(t, got)
+}

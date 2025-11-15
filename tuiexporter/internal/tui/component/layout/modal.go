@@ -9,7 +9,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
-func AttachModalForTreeAttributes(tree *tview.TreeView) {
+func AttachModalForTreeAttributes(tree *tview.TreeView, onHide func()) {
 	var currentModalNode *tview.TreeNode = nil
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		if len(node.GetChildren()) > 0 {
@@ -18,6 +18,9 @@ func AttachModalForTreeAttributes(tree *tview.TreeView) {
 		}
 		if currentModalNode == node {
 			navigation.HideModal(tree)
+			if onHide != nil {
+				onHide()
+			}
 			currentModalNode = nil
 			return
 		}
@@ -47,6 +50,9 @@ func AttachModalForTreeAttributes(tree *tview.TreeView) {
 	tree.SetChangedFunc(func(node *tview.TreeNode) {
 		if currentModalNode != nil {
 			navigation.HideModal(tree)
+			if onHide != nil {
+				onHide()
+			}
 			currentModalNode = nil
 		}
 	})
@@ -58,7 +64,7 @@ type tableModalMapper interface {
 	GetColumnIdx() int
 }
 
-func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper) {
+func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, onHide func()) {
 	if mapper == nil {
 		return
 	}
@@ -68,6 +74,9 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper) {
 	table.SetSelectedFunc(func(row, column int) {
 		if currentRow == row {
 			navigation.HideModal(table)
+			if onHide != nil {
+				onHide()
+			}
 			currentRow = -1
 			return
 		}
@@ -94,6 +103,9 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper) {
 	table.SetSelectionChangedFunc(func(row, column int) {
 		if currentRow != -1 {
 			navigation.HideModal(table)
+			if onHide != nil {
+				onHide()
+			}
 			currentRow = -1
 		}
 	})

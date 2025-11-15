@@ -101,7 +101,7 @@ func (d *detail) getTraceInfoTree(spans []*telemetry.SpanData) *tview.TreeView {
 
 	root.AddChild(resource)
 
-	layout.AttachModalForTreeAttributes(tree)
+	layout.AttachModalForTreeAttributes(tree, d.updateCommands)
 
 	return tree
 }

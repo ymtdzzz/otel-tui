@@ -73,7 +73,7 @@ func Test_attachModalForTreeAttributes(t *testing.T) {
 			hideFn := func(tview.Primitive) {}
 			navigation.Init(nil, showFn, hideFn)
 
-			AttachModalForTreeAttributes(tree)
+			AttachModalForTreeAttributes(tree, nil)
 			tree.SetCurrentNode(node)
 
 			event := tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone)
