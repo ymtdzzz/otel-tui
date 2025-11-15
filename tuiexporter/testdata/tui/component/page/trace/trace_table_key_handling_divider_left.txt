@@ -2,7 +2,7 @@
 ╔═════════════════════════════════════════════════Traces (t)═════════════════════════════════════════════════╗┌─────────────────────────────────────────────────Details (d)────────────────────────────────────────────────┐
 ║Filter by service or span name (/):                                                                         ║│test-service-1 (01000000000000000000000000000000)                                                           │
 ║  Service Name   Latency Received At         Span Name                                                      ║│├──Statistics                                                                                               │
-║  test-service-1 200ms   2025-11-09 21:15:00 span-0-0-0                                                     ║││  └──span count: 1                                                                                         │
+║  test-service-1 200ms   2025-11-09 12:15:00 span-0-0-0                                                     ║││  └──span count: 1                                                                                         │
 ║                                                                                                            ║│└──Resource                                                                                                 │
 ║                                                                                                            ║│   ├──dropped attributes count: 1                                                                           │
 ║                                                                                                            ║│   ├──schema url:                                                                                           │

@@ -20,7 +20,7 @@ lint-exporter: ## Run static analysis for exporter
 
 .PHONY: test
 test: ## run test ex.) make test OPT="-run TestXXX"
-	go test -v "$(DIR)" "$(OPT)"
+	TZ=UTC go test -v "$(DIR)" "$(OPT)"
 
 test-exporter: ## run test for exporter
 	$(MAKE) test DIR="./tuiexporter/..."
