@@ -16,6 +16,16 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: "./go.mod"
+          cache: false
+      - name: Setup Golang caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-${{ hashFiles('./go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
       - name: Run lint
         run: make install-lint-tools lint
   lint-exporter:
@@ -26,7 +36,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: "./go.mod"
+          go-version-file: "./tuiexporter/go.mod"
+          cache: false
+      - name: Setup Golang caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-${{ hashFiles('./tuiexporter/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
       - name: Run lint for exporter
         run: make install-lint-tools lint-exporter
 
@@ -39,6 +59,16 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: "./go.mod"
+          cache: false
+      - name: Setup Golang caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-${{ hashFiles('./go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
       - name: Run test
         run: make test-coverage
       - uses: actions/upload-artifact@v5
@@ -53,7 +83,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: "./go.mod"
+          go-version-file: "./tuiexporter/go.mod"
+          cache: false
+      - name: Setup Golang caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-${{ hashFiles('./tuiexporter/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
       - name: Run test for exporter
         run: make test-coverage-exporter
       - uses: actions/upload-artifact@v5
@@ -62,7 +102,7 @@ jobs:
           path: coverage.out
   upload-coverage:
     name: Upload test coverage to Codecov
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [test, test-exporter]
     steps:
       - uses: actions/checkout@v4
