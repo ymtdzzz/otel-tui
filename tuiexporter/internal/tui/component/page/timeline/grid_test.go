@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"gotest.tools/v3/assert"
@@ -212,6 +213,233 @@ func TestWidenInLimit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := widenInLimit(tt.step, tt.curr, tt.limit)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestStepBy(t *testing.T) {
+	store := telemetry.NewStore(clockwork.NewRealClock())
+	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{10}})
+	store.AddSpan(&payload)
+
+	tests := []struct {
+		name           string
+		initialRow     int
+		totalRow       int
+		step           int
+		wantCurrentRow int
+		wantOffsetRow  int
+		wantOffsetCol  int
+	}{
+		{
+			name:           "Forward_In_Range",
+			initialRow:     2,
+			totalRow:       10,
+			step:           1,
+			wantCurrentRow: 3,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Backward_In_Range",
+			initialRow:     5,
+			totalRow:       10,
+			step:           -1,
+			wantCurrentRow: 4,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Forward_To_Last",
+			initialRow:     8,
+			totalRow:       10,
+			step:           1,
+			wantCurrentRow: 9,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Backward_To_First",
+			initialRow:     1,
+			totalRow:       10,
+			step:           -1,
+			wantCurrentRow: 0,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Beyond_Last",
+			initialRow:     9,
+			totalRow:       10,
+			step:           1,
+			wantCurrentRow: 9,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Before_First",
+			initialRow:     0,
+			totalRow:       10,
+			step:           -1,
+			wantCurrentRow: 0,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newGrid(nil, store.GetTraceCache(), nil, nil, nil)
+			g.currentRow = tt.initialRow
+			g.totalRow = tt.totalRow
+			g.items = make([]*tview.TextView, tt.totalRow)
+			g.nodes = make([]*spanTreeNode, tt.totalRow)
+			for i := 0; i < tt.totalRow; i++ {
+				g.items[i] = tview.NewTextView()
+				g.nodes[i] = &spanTreeNode{span: &telemetry.SpanData{
+					Span:         testdata.Spans[0],
+					ResourceSpan: testdata.RSpans[0],
+					ScopeSpans:   testdata.SSpans[0],
+				}}
+			}
+
+			handler := g.stepBy(tt.step)
+			handler(nil)
+
+			assert.Equal(t, tt.wantCurrentRow, g.currentRow)
+			row, col := g.gridView.GetOffset()
+			assert.Equal(t, tt.wantOffsetRow, row)
+			assert.Equal(t, tt.wantOffsetCol, col)
+		})
+	}
+}
+
+func TestGoToFirst(t *testing.T) {
+	store := telemetry.NewStore(clockwork.NewRealClock())
+	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{10}})
+	store.AddSpan(&payload)
+
+	tests := []struct {
+		name           string
+		initialRow     int
+		totalRow       int
+		wantCurrentRow int
+		wantOffsetRow  int
+		wantOffsetCol  int
+	}{
+		{
+			name:           "From_Middle",
+			initialRow:     5,
+			totalRow:       10,
+			wantCurrentRow: 0,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "From_Last",
+			initialRow:     9,
+			totalRow:       10,
+			wantCurrentRow: 0,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Already_First",
+			initialRow:     0,
+			totalRow:       10,
+			wantCurrentRow: 0,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newGrid(nil, store.GetTraceCache(), nil, nil, nil)
+			g.currentRow = tt.initialRow
+			g.totalRow = tt.totalRow
+			g.items = make([]*tview.TextView, tt.totalRow)
+			g.nodes = make([]*spanTreeNode, tt.totalRow)
+			for i := 0; i < tt.totalRow; i++ {
+				g.items[i] = tview.NewTextView()
+				g.nodes[i] = &spanTreeNode{span: &telemetry.SpanData{
+					Span:         testdata.Spans[0],
+					ResourceSpan: testdata.RSpans[0],
+					ScopeSpans:   testdata.SSpans[0],
+				}}
+			}
+
+			g.goToFirst(nil)
+
+			assert.Equal(t, tt.wantCurrentRow, g.currentRow)
+			row, col := g.gridView.GetOffset()
+			assert.Equal(t, tt.wantOffsetRow, row)
+			assert.Equal(t, tt.wantOffsetCol, col)
+		})
+	}
+}
+
+func TestGoToLast(t *testing.T) {
+	store := telemetry.NewStore(clockwork.NewRealClock())
+	payload, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{10}})
+	store.AddSpan(&payload)
+
+	tests := []struct {
+		name           string
+		initialRow     int
+		totalRow       int
+		wantCurrentRow int
+		wantOffsetRow  int
+		wantOffsetCol  int
+	}{
+		{
+			name:           "From_First",
+			initialRow:     0,
+			totalRow:       10,
+			wantCurrentRow: 9,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "From_Middle",
+			initialRow:     5,
+			totalRow:       10,
+			wantCurrentRow: 9,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+		{
+			name:           "Already_Last",
+			initialRow:     9,
+			totalRow:       10,
+			wantCurrentRow: 9,
+			wantOffsetRow:  0,
+			wantOffsetCol:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newGrid(nil, store.GetTraceCache(), nil, nil, nil)
+			g.currentRow = tt.initialRow
+			g.totalRow = tt.totalRow
+			g.items = make([]*tview.TextView, tt.totalRow)
+			g.nodes = make([]*spanTreeNode, tt.totalRow)
+			for i := 0; i < tt.totalRow; i++ {
+				g.items[i] = tview.NewTextView()
+				g.nodes[i] = &spanTreeNode{span: &telemetry.SpanData{
+					Span:         testdata.Spans[0],
+					ResourceSpan: testdata.RSpans[0],
+					ScopeSpans:   testdata.SSpans[0],
+				}}
+			}
+
+			g.goToLast(nil)
+
+			assert.Equal(t, tt.wantCurrentRow, g.currentRow)
+			row, col := g.gridView.GetOffset()
+			assert.Equal(t, tt.wantOffsetRow, row)
+			assert.Equal(t, tt.wantOffsetCol, col)
 		})
 	}
 }
