@@ -20,10 +20,10 @@ lint-exporter: ## Run static analysis for exporter
 
 .PHONY: test
 test: ## run test ex.) make test OPT="-run TestXXX"
-	TZ=UTC go test -v "$(DIR)" "$(OPT)"
+	TZ=UTC go test -v "$(DIR)" $(OPT)
 
 test-coverage: ## Run test with coverage
-	$(MAKE) test OPT="-coverprofile=coverage.out"
+	$(MAKE) test OPT="-coverprofile=coverage.out -coverpkg=./..."
 
 test-coverage-report: ## Run test with coverage and generate report
 	$(MAKE) test-coverage
