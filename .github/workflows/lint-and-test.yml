@@ -8,7 +8,7 @@ on:
 
 jobs:
   detect-modules:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
     steps:
