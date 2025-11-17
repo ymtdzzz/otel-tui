@@ -2,19 +2,10 @@
 help: ## Print help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-install-lint-tools: ## Install lint tools
-	go install tool
-
 DIR=./...
 lint: ## Run static analysis
-	go vet "$(DIR)"
-	test -z "`gofmt -s -d .`"
-	staticcheck "$(DIR)"
-	prealloc -set_exit_status "$(DIR)"
-	gosec "$(DIR)"
-
-lint-exporter: ## Run static analysis for exporter
-	$(MAKE) lint DIR="./tuiexporter/..."
+	@command -v golangci-lint > /dev/null || (echo "golangci-lint is needed. see: https://golangci-lint.run/docs/welcome/install/#local-installation" && exit 1)
+	golangci-lint run . ./tuiexporter
 
 .PHONY: test
 test: ## run test ex.) make test OPT="-run TestXXX"

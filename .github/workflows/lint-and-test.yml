@@ -7,54 +7,43 @@ on:
   pull_request:
 
 jobs:
-  lint:
-    name: Run lint
+  detect-modules:
     runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: "./go.mod"
-          cache: false
-      - name: Setup Golang caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-golang-${{ hashFiles('./go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-golang-
-      - name: Run lint
-        run: make install-lint-tools lint
-  lint-exporter:
-    name: Run lint for exporter
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "./tuiexporter/go.mod"
           cache: false
-      - name: Setup Golang caches
-        uses: actions/cache@v4
+      - id: set-modules
+        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+
+  lint:
+    needs: detect-modules
+    name: Run lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-golang-${{ hashFiles('./tuiexporter/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-golang-
-      - name: Run lint for exporter
-        run: make install-lint-tools lint-exporter
+          go-version-file: "./tuiexporter/go.mod"
+          cache: false
+      - name: golangci-lint ${{ matrix.modules }}
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          working-directory: ${{ matrix.modules }}
 
   test:
     name: Run test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
@@ -79,7 +68,7 @@ jobs:
     name: Run test for exporter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
@@ -105,7 +94,7 @@ jobs:
     runs-on: ubuntu-slim
     needs: [test, test-exporter]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v6
         with:
           path: coverages
