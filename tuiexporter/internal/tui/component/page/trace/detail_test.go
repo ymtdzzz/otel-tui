@@ -45,7 +45,9 @@ func TestDrawTreeWithServiceName(t *testing.T) {
 	})
 	sw, sh := 55, 25
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
@@ -112,7 +114,9 @@ func TestDrawTreeWithoutServiceName(t *testing.T) {
 	})
 	sw, sh := 55, 24
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
@@ -131,7 +135,9 @@ func TestDrawTreeWithoutServiceName(t *testing.T) {
 func TestDrawTreeWithoutSpans(t *testing.T) {
 	sw, sh := 55, 10
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))

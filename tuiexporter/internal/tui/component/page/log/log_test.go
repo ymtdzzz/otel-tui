@@ -30,7 +30,9 @@ func setupLogPage(t *testing.T) (*mockDrawTimelineHandler, *LogPage, tcell.Simul
 
 	sw, sh := 220, 50
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	page := NewLogPage(mockHandler.DrawTimeline, store)

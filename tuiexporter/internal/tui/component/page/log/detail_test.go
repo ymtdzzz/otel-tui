@@ -29,7 +29,9 @@ func TestGetLogInfoTree(t *testing.T) {
 	}
 	sw, sh := 55, 28
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	detail := newDetail(layout.NewCommandList(), noopDrawTimelineFn, []*layout.ResizeManager{}, nil)

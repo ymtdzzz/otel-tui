@@ -46,7 +46,9 @@ func TestDrawMetricHistogramChart(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sw, sh := 100, 20
 			screen := tcell.NewSimulationScreen("")
-			screen.Init()
+			if err := screen.Init(); err != nil {
+				t.Fatalf("failed to initialize screen: %v", err)
+			}
 			screen.SetSize(sw, sh)
 
 			chart := newChart(layout.NewCommandList(), nil, []*layout.ResizeManager{})

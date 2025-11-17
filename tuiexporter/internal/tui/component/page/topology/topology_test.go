@@ -25,7 +25,9 @@ func TestTopologyPage(t *testing.T) {
 
 		sw, sh := 100, 25
 		screen := tcell.NewSimulationScreen("")
-		screen.Init()
+		if err := screen.Init(); err != nil {
+			t.Fatalf("failed to initialize screen: %v", err)
+		}
 		screen.SetSize(sw, sh)
 
 		page := NewTopologyPage(store.GetTraceCache())
@@ -66,7 +68,9 @@ func TestTopologyPage(t *testing.T) {
 
 		sw, sh := 100, 25
 		screen := tcell.NewSimulationScreen("")
-		screen.Init()
+		if err := screen.Init(); err != nil {
+			t.Fatalf("failed to initialize screen: %v", err)
+		}
 		screen.SetSize(sw, sh)
 
 		page := NewTopologyPage(store.GetTraceCache())
