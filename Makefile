@@ -5,7 +5,7 @@ help: ## Print help.
 DIR=./...
 lint: ## Run static analysis
 	@command -v golangci-lint > /dev/null || (echo "golangci-lint is needed. see: https://golangci-lint.run/docs/welcome/install/#local-installation" && exit 1)
-	golangci-lint run . ./tuiexporter
+	golangci-lint run ./... ./tuiexporter/...
 
 .PHONY: test
 test: ## run test ex.) make test OPT="-run TestXXX"
