@@ -20,7 +20,9 @@ func setupMetricPage(t *testing.T) (*MetricPage, tcell.SimulationScreen, *teleme
 
 	sw, sh := 220, 50
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	page := NewMetricPage(store)

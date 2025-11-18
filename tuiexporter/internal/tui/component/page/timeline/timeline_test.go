@@ -34,7 +34,9 @@ func setupTimelinePage(t *testing.T) (*mockTimelineHandler, *TimelinePage, tcell
 
 	sw, sh := 220, 50
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	page := NewTimelinePage(mockHandler.switchToPageHandler, store, mockHandler.onEscapeHandler)

@@ -23,7 +23,9 @@ func TestDetailInputCaptureAfterModalClosed(t *testing.T) {
 
 	sw, sh := 55, 10
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 	detail.view.SetRect(0, 0, sw, sh)
 

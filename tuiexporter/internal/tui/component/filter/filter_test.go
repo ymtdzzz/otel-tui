@@ -31,7 +31,9 @@ func (m *filterCallbackMock) OnSortTypeChanged(inputConfirmed string, sortType t
 func TestDrawFilter(t *testing.T) {
 	sw, sh := 50, 1
 	screen := tcell.NewSimulationScreen("")
-	screen.Init()
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to initialize screen: %v", err)
+	}
 	screen.SetSize(sw, sh)
 
 	setup := func() *Filter {
