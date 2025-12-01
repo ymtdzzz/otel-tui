@@ -4,7 +4,7 @@ go 1.24.7
 
 require (
 	github.com/atotto/clipboard v0.1.4
-	github.com/gdamore/tcell/v2 v2.11.0
+	github.com/gdamore/tcell/v2 v2.13.1
 	github.com/icza/gox v0.2.2
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/navidys/tvxwidgets v0.12.1
