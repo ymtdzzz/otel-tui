@@ -87,6 +87,9 @@ func (g *grid) updateGrid(traceID string) *telemetry.SpanData {
 
 	g.updateCommands()
 
+	if len(g.nodes) == 0 {
+		return nil
+	}
 	return g.nodes[0].span
 }
 
