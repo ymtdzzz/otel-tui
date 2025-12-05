@@ -38,6 +38,7 @@ type Config struct {
 	PromScrapeConfigs      []*PromScrapeConfig
 	DebugLogFilePath       string
 	DisableInternalMetrics bool
+	AuthToken              string
 }
 
 func NewConfig(
@@ -49,6 +50,7 @@ func NewConfig(
 	promTarget []string,
 	debugLogFilePath string,
 	disableInternalMetrics bool,
+	authToken string,
 ) (*Config, error) {
 	cfg := &Config{
 		OTLPHost:               otlpHost,
@@ -59,6 +61,7 @@ func NewConfig(
 		PromTarget:             promTarget,
 		DebugLogFilePath:       debugLogFilePath,
 		DisableInternalMetrics: disableInternalMetrics,
+		AuthToken:              authToken,
 	}
 
 	if err := cfg.validate(); err != nil {

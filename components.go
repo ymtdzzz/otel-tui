@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
@@ -13,13 +14,16 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 
-	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory]()
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
+		bearertokenauthextension.NewFactory(),
+	)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
@@ -51,6 +55,8 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
+
+	factories.Telemetry = otelconftelemetry.NewFactory()
 
 	return factories, nil
 }

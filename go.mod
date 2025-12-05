@@ -5,6 +5,7 @@ module github.com/ymtdzzz/otel-tui
 go 1.24.7
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.140.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.140.1
@@ -13,7 +14,8 @@ require (
 	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20251115032248-fb59556a3201
 	go.opentelemetry.io/collector/component v1.46.0
 	go.opentelemetry.io/collector/component/componenttest v0.140.0
-	go.opentelemetry.io/collector/confmap v1.46.0
+	go.opentelemetry.io/collector/confmap v1.47.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.47.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.46.0
 	go.opentelemetry.io/collector/connector v0.140.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.140.0
@@ -21,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.140.0
 	go.opentelemetry.io/collector/processor v1.46.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.140.0
+	go.opentelemetry.io/collector/service v0.140.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/sys v0.38.0
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822
@@ -272,7 +275,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.140.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.140.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.140.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.46.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.47.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.140.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.140.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.140.0 // indirect
@@ -289,7 +292,6 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.140.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.140.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
-	go.opentelemetry.io/collector/service v0.140.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.140.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect

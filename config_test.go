@@ -281,6 +281,66 @@ service:
 	assert.Equal(t, want, got)
 }
 
+func TestConfigRenderYmlWithAuth(t *testing.T) {
+	cfg := &Config{
+		OTLPHost:     "0.0.0.0",
+		OTLPHTTPPort: 4318,
+		OTLPGRPCPort: 4317,
+		AuthToken:    "set", // any non-empty value triggers auth
+	}
+	want := `yaml:
+extensions:
+  bearertokenauth:
+    token: "${env:AUTH_TOKEN}"
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://localhost:*
+            - https://localhost:*
+        auth:
+          authenticator: bearertokenauth
+      grpc:
+        endpoint: 0.0.0.0:4317
+        auth:
+          authenticator: bearertokenauth
+processors:
+exporters:
+  tui:
+    from_json_file: false
+    debug_log_file_path: ''
+service:
+  extensions: [bearertokenauth]
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors:
+      exporters:
+        - tui
+    logs:
+      receivers:
+        - otlp
+      processors:
+      exporters:
+        - tui
+    metrics:
+      receivers:
+        - otlp
+      processors:
+      exporters:
+        - tui
+`
+	err := cfg.buildPromScrapeConfigs()
+	assert.Nil(t, err)
+	got, err := cfg.RenderYml()
+	assert.Nil(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name string
@@ -304,6 +364,13 @@ func TestValidate(t *testing.T) {
 					"localhost:9000",
 					"other-host:9000",
 				},
+			},
+			want: nil,
+		},
+		{
+			name: "OK_WithAuthToken",
+			cfg: &Config{
+				AuthToken: "valid-token",
 			},
 			want: nil,
 		},
