@@ -29,7 +29,4 @@ pkgs.buildGoModule {
   ];
   vendorHash = "sha256-JcMIDVxBULzj8M+KDXltI8ToBAhqaX67X8aZXGiMR+Q=";
   subPackages = [ "." ];
-  buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
-    pkgs.xorg.libX11
-  ];
 }
