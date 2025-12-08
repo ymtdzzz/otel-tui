@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
@@ -44,72 +45,93 @@ func runInteractive(params otelcol.CollectorSettings) error {
 	return nil
 }
 
-func newCommand(params otelcol.CollectorSettings) *cobra.Command {
-	var (
-		httpPortFlag, grpcPortFlag int
-		hostFlag                   string
-		zipkinEnabledFlag          bool
-		promTargetFlag             []string
-		fromJSONFileFlag           string
-		debugLogFlag               bool
-		disableInternalMetricsFlag bool
+type collectorCommand struct {
+	*cobra.Command
+	params                 otelcol.CollectorSettings
+	httpPort               int
+	grpcPort               int
+	host                   string
+	zipkinEnabled          bool
+	promTargets            []string
+	fromJSONFile           string
+	debugLog               bool
+	disableInternalMetrics bool
+}
+
+func (c *collectorCommand) preRunE(cmd *cobra.Command, args []string) error {
+	logPath, err := setLoggingOptions(&c.params, c.debugLog)
+	if err != nil {
+		return err
+	}
+
+	cfg, err := NewConfig(
+		c.host,
+		c.httpPort,
+		c.grpcPort,
+		c.zipkinEnabled,
+		c.fromJSONFile,
+		c.promTargets,
+		logPath,
+		c.disableInternalMetrics,
+		os.Getenv("AUTH_TOKEN"),
 	)
 
-	rootCmd := &cobra.Command{
-		Use:          params.BuildInfo.Command,
-		Version:      params.BuildInfo.Version,
-		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			logPath, err := setLoggingOptions(&params, debugLogFlag)
-			if err != nil {
-				return err
-			}
+	if err != nil {
+		return err
+	}
 
-			cfg, err := NewConfig(
-				hostFlag,
-				httpPortFlag,
-				grpcPortFlag,
-				zipkinEnabledFlag,
-				fromJSONFileFlag,
-				promTargetFlag,
-				logPath,
-				disableInternalMetricsFlag,
-			)
+	configContents, err := cfg.RenderYml()
+	if err != nil {
+		return err
+	}
 
-			if err != nil {
-				return err
-			}
-
-			configContents, err := cfg.RenderYml()
-			if err != nil {
-				return err
-			}
-
-			configProviderSettings := otelcol.ConfigProviderSettings{
-				ResolverSettings: confmap.ResolverSettings{
-					URIs:              []string{configContents},
-					ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
-				},
-			}
-
-			params.ConfigProviderSettings = configProviderSettings
-
-			col, err := otelcol.NewCollector(params)
-			if err != nil {
-				return err
-			}
-			return col.Run(cmd.Context())
+	configProviderSettings := otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:              []string{configContents},
+			ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory(), envprovider.NewFactory()},
 		},
 	}
 
-	rootCmd.Flags().IntVar(&httpPortFlag, "http", 4318, "The port number on which we listen for OTLP http payloads")
-	rootCmd.Flags().IntVar(&grpcPortFlag, "grpc", 4317, "The port number on which we listen for OTLP grpc payloads")
-	rootCmd.Flags().StringVar(&hostFlag, "host", "0.0.0.0", "The host where we expose our OTLP endpoints")
-	rootCmd.Flags().BoolVar(&zipkinEnabledFlag, "enable-zipkin", false, "Enable the zipkin receiver")
-	rootCmd.Flags().StringVar(&fromJSONFileFlag, "from-json-file", "", "The JSON file path exported by JSON exporter")
-	rootCmd.Flags().StringArrayVar(&promTargetFlag, "prom-target", []string{}, `Enable the prometheus receiver and specify the target endpoints for the receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
-	rootCmd.Flags().BoolVar(&debugLogFlag, "debug-log", false, "Enable debug log output to file (/tmp/otel-tui.log)")
-	rootCmd.Flags().BoolVar(&disableInternalMetricsFlag, "disable-internal-metrics", false, "Disable the collector's internal metrics telemetry reporting")
+	c.params.ConfigProviderSettings = configProviderSettings
+	return nil
+}
+
+func (c *collectorCommand) runE(cmd *cobra.Command, args []string) error {
+	col, err := otelcol.NewCollector(c.params)
+	if err != nil {
+		return err
+	}
+	return col.Run(cmd.Context())
+}
+
+func newCommand(params otelcol.CollectorSettings) *collectorCommand {
+	rootCmd := &collectorCommand{
+		Command: &cobra.Command{
+			Use:          params.BuildInfo.Command,
+			Version:      params.BuildInfo.Version,
+			SilenceUsage: true,
+			Long: `A terminal OpenTelemetry viewer
+
+Environment Variables:
+  AUTH_TOKEN    Bearer token for OTLP receiver authentication (applies to both HTTP and gRPC)`,
+		},
+		params:   params,
+		httpPort: 4318,
+		grpcPort: 4317,
+		host:     "0.0.0.0",
+	}
+
+	rootCmd.PreRunE = rootCmd.preRunE
+	rootCmd.RunE = rootCmd.runE
+
+	rootCmd.Flags().IntVar(&rootCmd.httpPort, "http", rootCmd.httpPort, "The port number on which we listen for OTLP http payloads")
+	rootCmd.Flags().IntVar(&rootCmd.grpcPort, "grpc", rootCmd.grpcPort, "The port number on which we listen for OTLP grpc payloads")
+	rootCmd.Flags().StringVar(&rootCmd.host, "host", rootCmd.host, "The host where we expose our OTLP endpoints")
+	rootCmd.Flags().BoolVar(&rootCmd.zipkinEnabled, "enable-zipkin", rootCmd.zipkinEnabled, "Enable the zipkin receiver")
+	rootCmd.Flags().StringVar(&rootCmd.fromJSONFile, "from-json-file", rootCmd.fromJSONFile, "The JSON file path exported by JSON exporter")
+	rootCmd.Flags().StringArrayVar(&rootCmd.promTargets, "prom-target", rootCmd.promTargets, `Enable the prometheus receiver and specify the target endpoints for the receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
+	rootCmd.Flags().BoolVar(&rootCmd.debugLog, "debug-log", rootCmd.debugLog, "Enable debug log output to file (/tmp/otel-tui.log)")
+	rootCmd.Flags().BoolVar(&rootCmd.disableInternalMetrics, "disable-internal-metrics", rootCmd.disableInternalMetrics, "Disable the collector's internal metrics telemetry reporting")
 	return rootCmd
 }
 

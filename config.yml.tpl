@@ -1,4 +1,9 @@
 yaml:
+{{- if .AuthToken}}
+extensions:
+  bearertokenauth:
+    token: "${env:AUTH_TOKEN}"
+{{- end}}
 receivers:
   otlp:
     protocols:
@@ -8,8 +13,16 @@ receivers:
           allowed_origins:
             - http://localhost:*
             - https://localhost:*
+{{- if .AuthToken}}
+        auth:
+          authenticator: bearertokenauth
+{{- end}}
       grpc:
         endpoint: {{ .OTLPHost }}:{{ .OTLPGRPCPort }}
+{{- if .AuthToken}}
+        auth:
+          authenticator: bearertokenauth
+{{- end}}
 {{- if .EnableZipkin}}
   zipkin:
     endpoint: 0.0.0.0:9411
@@ -53,6 +66,9 @@ exporters:
     from_json_file: {{ if .FromJSONFile }}true{{else}}false{{end}}
     debug_log_file_path: '{{ .DebugLogFilePath }}'
 service:
+{{- if .AuthToken}}
+  extensions: [bearertokenauth]
+{{- end}}
 {{- if .DisableInternalMetrics}}
   telemetry:
     metrics:
