@@ -292,7 +292,7 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) layout.KeyMaps {
 	ch.SetBorder(true)
 	ch.SetData(data)
 	ch.SetDrawXAxisLabel(false)
-	ch.SetLineColor(layout.Colors)
+	ch.SetLineColor(lineColors(len(data)))
 
 	legend := tview.NewFlex().SetDirection(tview.FlexRow)
 	legend.AddItem(txts, 0, 1, false)
@@ -461,4 +461,18 @@ func uint64ToInt(u uint64) int {
 		return math.MaxInt
 	}
 	return int(u)
+}
+
+// lineColors returns a color slice for the plot widget.
+// If n <= len(layout.Colors), returns the original slice (no allocation).
+// Otherwise, returns a new slice with colors cycling via modulo.
+func lineColors(n int) []tcell.Color {
+	if n <= len(layout.Colors) {
+		return layout.Colors
+	}
+	colors := make([]tcell.Color, n)
+	for i := range colors {
+		colors[i] = layout.Colors[i%len(layout.Colors)]
+	}
+	return colors
 }

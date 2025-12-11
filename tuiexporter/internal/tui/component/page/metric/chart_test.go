@@ -1,17 +1,18 @@
 package metric
 
 import (
-	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/jonboulle/clockwork"
+	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestDrawMetricHistogramChart(t *testing.T) {
@@ -89,51 +90,67 @@ func TestChartInputCaptureAfterFlush(t *testing.T) {
 	assert.Nil(t, got)
 }
 
-func TestGetDataToDrawWithMoreKeysThanColors(t *testing.T) {
-	// Create dataMap with 12 keys (more than 10 colors available)
-	// This test ensures no panic occurs when there are more keys than colors
-	attrkey := "test_attr"
-	numKeys := 12
+func TestLineColors(t *testing.T) {
+	c := layout.Colors
+	n := len(c)
 
-	dataMap := make(map[string]map[string][]*pmetric.NumberDataPoint)
-	dataMap[attrkey] = make(map[string][]*pmetric.NumberDataPoint)
+	tests := []struct {
+		name string
+		n    int
+		want []tcell.Color
+	}{
+		{
+			name: "within bounds",
+			n:    n - 1,
+			want: c,
+		},
+		{
+			name: "exact bound",
+			n:    n,
+			want: c,
+		},
+		{
+			name: "one over",
+			n:    n + 1,
+			want: append(append([]tcell.Color{}, c...), c[0]),
+		},
+	}
 
-	start := time.Now()
-	end := start.Add(time.Minute)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, lineColors(tt.n))
+		})
+	}
+}
 
-	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("key_%02d", i)
-		// Use multiple data points per key to exercise interpolation logic
-		dps := make([]*pmetric.NumberDataPoint, 0, 3)
-		for j := 0; j < 3; j++ {
-			dp := pmetric.NewNumberDataPoint()
-			// Alternate between double and int values
-			if (i+j)%2 == 0 {
-				dp.SetDoubleValue(float64(i*10 + j))
-			} else {
-				dp.SetIntValue(int64(i*10 + j))
-			}
-			dp.SetTimestamp(pcommon.NewTimestampFromTime(start.Add(time.Duration(i*3+j) * time.Second)))
-			dps = append(dps, &dp)
+func TestDrawMetricNumberChartWithManyDataPoints(t *testing.T) {
+	mockClock := clockwork.NewFakeClockAt(time.Date(2025, 11, 9, 12, 15, 0, 0, time.UTC))
+	store := telemetry.NewStore(mockClock)
+
+	// Add 11 separate metrics with unique attribute values (> 10 colors)
+	// Each metric has one data point with a unique "dp index" attribute
+	dpCount := 11
+	var lastMetric *telemetry.MetricData
+	for i := 0; i < dpCount; i++ {
+		payload, m := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
+		// Clear default attributes and set unique attribute value
+		dp := payload.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+		dp.Attributes().Clear()
+		dp.Attributes().PutInt("series", int64(i))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(mockClock.Now().Add(time.Duration(i) * time.Second)))
+		store.AddMetric(&payload)
+		lastMetric = &telemetry.MetricData{
+			Metric:         m.Metrics[0],
+			ResourceMetric: m.RMetrics[0],
 		}
-		dataMap[attrkey][key] = dps
 	}
 
-	chart := newChart(layout.NewCommandList(), nil, []*layout.ResizeManager{})
+	chart := newChart(layout.NewCommandList(), store, []*layout.ResizeManager{})
+	chart.update(lastMetric)
 
-	// This should not panic
-	data, tv := chart.getDataToDraw(dataMap, attrkey, start, end)
-
-	// Verify we got data for all 12 keys
-	assert.Len(t, data, numKeys)
-
-	// Verify the legend text contains all keys with colors (colors wrap around)
-	legendText := tv.GetText(false)
-	for i := 0; i < numKeys; i++ {
-		key := fmt.Sprintf("key_%02d", i)
-		assert.Contains(t, legendText, key)
-		// Verify color tag is present (colors wrap via modulo)
-		expectedColor := layout.Colors[i%len(layout.Colors)].String()
-		assert.Contains(t, legendText, expectedColor)
-	}
+	// Legend is second item, contains TextView with one line per data series
+	legend := chart.ch.GetItem(1).(*tview.Flex)
+	tv := legend.GetItem(0).(*tview.TextView)
+	lines := strings.Count(tv.GetText(false), "\n") + 1
+	assert.Equal(t, dpCount, lines)
 }
