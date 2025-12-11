@@ -412,7 +412,7 @@ func (c *chart) getDataToDraw(dataMap map[string]map[string][]*pmetric.NumberDat
 			prevpos = pos
 			prevval = val
 		}
-		txts[i] = fmt.Sprintf("[%s]● %s: %s", layout.Colors[i].String(), attrkey, k)
+		txts[i] = fmt.Sprintf("[%s]● %s: %s", layout.Colors[i%len(layout.Colors)].String(), attrkey, k)
 	}
 	tv.SetText(strings.Join(txts, "\n"))
 	// Replace null value with appropriate value for smooth line
