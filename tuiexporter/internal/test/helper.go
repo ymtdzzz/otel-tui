@@ -46,10 +46,28 @@ func GetScreenContent(t *testing.T, screen tcell.SimulationScreen) bytes.Buffer 
 	var got bytes.Buffer
 	for n, v := range content {
 		var err error
+		ch := v.Runes[0]
+		// Replace SimulationScreen's default fill character ('X') with space.
+		// Since tcell v2.12.0, the Put API changes (PR #846, #848) caused the fill
+		// character to become visible in test environments when tview components don't
+		// fully occupy their allocated space. This doesn't occur in actual terminals,
+		// so we normalize the test environment to match real-world behavior.
+		// See https://github.com/gdamore/tcell/pull/848
+
+		// To avoid replacing intentional 'X' characters (e.g., in text content or
+		// control characters like Ctrl-X), we only replace 'X' when it appears as
+		// part of a consecutive fill pattern.
+		if ch == 'X' {
+			prevIsX := n > 0 && content[n-1].Runes[0] == 'X'
+			nextIsX := n < len(content)-1 && content[n+1].Runes[0] == 'X'
+			if prevIsX || nextIsX {
+				ch = ' '
+			}
+		}
 		if n%w == w-1 {
-			_, err = fmt.Fprintf(&got, "%c\n", v.Runes[0])
+			_, err = fmt.Fprintf(&got, "%c\n", ch)
 		} else {
-			_, err = fmt.Fprintf(&got, "%c", v.Runes[0])
+			_, err = fmt.Fprintf(&got, "%c", ch)
 		}
 		if err != nil {
 			t.Error(err)
