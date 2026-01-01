@@ -56,7 +56,8 @@ func newTable(
 	t.SetContent(&spanData)
 	store.SetOnSpanAdded(func() {
 		if detail.tree.GetRoot() == nil {
-			t.Select(t.GetSelection())
+			// Select the first data row (row 1), not the header (row 0)
+			t.Select(1, 0)
 		}
 	})
 
