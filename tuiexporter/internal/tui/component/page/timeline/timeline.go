@@ -88,6 +88,10 @@ func (p *TimelinePage) ShowTimelineByRow(row int) {
 }
 
 func (p *TimelinePage) DrawTimeline(traceID string) {
+	if traceID == "" {
+		return
+	}
+
 	p.traceID = traceID
 
 	p.container.Clear()
