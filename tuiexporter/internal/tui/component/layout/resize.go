@@ -49,19 +49,32 @@ func (m *ResizeManager) Register(
 func (m *ResizeManager) KeyMaps() KeyMaps {
 	switch m.direction {
 	case ResizeDirectionHorizontal:
+		moveDividerLeft := func(event *tcell.EventKey) *tcell.EventKey {
+			if m.firstProportion <= 1 {
+				return nil
+			}
+			m.firstProportion--
+			m.secondProportion++
+			m.resize()
+			return nil
+		}
 		return KeyMaps{
 			{
 				Key:         tcell.NewEventKey(tcell.KeyCtrlH, ' ', tcell.ModNone),
 				Description: "Move divider left",
-				Handler: func(event *tcell.EventKey) *tcell.EventKey {
-					if m.firstProportion <= 1 {
-						return nil
-					}
-					m.firstProportion--
-					m.secondProportion++
-					m.resize()
-					return nil
-				},
+				Handler:     moveDividerLeft,
+			},
+			{
+				// Ctrl-H is often interpreted as backspace by terminals
+				Key:     tcell.NewEventKey(tcell.KeyBackspace, ' ', tcell.ModNone),
+				Hidden:  true,
+				Handler: moveDividerLeft,
+			},
+			{
+				// Some terminals use KeyBackspace2 for backspace
+				Key:     tcell.NewEventKey(tcell.KeyBackspace2, ' ', tcell.ModNone),
+				Hidden:  true,
+				Handler: moveDividerLeft,
 			},
 			{
 				Key:         tcell.NewEventKey(tcell.KeyCtrlL, ' ', tcell.ModNone),
