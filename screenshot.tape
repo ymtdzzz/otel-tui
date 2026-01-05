@@ -17,17 +17,17 @@ Screenshot docs/traces.png
 Enter
 Sleep 100ms
 Type "L"
-Ctrl+L
+Right
 Sleep 10ms
-Ctrl+L
+Right
 Sleep 10ms
-Ctrl+L
+Right
 Sleep 10ms
-Ctrl+L
+Right
 Sleep 10ms
-Ctrl+L
+Right
 Sleep 10ms
-Ctrl+L
+Right
 Sleep 100ms
 Screenshot docs/spans.png
 Sleep 1s
