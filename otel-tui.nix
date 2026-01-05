@@ -15,7 +15,7 @@ pkgs.buildGoModule {
     owner = "ymtdzzz";
     repo = "otel-tui";
     rev = "${otel-tui-version}";
-    hash = "sha256-Q6iaR8zLsjLq3gvZtIaLn0uyTWaaxWobuGa6Cbhn9pM=";
+    hash = "sha256-V12mnV4CqHg7tM6ypG5NctTSFDu+jz0sC7p1v8Ax47A=";
   };
   overrideModAttrs = (
     _: {
