@@ -295,7 +295,7 @@ func TestStoreAddSpanWithoutRotation(t *testing.T) {
 	{
 		gotsd := store.tracecache.traceid2spans[testdata.Spans[0].TraceID().String()]
 		assert.Equal(t, 4, len(gotsd))
-		gotspans := []*ptrace.Span{}
+		gotspans := make([]*ptrace.Span, 0, len(gotsd))
 		for _, sd := range gotsd {
 			gotspans = append(gotspans, sd.Span)
 		}
