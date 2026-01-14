@@ -12,7 +12,7 @@ import (
 
 func TestInputCaptureAfterModalClosed(t *testing.T) {
 	_, testdata := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
-	metrics := []*telemetry.MetricData{}
+	metrics := make([]*telemetry.MetricData, 0, 1)
 	metrics = append(metrics, &telemetry.MetricData{
 		Metric:         testdata.Metrics[0],
 		ResourceMetric: testdata.RMetrics[0],

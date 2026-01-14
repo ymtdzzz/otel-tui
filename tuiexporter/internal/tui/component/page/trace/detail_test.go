@@ -22,7 +22,7 @@ func TestDrawTreeWithServiceName(t *testing.T) {
 	//    └- scope: test-scope-2-1
 	//      └- span: span-2-1-1
 	_, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
-	spans := []*telemetry.SpanData{}
+	spans := make([]*telemetry.SpanData, 0, 4)
 	spans = append(spans, &telemetry.SpanData{
 		Span:         testdata.Spans[0],
 		ResourceSpan: testdata.RSpans[0],
@@ -91,7 +91,7 @@ func TestDrawTreeWithoutServiceName(t *testing.T) {
 	//      └- span: span-2-1-1
 	_, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
 	testdata.RSpans[0].Resource().Attributes().Remove("service.name")
-	spans := []*telemetry.SpanData{}
+	spans := make([]*telemetry.SpanData, 0, 4)
 	spans = append(spans, &telemetry.SpanData{
 		Span:         testdata.Spans[0],
 		ResourceSpan: testdata.RSpans[0],
@@ -165,7 +165,7 @@ func TestInputCaptureAfterModalClosed(t *testing.T) {
 	//    └- scope: test-scope-2-1
 	//      └- span: span-2-1-1
 	_, testdata := test.GenerateOTLPTracesPayload(t, 1, 2, []int{2, 1}, [][]int{{2, 1}, {1}})
-	spans := []*telemetry.SpanData{}
+	spans := make([]*telemetry.SpanData, 0, 4)
 	spans = append(spans, &telemetry.SpanData{
 		Span:         testdata.Spans[0],
 		ResourceSpan: testdata.RSpans[0],
