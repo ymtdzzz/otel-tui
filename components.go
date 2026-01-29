@@ -9,7 +9,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	tuiexporter "github.com/ymtdzzz/otel-tui/tuiexporter"
 	"go.opentelemetry.io/collector/connector"
-	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
@@ -39,7 +38,6 @@ func components() (otelcol.Factories, error) {
 	}
 
 	factories.Exporters, err = otelcol.MakeFactoryMap(
-		otlpexporter.NewFactory(),
 		tuiexporter.NewFactory(),
 	)
 	if err != nil {
