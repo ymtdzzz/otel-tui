@@ -33,6 +33,7 @@ type Config struct {
 	OTLPHTTPPort           int
 	OTLPGRPCPort           int
 	EnableZipkin           bool
+	EnableDatadog          bool
 	FromJSONFile           string
 	PromTarget             []string
 	PromScrapeConfigs      []*PromScrapeConfig
@@ -46,6 +47,7 @@ func NewConfig(
 	otlpHTTPPort int,
 	otlpGRPCPort int,
 	enableZipkin bool,
+	enableDatadog bool,
 	fromJSONFile string,
 	promTarget []string,
 	debugLogFilePath string,
@@ -57,6 +59,7 @@ func NewConfig(
 		OTLPHTTPPort:           otlpHTTPPort,
 		OTLPGRPCPort:           otlpGRPCPort,
 		EnableZipkin:           enableZipkin,
+		EnableDatadog:          enableDatadog,
 		FromJSONFile:           fromJSONFile,
 		PromTarget:             promTarget,
 		DebugLogFilePath:       debugLogFilePath,

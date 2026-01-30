@@ -341,6 +341,70 @@ service:
 	assert.Equal(t, want, got)
 }
 
+func TestConfigRenderYmlWithDatadog(t *testing.T) {
+	cfg := &Config{
+		OTLPHost:      "0.0.0.0",
+		OTLPHTTPPort:  4318,
+		OTLPGRPCPort:  4317,
+		EnableDatadog: true,
+	}
+	want := `yaml:
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://localhost:*
+            - https://localhost:*
+      grpc:
+        endpoint: 0.0.0.0:4317
+  datadog:
+    endpoint: 0.0.0.0:8126
+    read_timeout: 60s
+  statsd/dogstatsd:
+    endpoint: 0.0.0.0:8125
+    aggregation_interval: 5s
+    enable_metric_type: true
+    is_monotonic_counter: true
+processors:
+exporters:
+  tui:
+    from_json_file: false
+    debug_log_file_path: ''
+service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+        - datadog
+      processors:
+      exporters:
+        - tui
+    logs:
+      receivers:
+        - otlp
+        - datadog
+      processors:
+      exporters:
+        - tui
+    metrics:
+      receivers:
+        - otlp
+        - datadog
+        - statsd/dogstatsd
+      processors:
+      exporters:
+        - tui
+`
+	err := cfg.buildPromScrapeConfigs()
+	assert.Nil(t, err)
+	got, err := cfg.RenderYml()
+	assert.Nil(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name string

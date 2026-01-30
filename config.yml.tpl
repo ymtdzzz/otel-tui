@@ -27,6 +27,16 @@ receivers:
   zipkin:
     endpoint: 0.0.0.0:9411
 {{- end}}
+{{- if .EnableDatadog}}
+  datadog:
+    endpoint: 0.0.0.0:8126
+    read_timeout: 60s
+  statsd/dogstatsd:
+    endpoint: 0.0.0.0:8125
+    aggregation_interval: 5s
+    enable_metric_type: true
+    is_monotonic_counter: true
+{{- end}}
 {{- if gt (len .PromScrapeConfigs) 0}}
   prometheus:
     config:
@@ -81,6 +91,9 @@ service:
 {{- if .EnableZipkin}}
         - zipkin
 {{- end}}
+{{- if .EnableDatadog}}
+        - datadog
+{{- end}}
 {{- if gt (len .FromJSONFile) 0}}
         - otlpjsonfile
 {{- end}}
@@ -90,6 +103,9 @@ service:
     logs:
       receivers:
         - otlp
+{{- if .EnableDatadog}}
+        - datadog
+{{- end}}
 {{- if gt (len .FromJSONFile) 0}}
         - otlpjsonfile
 {{- end}}
@@ -101,6 +117,10 @@ service:
         - otlp
 {{- if gt (len .PromScrapeConfigs) 0}}
         - prometheus
+{{- end}}
+{{- if .EnableDatadog}}
+        - datadog
+        - statsd/dogstatsd
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}
         - otlpjsonfile
