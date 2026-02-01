@@ -2,7 +2,7 @@
 
 A terminal OpenTelemetry viewer inspired by [otel-desktop-viewer](https://github.com/CtrlSpice/otel-desktop-viewer/tree/main).
 
-This tool currently supports OpenTelemetry, Zipkin (Traces) and Prometheus (Metrics) formats.
+This tool currently supports OpenTelemetry, Zipkin (Traces), Prometheus (Metrics), and Datadog (Traces, Metrics, Logs) formats.
 
 Traces
 ![Traces](./docs/traces.png)
@@ -22,6 +22,8 @@ Currently, this tool exposes the ports:
 - `4317` to receive OpenTelemetry signals (gRPC)
 - `4318` to receive OpenTelemetry signals (HTTP)
 - `9411` to receive Zipkin traces (enabled by `--enable-zipkin` option)
+- `8126` to receive Datadog signals (enabled by `--enable-datadog` option)
+- `8125` to receive DogStatsD metrics (enabled by `--enable-datadog` option)
 
 The server's Access-Control-Allow-Origin header includes `localhost`, allowing telemetry to be sent directly from browser applications running on localhost.
 
@@ -33,6 +35,7 @@ Usage:
 
 Flags:
       --debug-log                 Enable debug log output to file (/tmp/otel-tui.log)
+      --enable-datadog            Enable the Datadog and DogStatsD receivers
       --enable-zipkin             Enable the zipkin receiver
       --from-json-file string     The JSON file path exported by JSON exporter
       --grpc int                  The port number on which we listen for OTLP grpc payloads (default 4317)

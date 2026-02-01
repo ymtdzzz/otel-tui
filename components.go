@@ -4,8 +4,10 @@ package main
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	tuiexporter "github.com/ymtdzzz/otel-tui/tuiexporter"
 	"go.opentelemetry.io/collector/connector"
@@ -30,6 +32,8 @@ func components() (otelcol.Factories, error) {
 	factories.Receivers, err = otelcol.MakeFactoryMap(
 		otlpreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
+		datadogreceiver.NewFactory(),
+		statsdreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		otlpjsonfilereceiver.NewFactory(),
 	)

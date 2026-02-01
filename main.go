@@ -52,6 +52,7 @@ type collectorCommand struct {
 	grpcPort               int
 	host                   string
 	zipkinEnabled          bool
+	datadogEnabled         bool
 	promTargets            []string
 	fromJSONFile           string
 	debugLog               bool
@@ -69,6 +70,7 @@ func (c *collectorCommand) preRunE(cmd *cobra.Command, args []string) error {
 		c.httpPort,
 		c.grpcPort,
 		c.zipkinEnabled,
+		c.datadogEnabled,
 		c.fromJSONFile,
 		c.promTargets,
 		logPath,
@@ -128,6 +130,7 @@ Environment Variables:
 	rootCmd.Flags().IntVar(&rootCmd.grpcPort, "grpc", rootCmd.grpcPort, "The port number on which we listen for OTLP grpc payloads")
 	rootCmd.Flags().StringVar(&rootCmd.host, "host", rootCmd.host, "The host where we expose our OTLP endpoints")
 	rootCmd.Flags().BoolVar(&rootCmd.zipkinEnabled, "enable-zipkin", rootCmd.zipkinEnabled, "Enable the zipkin receiver")
+	rootCmd.Flags().BoolVar(&rootCmd.datadogEnabled, "enable-datadog", rootCmd.datadogEnabled, "Enable the Datadog and DogStatsD receivers")
 	rootCmd.Flags().StringVar(&rootCmd.fromJSONFile, "from-json-file", rootCmd.fromJSONFile, "The JSON file path exported by JSON exporter")
 	rootCmd.Flags().StringArrayVar(&rootCmd.promTargets, "prom-target", rootCmd.promTargets, `Enable the prometheus receiver and specify the target endpoints for the receiver (--prom-target "localhost:9000" --prom-target "http://other-host:9000/custom/prometheus")`)
 	rootCmd.Flags().BoolVar(&rootCmd.debugLog, "debug-log", rootCmd.debugLog, "Enable debug log output to file (/tmp/otel-tui.log)")
