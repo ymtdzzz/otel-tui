@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.144.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260105025239-b59e29bb10f4
+	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260201045406-0d9aa784a605
 	go.opentelemetry.io/collector/component v1.50.0
 	go.opentelemetry.io/collector/component/componenttest v0.144.0
 	go.opentelemetry.io/collector/confmap v1.50.0
@@ -122,7 +122,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.13.5 // indirect
+	github.com/gdamore/tcell/v2 v2.13.7 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

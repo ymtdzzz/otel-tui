@@ -228,8 +228,8 @@ github.com/fxamacker/cbor/v2 v2.9.0 h1:NpKPmjDBgUfBms6tr6JZkTHtfFGcMKsw3eGcmD/sa
 github.com/fxamacker/cbor/v2 v2.9.0/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
 github.com/gdamore/encoding v1.0.1 h1:YzKZckdBL6jVt2Gc+5p82qhrGiqMdG/eNs6Wy0u3Uhw=
 github.com/gdamore/encoding v1.0.1/go.mod h1:0Z0cMFinngz9kS1QfMjCP8TY7em3bZYeeklsSDPivEo=
-github.com/gdamore/tcell/v2 v2.13.5 h1:YvWYCSr6gr2Ovs84dXbZLjDuOfQchhj8buOEqY52rpA=
-github.com/gdamore/tcell/v2 v2.13.5/go.mod h1:+Wfe208WDdB7INEtCsNrAN6O2m+wsTPk1RAovjaILlo=
+github.com/gdamore/tcell/v2 v2.13.7 h1:yfHdeC7ODIYCc6dgRos8L1VujQtXHmUpU6UZotzD6os=
+github.com/gdamore/tcell/v2 v2.13.7/go.mod h1:+Wfe208WDdB7INEtCsNrAN6O2m+wsTPk1RAovjaILlo=
 github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-kit/log v0.2.1 h1:MRVx0/zhvdseW+Gza6N9rVzU/IVzaeE1SFI4raAhmBU=
@@ -783,8 +783,8 @@ github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavM
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJuqunuUZ/Dhy/avygyECGrLceyNeo4LiM=
 github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859 h1:TPrtTTD4gqQIj9g+4hAIa3Va2DkYBTOdOni/xh9RZak=
 github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859/go.mod h1:gDx5dss6A/czppfsA5jQ0J5jxYpfhojLVgiF5ArbIE8=
-github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260105025239-b59e29bb10f4 h1:xFBi8DLFPb6cTn6Bp30aWFdYT7u2WskR3RCND+mjMa4=
-github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260105025239-b59e29bb10f4/go.mod h1:n9uN2rdXymsp4pZakWvwEx2z5NQVCDHdpX9h0CUrEEs=
+github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260201045406-0d9aa784a605 h1:3SbRsOJfbuOQtUJcqCAQS07pIev/IcDu4apfGGxoTYY=
+github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260201045406-0d9aa784a605/go.mod h1:KkTKZYJjDP1xor6TPcEF6Ra9EMpZCgzJ+Ots93NYyrU=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
