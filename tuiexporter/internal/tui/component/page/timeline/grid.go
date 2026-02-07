@@ -278,41 +278,29 @@ func (g *grid) newTextView(text string) *tview.TextView {
 
 func (g *grid) updateCommands() {
 	keyMaps := layout.KeyMaps{
-		// FIXME: key 'j' and 'k' should be used to move the focus
-		//   but these keys are captured by the parent grid.
 		{
-			Key: tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
-			Handler: func(event *tcell.EventKey) *tcell.EventKey {
-				if g.currentRow < g.totalRow-1 {
-					g.currentRow++
-					navigation.Focus(g.items[g.currentRow])
-
-					currentSpan := g.getCurrentSpan()
-					g.detail.update(currentSpan)
-					g.logPane.updateLog(
-						currentSpan.Span.TraceID().String(),
-						currentSpan.Span.SpanID().String(),
-					)
-				}
-				return nil
-			},
+			Key:     tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModNone),
+			Handler: g.stepBy(1),
 		},
 		{
-			Key: tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
-			Handler: func(event *tcell.EventKey) *tcell.EventKey {
-				if g.currentRow > 0 {
-					g.currentRow--
-					navigation.Focus(g.items[g.currentRow])
-
-					currentSpan := g.getCurrentSpan()
-					g.detail.update(currentSpan)
-					g.logPane.updateLog(
-						currentSpan.Span.TraceID().String(),
-						currentSpan.Span.SpanID().String(),
-					)
-				}
-				return nil
-			},
+			Key:     tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone),
+			Handler: g.stepBy(1),
+		},
+		{
+			Key:     tcell.NewEventKey(tcell.KeyRune, 'k', tcell.ModNone),
+			Handler: g.stepBy(-1),
+		},
+		{
+			Key:     tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone),
+			Handler: g.stepBy(-1),
+		},
+		{
+			Key:     tcell.NewEventKey(tcell.KeyRune, 'g', tcell.ModNone),
+			Handler: g.goToFirst,
+		},
+		{
+			Key:     tcell.NewEventKey(tcell.KeyRune, 'G', tcell.ModNone),
+			Handler: g.goToLast,
 		},
 		{
 			Key:         tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
@@ -346,6 +334,10 @@ func (g *grid) updateCommands() {
 		},
 	}
 	keyMaps.Merge(g.resizeManager.KeyMaps())
+
+	// Remove default input capture to avoid conflict
+	g.gridView.SetInputCapture(nil)
+
 	layout.RegisterCommandList(g.commands, g.gridView, func() {
 		if g.getCurrentSpan() != nil {
 			navigation.Focus(g.items[g.currentRow])
@@ -358,6 +350,57 @@ func (g *grid) getCurrentSpan() *telemetry.SpanData {
 		return nil
 	}
 	return g.nodes[g.currentRow].span
+}
+
+func (g *grid) stepBy(step int) func(_ *tcell.EventKey) *tcell.EventKey {
+	return func(_ *tcell.EventKey) *tcell.EventKey {
+		nextRow := g.currentRow + step
+
+		if nextRow >= g.totalRow || nextRow < 0 {
+			return nil
+		}
+
+		g.currentRow = nextRow
+		navigation.Focus(g.items[g.currentRow])
+		if g.currentRow == 0 {
+			g.gridView.SetOffset(g.currentRow, 0)
+		}
+
+		g.updateCurrentSpan()
+
+		return nil
+	}
+}
+
+func (g *grid) goToFirst(_ *tcell.EventKey) *tcell.EventKey {
+	g.currentRow = 0
+	navigation.Focus(g.items[g.currentRow])
+	g.gridView.SetOffset(g.currentRow, 0)
+	g.updateCurrentSpan()
+
+	return nil
+}
+
+func (g *grid) goToLast(_ *tcell.EventKey) *tcell.EventKey {
+	g.currentRow = g.totalRow - 1
+	navigation.Focus(g.items[g.currentRow])
+	// g.gridView.SetOffset(g.currentRow, 0)
+	g.updateCurrentSpan()
+
+	return nil
+}
+
+func (g *grid) updateCurrentSpan() {
+	currentSpan := g.getCurrentSpan()
+	if g.detail != nil {
+		g.detail.update(currentSpan)
+	}
+	if g.logPane != nil {
+		g.logPane.updateLog(
+			currentSpan.Span.TraceID().String(),
+			currentSpan.Span.SpanID().String(),
+		)
+	}
 }
 
 func createSpan(color tcell.Color, total, start, end time.Duration) (span *tview.Box) {
