@@ -2,7 +2,7 @@
 
 module github.com/ymtdzzz/otel-tui
 
-go 1.25.0
+go 1.25
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.146.0
