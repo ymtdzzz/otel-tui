@@ -85,14 +85,14 @@ func fillScope(t *testing.T, scope pcommon.InstrumentationScope, resourceIndex, 
 // This is written referencing following code: https://github.com/CtrlSpice/otel-desktop-viewer/blob/af38ec47a37564e5f03b6d9cefa20b2422033e03/desktopexporter/testdata/trace.go
 func fillSpan(t *testing.T, span ptrace.Span, traceID, resourceIndex, scopeIndex, spanIndex, uniqueSpanIndex int) {
 	t.Helper()
-	spanID := [8]byte{byte(uniqueSpanIndex + 1)}
+	spanID := [8]byte{byte(uniqueSpanIndex + 1)} // #nosec G115
 
 	span.SetName(fmt.Sprintf("span-%d-%d-%d", resourceIndex, scopeIndex, spanIndex))
 	span.SetKind(ptrace.SpanKindInternal)
 	span.SetStartTimestamp(spanStartTimestamp)
 	span.SetEndTimestamp(spanEndTimestamp)
 	span.SetDroppedAttributesCount(3)
-	span.SetTraceID([16]byte{byte(traceID)})
+	span.SetTraceID([16]byte{byte(traceID)}) // #nosec G115
 	span.SetSpanID(spanID)
 	span.SetParentSpanID([8]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28})
 	span.Attributes().PutInt("span index", int64(spanIndex))

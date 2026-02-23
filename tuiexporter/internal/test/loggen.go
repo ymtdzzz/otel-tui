@@ -66,9 +66,9 @@ func GenerateOTLPLogsPayload(t *testing.T, traceID, resourceCount int, scopeCoun
 
 func fillLog(t *testing.T, l plog.LogRecord, traceID, resourceIndex, scopeIndex, spanIndex, logIndex, uniqueSpanIndex int) {
 	t.Helper()
-	spanID := [8]byte{byte(uniqueSpanIndex + 1)}
+	spanID := [8]byte{byte(uniqueSpanIndex + 1)} // #nosec G115
 
-	l.SetTraceID([16]byte{byte(traceID)})
+	l.SetTraceID([16]byte{byte(traceID)}) // #nosec G115
 	l.SetSpanID(spanID)
 
 	l.Body().SetStr(fmt.Sprintf("log body %d-%d-%d-%d", resourceIndex, scopeIndex, spanIndex, logIndex))

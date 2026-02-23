@@ -114,7 +114,7 @@ func (d *dependencyInfo) getMermaid() string {
 	var traverse func(node *node, tmp string)
 	traverse = func(node *node, tmp string) {
 		if len(node.Children) == 0 {
-			sb.WriteString(fmt.Sprintf("%s\n", tmp))
+			fmt.Fprintf(&sb, "%s\n", tmp)
 			return
 		}
 		for _, child := range node.Children {
