@@ -113,8 +113,8 @@ func addSpan(t *testing.T, sdm SpanDataMap, traceID, spanID int, fromsn, tosn st
 	fss := frs.ScopeSpans().AppendEmpty()
 	fss.Spans().EnsureCapacity(1)
 	fs := fss.Spans().AppendEmpty()
-	fs.SetTraceID([16]byte{byte(traceID)})
-	fs.SetSpanID([8]byte{byte(spanID)})
+	fs.SetTraceID([16]byte{byte(traceID)}) // #nosec G115
+	fs.SetSpanID([8]byte{byte(spanID)})    // #nosec G115
 
 	from := &SpanData{
 		Span:         &fs,
@@ -134,8 +134,8 @@ func addSpan(t *testing.T, sdm SpanDataMap, traceID, spanID int, fromsn, tosn st
 	tss := trs.ScopeSpans().AppendEmpty()
 	tss.Spans().EnsureCapacity(1)
 	ts := tss.Spans().AppendEmpty()
-	ts.SetTraceID([16]byte{byte(traceID)})
-	ts.SetSpanID([8]byte{byte(spanID + 1)})
+	ts.SetTraceID([16]byte{byte(traceID)})  // #nosec G115
+	ts.SetSpanID([8]byte{byte(spanID + 1)}) // #nosec G115
 	ts.SetParentSpanID(fs.SpanID())
 
 	to := &SpanData{

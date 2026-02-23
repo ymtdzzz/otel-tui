@@ -39,7 +39,7 @@ type Config struct {
 	PromScrapeConfigs      []*PromScrapeConfig
 	DebugLogFilePath       string
 	DisableInternalMetrics bool
-	AuthToken              string
+	AuthToken              string // #nosec G117
 }
 
 func NewConfig(
