@@ -98,6 +98,8 @@ Modify configuration for otelcol
 exporters:
   otlp:
     endpoint: oteltui:4317
+    tls:
+      insecure: true
 service:
   pipelines:
     traces:
