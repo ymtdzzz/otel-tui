@@ -5,18 +5,18 @@ go 1.25.0
 require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/gdamore/tcell/v2 v2.13.8
-	github.com/icza/gox v0.2.5
+	github.com/icza/gox v0.2.6
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/navidys/tvxwidgets v0.13.0
 	github.com/rivo/tview v0.42.0
 	github.com/stretchr/testify v1.11.1
 	github.com/ymtdzzz/mermaid-ascii v0.0.0-20250126112717-874906822859
-	go.opentelemetry.io/collector/component v1.52.0
-	go.opentelemetry.io/collector/component/componentstatus v0.146.1
-	go.opentelemetry.io/collector/component/componenttest v0.146.1
-	go.opentelemetry.io/collector/exporter v1.52.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.146.1
-	go.opentelemetry.io/collector/pdata v1.52.0
+	go.opentelemetry.io/collector/component v1.53.0
+	go.opentelemetry.io/collector/component/componentstatus v0.147.0
+	go.opentelemetry.io/collector/component/componenttest v0.147.0
+	go.opentelemetry.io/collector/exporter v1.53.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.147.0
+	go.opentelemetry.io/collector/pdata v1.53.0
 	gotest.tools/v3 v3.5.2
 )
 
@@ -35,6 +35,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
@@ -50,21 +51,21 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.52.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.52.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.52.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.52.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.146.1 // indirect
-	go.opentelemetry.io/collector/consumer v1.52.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.146.1 // indirect
-	go.opentelemetry.io/collector/extension v1.52.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.146.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.52.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.146.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.146.1 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.146.1 // indirect
-	go.opentelemetry.io/collector/pipeline v1.52.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.146.1 // indirect
+	go.opentelemetry.io/collector/client v1.53.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.53.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.53.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.53.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.147.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.53.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.147.0 // indirect
+	go.opentelemetry.io/collector/extension v1.53.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.147.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.147.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.147.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.53.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.0 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
@@ -74,10 +75,9 @@ require (
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9 // indirect
-	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/term v0.39.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
