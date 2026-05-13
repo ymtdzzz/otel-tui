@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"sync"
+
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -26,6 +28,7 @@ type TraceServiceParentIDMap map[string]map[string]*SpanData
 
 // TraceCache is a cache of trace spans
 type TraceCache struct {
+	mu                sync.RWMutex
 	spanid2span       SpanDataMap
 	traceid2spans     TraceSpanDataMap
 	tracesvc2spans    TraceServiceSpanDataMap
@@ -46,6 +49,8 @@ func NewTraceCache() *TraceCache {
 
 // UpdateCache updates the cache with a new span
 func (c *TraceCache) UpdateCache(sname string, data *SpanData) (newtracesvc bool, replaceSpanID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.spanid2span[data.Span.SpanID().String()] = data
 	traceID := data.Span.TraceID().String()
 	hasError := spanHasError(data.Span)
@@ -84,12 +89,14 @@ func (c *TraceCache) UpdateCache(sname string, data *SpanData) (newtracesvc bool
 
 // DeleteCache deletes a list of spans from the cache
 func (c *TraceCache) DeleteCache(serviceSpans []*SpanData) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	// FIXME: more efficient way ?
 	for _, ss := range serviceSpans {
 		traceID := ss.Span.TraceID().String()
 		sname := GetServiceNameFromResource(ss.ResourceSpan.Resource())
 
-		if spans, ok := c.GetSpansByTraceIDAndSvc(ss.Span.TraceID().String(), sname); ok {
+		if spans, ok := c.getSpansByTraceIDAndSvcLocked(ss.Span.TraceID().String(), sname); ok {
 			for _, s := range spans {
 				delete(c.spanid2span, s.Span.SpanID().String())
 			}
@@ -110,12 +117,22 @@ func (c *TraceCache) DeleteCache(serviceSpans []*SpanData) {
 
 // GetSpansByTraceID returns all spans for a given trace id
 func (c *TraceCache) GetSpansByTraceID(traceID string) ([]*SpanData, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	spans, ok := c.traceid2spans[traceID]
 	return spans, ok
 }
 
 // GetSpansByTraceIDAndSvc returns all spans for a given trace id and service name
 func (c *TraceCache) GetSpansByTraceIDAndSvc(traceID, svc string) ([]*SpanData, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.getSpansByTraceIDAndSvcLocked(traceID, svc)
+}
+
+// getSpansByTraceIDAndSvcLocked is the lock-free implementation. The caller
+// must hold c.mu (read or write).
+func (c *TraceCache) getSpansByTraceIDAndSvcLocked(traceID, svc string) ([]*SpanData, bool) {
 	if spans, ok := c.tracesvc2spans[traceID]; ok {
 		if ss, ok := spans[svc]; ok {
 			return ss, ok
@@ -126,6 +143,8 @@ func (c *TraceCache) GetSpansByTraceIDAndSvc(traceID, svc string) ([]*SpanData, 
 
 // HasErrorByTraceIDAndSvc returns the flag whether the spans have any errors
 func (c *TraceCache) HasErrorByTraceIDAndSvc(traceID, svc string) (bool, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if spans, ok := c.tracesvc2haserror[traceID]; ok {
 		if haserr, ok := spans[svc]; ok {
 			return haserr, ok
@@ -136,15 +155,21 @@ func (c *TraceCache) HasErrorByTraceIDAndSvc(traceID, svc string) (bool, bool) {
 
 // GetSpanByID returns a span by its id
 func (c *TraceCache) GetSpanByID(spanID string) (*SpanData, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	span, ok := c.spanid2span[spanID]
 	return span, ok
 }
 
 func (c *TraceCache) DrawSpanDependencies() (string, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.spanid2span.getDependencyGraph()
 }
 
 func (c *TraceCache) flush() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.spanid2span = SpanDataMap{}
 	c.traceid2spans = TraceSpanDataMap{}
 	c.tracesvc2spans = TraceServiceSpanDataMap{}
@@ -160,6 +185,7 @@ type TraceLogDataMap map[string][]*LogData
 
 // LogCache is a cache of logs
 type LogCache struct {
+	mu           sync.RWMutex
 	traceid2logs TraceLogDataMap
 }
 
@@ -172,6 +198,8 @@ func NewLogCache() *LogCache {
 
 // UpdateCache updates the cache with a new log
 func (c *LogCache) UpdateCache(data *LogData) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	traceID := data.Log.TraceID().String()
 	if ts, ok := c.traceid2logs[traceID]; ok {
 		c.traceid2logs[traceID] = append(ts, data)
@@ -182,6 +210,8 @@ func (c *LogCache) UpdateCache(data *LogData) {
 
 // DeleteCache deletes a list of logs from the cache
 func (c *LogCache) DeleteCache(logs []*LogData) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	for _, l := range logs {
 		traceID := l.Log.TraceID().String()
 		if _, ok := c.traceid2logs[traceID]; ok {
@@ -197,11 +227,15 @@ func (c *LogCache) DeleteCache(logs []*LogData) {
 
 // GetLogsByTraceID returns all logs for a given trace id
 func (c *LogCache) GetLogsByTraceID(traceID string) ([]*LogData, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	logs, ok := c.traceid2logs[traceID]
 	return logs, ok
 }
 
 func (c *LogCache) flush() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.traceid2logs = TraceLogDataMap{}
 }
 
@@ -211,6 +245,7 @@ type MetricServiceMetricDataMap map[string]map[string][]*MetricData
 
 // MetricCache is a cache of metrics
 type MetricCache struct {
+	mu                sync.RWMutex
 	svcmetric2metrics MetricServiceMetricDataMap
 }
 
@@ -223,6 +258,8 @@ func NewMetricCache() *MetricCache {
 
 // UpdateCache updates the cache with a new metric
 func (c *MetricCache) UpdateCache(sname string, data *MetricData) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	mname := data.Metric.Name()
 	if sms, ok := c.svcmetric2metrics[sname]; ok {
 		if _, ok := sms[mname]; ok {
@@ -237,6 +274,8 @@ func (c *MetricCache) UpdateCache(sname string, data *MetricData) {
 
 // DeleteCache deletes a list of metrics from the cache
 func (c *MetricCache) DeleteCache(metrics []*MetricData) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	for _, m := range metrics {
 		sname := GetServiceNameFromResource(m.ResourceMetric.Resource())
 		mname := m.Metric.Name()
@@ -258,6 +297,8 @@ func (c *MetricCache) DeleteCache(metrics []*MetricData) {
 
 // GetMetricsBySvcAndMetricName returns all metrics for a given service name and metric name
 func (c *MetricCache) GetMetricsBySvcAndMetricName(sname, mname string) ([]*MetricData, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if sms, ok := c.svcmetric2metrics[sname]; ok {
 		if ms, ok := sms[mname]; ok {
 			return ms, ok
@@ -267,5 +308,7 @@ func (c *MetricCache) GetMetricsBySvcAndMetricName(sname, mname string) ([]*Metr
 }
 
 func (c *MetricCache) flush() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.svcmetric2metrics = MetricServiceMetricDataMap{}
 }
