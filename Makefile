@@ -9,7 +9,7 @@ lint: ## Run static analysis
 
 .PHONY: test
 test: ## run test ex.) make test OPT="-run TestXXX"
-	TZ=UTC go test -v "$(DIR)" $(OPT)
+	TZ=UTC go test -race -v "$(DIR)" $(OPT)
 
 test-coverage: ## Run test with coverage
 	$(MAKE) test OPT="-coverprofile=coverage.out -coverpkg=./..."
