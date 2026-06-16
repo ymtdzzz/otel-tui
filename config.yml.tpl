@@ -65,7 +65,7 @@ receivers:
 {{- end}}
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}
-  otlpjsonfile:
+  otlp_json_file:
     include:
       - '{{ .FromJSONFile -}}'
     start_at: beginning
@@ -95,7 +95,7 @@ service:
         - datadog
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}
-        - otlpjsonfile
+        - otlp_json_file
 {{- end}}
       processors:
       exporters:
@@ -107,7 +107,7 @@ service:
         - datadog
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}
-        - otlpjsonfile
+        - otlp_json_file
 {{- end}}
       processors:
       exporters:
@@ -123,7 +123,7 @@ service:
         - statsd/dogstatsd
 {{- end}}
 {{- if gt (len .FromJSONFile) 0}}
-        - otlpjsonfile
+        - otlp_json_file
 {{- end}}
       processors:
       exporters:

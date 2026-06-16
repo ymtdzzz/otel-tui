@@ -184,7 +184,7 @@ receivers:
           static_configs:
             - targets:
               - 'source-prometheus-1:9090'
-  otlpjsonfile:
+  otlp_json_file:
     include:
       - './path/to/init.json'
     start_at: beginning
@@ -202,14 +202,14 @@ service:
       receivers:
         - otlp
         - zipkin
-        - otlpjsonfile
+        - otlp_json_file
       processors:
       exporters:
         - tui
     logs:
       receivers:
         - otlp
-        - otlpjsonfile
+        - otlp_json_file
       processors:
       exporters:
         - tui
@@ -217,7 +217,7 @@ service:
       receivers:
         - otlp
         - prometheus
-        - otlpjsonfile
+        - otlp_json_file
       processors:
       exporters:
         - tui
