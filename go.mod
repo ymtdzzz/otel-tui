@@ -15,7 +15,6 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260513121559-fcbe1631bbd1
 	go.opentelemetry.io/collector/component v1.60.0
-	go.opentelemetry.io/collector/component/componenttest v0.154.0
 	go.opentelemetry.io/collector/confmap v1.60.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.60.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.60.0
@@ -195,7 +194,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20260528135333-5b027732945f // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.41.2 // indirect
-	github.com/icza/gox v0.2.7 // indirect
+	github.com/icza/gox v0.2.14 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.7 // indirect
 	github.com/jaegertracing/jaeger-idl v0.9.0 // indirect
@@ -305,6 +304,7 @@ require (
 	go.opentelemetry.io/collector v0.154.0 // indirect
 	go.opentelemetry.io/collector/client v1.60.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.154.0 // indirect
+	go.opentelemetry.io/collector/component/componenttest v0.154.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.60.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.60.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.154.0 // indirect

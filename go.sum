@@ -455,8 +455,8 @@ github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfE
 github.com/hetznercloud/hcloud-go/v2 v2.41.2 h1:fO5zsMgp5oejrtnFj8mYuqlp+iMuirpaKv4b5FYNRdQ=
 github.com/hetznercloud/hcloud-go/v2 v2.41.2/go.mod h1:9OGvC//jbHE4sv2Oyo0bQ2vEWuUMKYoNMyj9Qxz2qcc=
 github.com/ianlancetaylor/demangle v0.0.0-20230524184225-eabc099b10ab/go.mod h1:gx7rwoVhcfuVKG5uya9Hs3Sxj7EIvldVofAWIUtGouw=
-github.com/icza/gox v0.2.7 h1:JkUpFTKdfQorOxq8xqs75nLu2I0GJlh/tmTkE1Rokig=
-github.com/icza/gox v0.2.7/go.mod h1:rVecw5Q6POJAWBcXgCZdAtwK/hmoNehxCkAP3sMnOIc=
+github.com/icza/gox v0.2.14 h1:f20wY6FAB1RuUa8TlTydil2C2aA5z01ee6A1FTKk5go=
+github.com/icza/gox v0.2.14/go.mod h1:d62IGCt4ajK4/U7k/ldEF1Fi5jtP8C4hoGZiHQYfAi0=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/ionos-cloud/sdk-go/v6 v6.3.7 h1:t773JkC/asnyVqeQ+OvN9WCRZuosSoPtJfyM82EFCWY=
