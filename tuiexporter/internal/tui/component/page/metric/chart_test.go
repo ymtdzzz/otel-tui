@@ -13,6 +13,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestDrawMetricHistogramChart(t *testing.T) {
@@ -153,4 +154,86 @@ func TestDrawMetricNumberChartWithManyDataPoints(t *testing.T) {
 	tv := legend.GetItem(0).(*tview.TextView)
 	lines := strings.Count(tv.GetText(false), "\n") + 1
 	assert.Equal(t, dpCount, lines)
+}
+
+// generationMetricPayload builds a single metric carrying one data point per given
+// attribute value, mirroring how the .NET runtime reports metrics such as
+// dotnet.gc.collections (one data point per dotnet.gc.heap.generation).
+func generationMetricPayload(t *testing.T, ts time.Time, isSum bool, gens []string) (pmetric.Metrics, *telemetry.MetricData) {
+	t.Helper()
+
+	payload, m := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
+	metric := payload.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+	var dps pmetric.NumberDataPointSlice
+	if isSum {
+		dps = metric.SetEmptySum().DataPoints()
+	} else {
+		dps = metric.SetEmptyGauge().DataPoints()
+	}
+	for i, gen := range gens {
+		dp := dps.AppendEmpty()
+		dp.SetIntValue(int64(i + 1))
+		dp.Attributes().PutStr("dotnet.gc.heap.generation", gen)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+	}
+
+	return payload, &telemetry.MetricData{
+		Metric:         m.Metrics[0],
+		ResourceMetric: m.RMetrics[0],
+	}
+}
+
+// A single metric carrying several data points that differ only by attribute value
+// must produce one series per value, not just one.
+func TestDrawMetricNumberChartWithMultipleDataPointsInOneMetric(t *testing.T) {
+	tests := []struct {
+		name  string
+		isSum bool
+		gens  []string
+	}{
+		{
+			// dotnet.gc.last_collection.heap.size
+			name:  "gauge",
+			isSum: false,
+			gens:  []string{"gen0", "gen1", "gen2", "loh", "poh"},
+		},
+		{
+			// dotnet.gc.collections
+			name:  "sum",
+			isSum: true,
+			gens:  []string{"gen0", "gen1", "gen2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClock := clockwork.NewFakeClockAt(time.Date(2025, 11, 9, 12, 15, 0, 0, time.UTC))
+			store := telemetry.NewStore(mockClock)
+
+			// Two exports of the same metric, so the series must accumulate over time
+			// rather than overwrite each other.
+			var selected *telemetry.MetricData
+			for i := range 2 {
+				payload, md := generationMetricPayload(
+					t, mockClock.Now().Add(time.Duration(i)*time.Second), tt.isSum, tt.gens,
+				)
+				store.AddMetric(&payload)
+				selected = md
+			}
+
+			chart := newChart(layout.NewCommandList(), store, []*layout.ResizeManager{})
+			chart.update(selected)
+
+			legend := chart.ch.GetItem(1).(*tview.Flex)
+			tv := legend.GetItem(0).(*tview.TextView)
+			text := tv.GetText(false)
+
+			// One legend line per generation, regardless of the order they arrive in.
+			assert.Equal(t, len(tt.gens), strings.Count(text, "\n")+1)
+			for _, gen := range tt.gens {
+				assert.Contains(t, text, "dotnet.gc.heap.generation: "+gen)
+			}
+		})
+	}
 }
