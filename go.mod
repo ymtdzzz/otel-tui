@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.158.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260513121559-fcbe1631bbd1
+	github.com/ymtdzzz/otel-tui/tuiexporter v0.0.0-20260810044704-dbefb43c9732
 	go.opentelemetry.io/collector/component v1.64.0
 	go.opentelemetry.io/collector/confmap v1.64.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.64.0
@@ -130,7 +130,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.13.9 // indirect
+	github.com/gdamore/tcell/v2 v2.13.10 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -194,7 +194,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20260616181215-ea1ca2d932bf // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.43.0 // indirect
-	github.com/icza/gox v0.2.7 // indirect
+	github.com/icza/gox v0.2.14 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.8 // indirect
 	github.com/jaegertracing/jaeger-idl v0.9.0 // indirect
@@ -232,7 +232,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/navidys/tvxwidgets v0.13.0 // indirect
+	github.com/navidys/tvxwidgets v0.14.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.158.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.158.0 // indirect
