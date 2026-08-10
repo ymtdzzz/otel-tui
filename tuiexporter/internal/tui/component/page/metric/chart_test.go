@@ -237,3 +237,41 @@ func TestDrawMetricNumberChartWithMultipleDataPointsInOneMetric(t *testing.T) {
 		})
 	}
 }
+
+func TestDrawMetricNumberChartWithoutDataPoints(t *testing.T) {
+	tests := []struct {
+		name  string
+		isSum bool
+	}{
+		{name: "gauge", isSum: false},
+		{name: "sum", isSum: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClock := clockwork.NewFakeClockAt(time.Date(2025, 11, 9, 12, 15, 0, 0, time.UTC))
+			store := telemetry.NewStore(mockClock)
+
+			payload, m := test.GenerateOTLPGaugeMetricsPayload(t, 1, []int{1}, [][]int{{1}})
+			metric := payload.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			if tt.isSum {
+				metric.SetEmptySum()
+			} else {
+				metric.SetEmptyGauge()
+			}
+			store.AddMetric(&payload)
+
+			selected := &telemetry.MetricData{
+				Metric:         m.Metrics[0],
+				ResourceMetric: m.RMetrics[0],
+			}
+
+			chart := newChart(layout.NewCommandList(), store, []*layout.ResizeManager{})
+
+			assert.NotPanics(t, func() {
+				chart.update(selected)
+			})
+			assert.Equal(t, 0, chart.ch.GetItemCount())
+		})
+	}
+}
