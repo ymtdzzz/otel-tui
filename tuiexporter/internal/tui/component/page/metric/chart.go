@@ -258,6 +258,10 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) layout.KeyMaps {
 		return layout.KeyMaps{}
 	}
 
+	if len(attrkeys) == 0 {
+		return layout.KeyMaps{}
+	}
+
 	for k := range dataMap {
 		for kk := range dataMap[k] {
 			sort.Sort(ByTimestamp(dataMap[k][kk]))
