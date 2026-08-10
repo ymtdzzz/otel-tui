@@ -191,37 +191,24 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) layout.KeyMaps {
 	support := true
 	start := time.Unix(1<<63-62135596801, 999999999)
 	end := time.Unix(0, 0)
+	// Register a datapoint as one sample of the series identified by the given
+	// attribute key and value.
+	addToDataMap := func(k, vstr string, dp *pmetric.NumberDataPoint) {
+		if _, ok := dataMap[k]; !ok {
+			attrkeys = append(attrkeys, k)
+			dataMap[k] = map[string][]*pmetric.NumberDataPoint{}
+		}
+		dataMap[k][vstr] = append(dataMap[k][vstr], dp)
+	}
+
 	for _, m := range ms {
-		var (
-			attrs map[string]any
-			dp    pmetric.NumberDataPoint
-		)
+		var dps pmetric.NumberDataPointSlice
 
 		switch m.Metric.Type() {
 		case pmetric.MetricTypeGauge:
-			for dpi := 0; dpi < m.Metric.Gauge().DataPoints().Len(); dpi++ {
-				dp = m.Metric.Gauge().DataPoints().At(dpi)
-				attrs = dp.Attributes().AsRaw()
-				dpts := dp.Timestamp().AsTime()
-				if dpts.Before(start) {
-					start = dpts
-				}
-				if dpts.After(end) {
-					end = dpts
-				}
-			}
+			dps = m.Metric.Gauge().DataPoints()
 		case pmetric.MetricTypeSum:
-			for dpi := 0; dpi < m.Metric.Sum().DataPoints().Len(); dpi++ {
-				dp = m.Metric.Sum().DataPoints().At(dpi)
-				attrs = dp.Attributes().AsRaw()
-				dpts := dp.Timestamp().AsTime()
-				if dpts.Before(start) {
-					start = dpts
-				}
-				if dpts.After(end) {
-					end = dpts
-				}
-			}
+			dps = m.Metric.Sum().DataPoints()
 		default:
 			support = false
 		}
@@ -229,7 +216,28 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) layout.KeyMaps {
 			break
 		}
 
-		if len(attrs) > 0 {
+		// Every datapoint must be registered here: a single metric commonly carries
+		// one datapoint per attribute value (e.g. one per dotnet.gc.heap.generation),
+		// and each of those is a separate series on the chart.
+		for dpi := 0; dpi < dps.Len(); dpi++ {
+			// Bind a fresh variable per iteration so the pointers kept in dataMap
+			// don't all alias the same datapoint.
+			dp := dps.At(dpi)
+
+			dpts := dp.Timestamp().AsTime()
+			if dpts.Before(start) {
+				start = dpts
+			}
+			if dpts.After(end) {
+				end = dpts
+			}
+
+			attrs := dp.Attributes().AsRaw()
+			if len(attrs) == 0 {
+				addToDataMap("N/A", "N/A", &dp)
+				continue
+			}
+
 			// sort keys
 			keys := make([]string, 0, len(attrs))
 			for k := range attrs {
@@ -238,30 +246,7 @@ func (c *chart) drawMetricNumberChart(m *telemetry.MetricData) layout.KeyMaps {
 			sort.Strings(keys)
 			for _, k := range keys {
 				v := attrs[k]
-				vstr := fmt.Sprintf("%s", v)
-				if attrkey, ok := dataMap[k]; ok {
-					if _, ok := attrkey[vstr]; ok {
-						dataMap[k][vstr] = append(dataMap[k][vstr], &dp)
-					} else {
-						dataMap[k][vstr] = []*pmetric.NumberDataPoint{&dp}
-					}
-				} else {
-					attrkeys = append(attrkeys, k)
-					dataMap[k] = map[string][]*pmetric.NumberDataPoint{vstr: {&dp}}
-				}
-			}
-		} else {
-			k := "N/A"
-			vstr := "N/A"
-			if attrkey, ok := dataMap[k]; ok {
-				if _, ok := attrkey[vstr]; ok {
-					dataMap[k][vstr] = append(dataMap[k][vstr], &dp)
-				} else {
-					dataMap[k][vstr] = []*pmetric.NumberDataPoint{&dp}
-				}
-			} else {
-				attrkeys = append(attrkeys, k)
-				dataMap[k] = map[string][]*pmetric.NumberDataPoint{vstr: {&dp}}
+				addToDataMap(k, fmt.Sprintf("%s", v), &dp)
 			}
 		}
 	}
