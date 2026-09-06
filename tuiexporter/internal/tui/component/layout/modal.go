@@ -56,6 +56,17 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, onHide func()) {
 			currentModalNode = nil
 		}
 	})
+	tree.SetBlurFunc(func() {
+		if currentModalNode != nil {
+			// Focus is already moving elsewhere, so dismiss the modal without
+			// restoring focus to the tree that opened it.
+			navigation.HideModal(nil)
+			if onHide != nil {
+				onHide()
+			}
+			currentModalNode = nil
+		}
+	})
 }
 
 type tableModalMapper interface {
@@ -103,6 +114,15 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, onHide
 	table.SetSelectionChangedFunc(func(row, column int) {
 		if currentRow != -1 {
 			navigation.HideModal(table)
+			if onHide != nil {
+				onHide()
+			}
+			currentRow = -1
+		}
+	})
+	table.SetBlurFunc(func() {
+		if currentRow != -1 {
+			navigation.HideModal(nil)
 			if onHide != nil {
 				onHide()
 			}

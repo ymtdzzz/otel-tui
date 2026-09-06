@@ -50,6 +50,8 @@ func (m *ModalPage) ShowModalFunc(showModalPageFn func()) func(current tview.Pri
 func (m *ModalPage) HideModalFunc(hideModalPageFn func()) func(current tview.Primitive) {
 	return func(current tview.Primitive) {
 		hideModalPageFn()
-		navigation.Focus(current)
+		if current != nil {
+			navigation.Focus(current)
+		}
 	}
 }

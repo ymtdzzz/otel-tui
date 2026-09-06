@@ -3,7 +3,9 @@ package modal
 import (
 	"testing"
 
+	"github.com/rivo/tview"
 	"github.com/stretchr/testify/mock"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 	"gotest.tools/v3/assert"
 )
 
@@ -38,4 +40,15 @@ func TestModalPage(t *testing.T) {
 		hideModalFn(nil)
 		mockHandler.AssertCalled(t, "hideModal")
 	})
+}
+
+func TestHideModalWithoutCurrentFocus(t *testing.T) {
+	focusCalls := 0
+	navigation.Init(func(tview.Primitive) { focusCalls++ }, nil, nil)
+
+	modalPage := NewModalPage()
+	hideModalFn := modalPage.HideModalFunc(func() {})
+	hideModalFn(nil)
+
+	assert.Equal(t, 0, focusCalls)
 }
