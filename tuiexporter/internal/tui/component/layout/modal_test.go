@@ -118,6 +118,7 @@ func TestAttachModalForTableRowsHidesModalOnBlur(t *testing.T) {
 	table.SetCell(0, 0, tview.NewTableCell("value"))
 
 	hideCalls := 0
+	onHideCalls := 0
 	navigation.Init(nil, func(tview.Primitive, string) *tview.TextView {
 		return tview.NewTextView()
 	}, func(current tview.Primitive) {
@@ -125,7 +126,7 @@ func TestAttachModalForTableRowsHidesModalOnBlur(t *testing.T) {
 		hideCalls++
 	})
 
-	AttachModalForTableRows(table, testTableModalMapper{}, nil)
+	AttachModalForTableRows(table, testTableModalMapper{}, func() { onHideCalls++ })
 	// Invoke the selected handler through the input path without allowing the
 	// same event's selection notification to close the modal first.
 	table.SetSelectionChangedFunc(nil)
@@ -134,4 +135,5 @@ func TestAttachModalForTableRowsHidesModalOnBlur(t *testing.T) {
 	table.Blur()
 
 	assert.Equal(t, 1, hideCalls)
+	assert.Equal(t, 1, onHideCalls)
 }

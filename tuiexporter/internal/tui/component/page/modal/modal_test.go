@@ -51,4 +51,8 @@ func TestHideModalWithoutCurrentFocus(t *testing.T) {
 	hideModalFn(nil)
 
 	assert.Equal(t, 0, focusCalls)
+
+	current := tview.NewBox()
+	hideModalFn(current)
+	assert.Equal(t, 1, focusCalls)
 }
