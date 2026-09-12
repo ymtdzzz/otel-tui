@@ -61,8 +61,7 @@ func TestDrawMetricHistogramChart(t *testing.T) {
 			chart.update(tt.metricDataFn())
 
 			chart.view.SetRect(0, 0, sw, sh)
-			chart.view.Draw(screen)
-			screen.Sync()
+			test.Render(t, chart.view, screen)
 
 			got := test.GetScreenContent(t, screen)
 

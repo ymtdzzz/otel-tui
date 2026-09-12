@@ -39,8 +39,7 @@ func setupLogPage(t *testing.T) (*mockDrawTimelineHandler, *LogPage, tcell.Simul
 	page.table.table.Focus(nil)
 
 	page.view.SetRect(0, 0, sw, sh)
-	page.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, page.view, screen)
 
 	return mockHandler, page, screen, store
 }
@@ -58,8 +57,7 @@ func TestLogPage(t *testing.T) {
 		payload, _ := test.GenerateOTLPLogsPayload(t, 1, 1, []int{1}, [][]int{{1}})
 		store.AddLog(&payload)
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		got = test.GetScreenContent(t, screen)
 		want = test.LoadTestdata(t, "tui/component/page/log/log_first_log_received.txt")
@@ -79,14 +77,12 @@ func TestLogPage(t *testing.T) {
 			p.Focus(nil)
 		})
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		newPayload, _ := test.GenerateOTLPLogsPayload(t, 2, 1, []int{1}, [][]int{{1}})
 		store.AddLog(&newPayload)
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		assert.Equal(t, true, page.detail.view.HasFocus())
 	})
@@ -114,8 +110,7 @@ func TestLogPage(t *testing.T) {
 				page.table.filter.View().Blur()
 				page.table.table.Focus(nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/log/log_table_filter_logs.txt")
@@ -140,8 +135,7 @@ func TestLogPage(t *testing.T) {
 				handler(tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone), nil)
 				handler(tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone), nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/log/log_table_change_selection.txt")
@@ -158,8 +152,7 @@ func TestLogPage(t *testing.T) {
 				handler := page.table.view.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyCtrlX, ' ', tcell.ModNone), nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/log/log_table_flush.txt")
@@ -170,8 +163,7 @@ func TestLogPage(t *testing.T) {
 				newPayload, _ := test.GenerateOTLPLogsPayload(t, 2, 1, []int{1}, [][]int{{1}})
 				store.AddLog(&newPayload)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got = test.GetScreenContent(t, screen)
 				want = test.LoadTestdata(t, "tui/component/page/log/log_table_flush_log_received.txt")
@@ -218,8 +210,7 @@ func TestLogPage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.view.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.view, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)
@@ -316,8 +307,7 @@ func TestLogPage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.view.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.view, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)
@@ -360,8 +350,7 @@ func TestLogPage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.view.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.view, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)

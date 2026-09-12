@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,6 +39,16 @@ func LoadTestdata(t *testing.T, name string) string {
 	require.NoError(t, err, "failed to read testdata %s", name)
 
 	return string(data)
+}
+
+// Render mirrors tview.Application.draw(), which clears the screen before every
+// draw. Without the clear, a primitive that shrinks or moves leaves the previous
+// frame behind, and the leftovers get baked into the testdata.
+func Render(t *testing.T, p tview.Primitive, screen tcell.SimulationScreen) {
+	t.Helper()
+	screen.Clear()
+	p.Draw(screen)
+	screen.Sync()
 }
 
 func GetScreenContent(t *testing.T, screen tcell.SimulationScreen) bytes.Buffer {

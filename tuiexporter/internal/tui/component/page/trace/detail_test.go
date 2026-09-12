@@ -54,8 +54,7 @@ func TestDrawTreeWithServiceName(t *testing.T) {
 	detail.update(spans)
 
 	detail.view.SetRect(0, 0, sw, sh)
-	detail.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, detail.view, screen)
 
 	got := test.GetScreenContent(t, screen)
 	want := test.LoadTestdata(t, "tui/component/page/trace/detail/with_service_name.txt")
@@ -69,8 +68,7 @@ func TestDrawTreeWithServiceName(t *testing.T) {
 	handler(tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone), nil)
 	handler(tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone), nil)
 
-	detail.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, detail.view, screen)
 
 	got = test.GetScreenContent(t, screen)
 	want = test.LoadTestdata(t, "tui/component/page/trace/detail/with_service_name_key_event.txt")
@@ -123,8 +121,7 @@ func TestDrawTreeWithoutServiceName(t *testing.T) {
 	detail.update(spans)
 
 	detail.view.SetRect(0, 0, sw, sh)
-	detail.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, detail.view, screen)
 
 	got := test.GetScreenContent(t, screen)
 	want := test.LoadTestdata(t, "tui/component/page/trace/detail/without_service_name.txt")
@@ -144,8 +141,7 @@ func TestDrawTreeWithoutSpans(t *testing.T) {
 	detail.update([]*telemetry.SpanData{})
 
 	detail.view.SetRect(0, 0, sw, sh)
-	detail.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, detail.view, screen)
 
 	got := test.GetScreenContent(t, screen)
 	want := test.LoadTestdata(t, "tui/component/page/trace/detail/without_spans.txt")
