@@ -12,6 +12,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 )
 
 const refreshInterval = 500 * time.Millisecond
@@ -52,6 +53,15 @@ func NewTUIApp(store *telemetry.Store, initialInterval time.Duration, debugLogFi
 		app.SetFocus(p)
 	})
 	pages := tpages.GetPages()
+	navigation.SetQueueUpdateFunc(func(update func()) {
+		// Blur runs under Application.SetFocus's lock. Page changes can focus
+		// children again, so defer them to the event loop and retain its new focus.
+		go app.QueueUpdateDraw(func() {
+			focus := app.GetFocus()
+			update()
+			app.SetFocus(focus)
+		})
+	})
 	tapp := &TUIApp{
 		initialInterval: initialInterval,
 		app:             app,

@@ -223,3 +223,9 @@ make test-exporter
 - Open a pull request to the main repository, providing a clear description of your changes and their purpose.
 
 Thank you for taking the time to contribute!
+
+### Attribute modal focus
+
+Attribute modals close when focus moves to another pane. Blur callbacks queue
+page changes after tview releases its focus lock, preserving the destination
+focus and ignoring dismissals for a modal that has already been replaced.

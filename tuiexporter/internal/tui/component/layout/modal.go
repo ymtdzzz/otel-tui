@@ -17,11 +17,11 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, onHide func()) {
 			return
 		}
 		if currentModalNode == node {
+			currentModalNode = nil
 			navigation.HideModal(tree)
 			if onHide != nil {
 				onHide()
 			}
-			currentModalNode = nil
 			return
 		}
 		nodeText := node.GetText()
@@ -49,23 +49,27 @@ func AttachModalForTreeAttributes(tree *tview.TreeView, onHide func()) {
 	})
 	tree.SetChangedFunc(func(node *tview.TreeNode) {
 		if currentModalNode != nil {
+			currentModalNode = nil
 			navigation.HideModal(tree)
 			if onHide != nil {
 				onHide()
 			}
-			currentModalNode = nil
 		}
 	})
 	tree.SetBlurFunc(func() {
-		if currentModalNode != nil {
-			// Focus is already moving elsewhere, so dismiss the modal without
-			// restoring focus to the tree that opened it.
+		if currentModalNode == nil {
+			return
+		}
+		currentModalNode = nil
+		navigation.QueueModalDismiss(tree, func() {
+			if currentModalNode != nil {
+				return
+			}
 			navigation.HideModal(nil)
 			if onHide != nil {
 				onHide()
 			}
-			currentModalNode = nil
-		}
+		})
 	})
 }
 
@@ -84,18 +88,18 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, onHide
 
 	table.SetSelectedFunc(func(row, column int) {
 		if currentRow == row {
+			currentRow = -1
 			navigation.HideModal(table)
 			if onHide != nil {
 				onHide()
 			}
-			currentRow = -1
 			return
 		}
-		currentRow = row
 		if cell := table.GetCell(row, mapper.GetColumnIdx()); cell != nil {
 			text := cell.Text
 			text = json.PrettyJSON(text)
 			textView := navigation.ShowModal(table, text)
+			currentRow = row
 			table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 				switch event.Key() {
 				case tcell.KeyCtrlJ:
@@ -113,20 +117,26 @@ func AttachModalForTableRows(table *tview.Table, mapper tableModalMapper, onHide
 	})
 	table.SetSelectionChangedFunc(func(row, column int) {
 		if currentRow != -1 {
+			currentRow = -1
 			navigation.HideModal(table)
 			if onHide != nil {
 				onHide()
 			}
-			currentRow = -1
 		}
 	})
 	table.SetBlurFunc(func() {
-		if currentRow != -1 {
+		if currentRow == -1 {
+			return
+		}
+		currentRow = -1
+		navigation.QueueModalDismiss(table, func() {
+			if currentRow != -1 {
+				return
+			}
 			navigation.HideModal(nil)
 			if onHide != nil {
 				onHide()
 			}
-			currentRow = -1
-		}
+		})
 	})
 }
