@@ -248,6 +248,53 @@ func TestRegisterCommandList(t *testing.T) {
 			assert.Equal(t, " [yellow]q[white]: Quit | [yellow]Ctrl-R[white]: Refresh", commands.GetText(false))
 		})
 
+		t.Run("upper case rune and ctrl key do not collide", func(t *testing.T) {
+			tests := []struct {
+				name    string
+				ch      rune
+				ctrlKey tcell.Key
+			}{
+				{name: "A", ch: 'A', ctrlKey: tcell.KeyCtrlA},
+				{name: "G", ch: 'G', ctrlKey: tcell.KeyCtrlG},
+				{name: "L", ch: 'L', ctrlKey: tcell.KeyCtrlL},
+				{name: "R", ch: 'R', ctrlKey: tcell.KeyCtrlR},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					runeCalled, ctrlCalled := 0, 0
+					box := tview.NewBox()
+					keys := KeyMaps{
+						{
+							Key: tcell.NewEventKey(tcell.KeyRune, tt.ch, tcell.ModNone),
+							Handler: func(_ *tcell.EventKey) *tcell.EventKey {
+								runeCalled++
+								return nil
+							},
+						},
+						{
+							Key: tcell.NewEventKey(tt.ctrlKey, ' ', tcell.ModNone),
+							Handler: func(_ *tcell.EventKey) *tcell.EventKey {
+								ctrlCalled++
+								return nil
+							},
+						},
+					}
+
+					RegisterCommandList(tview.NewTextView(), box, nil, keys)
+
+					handler := box.InputHandler()
+					handler(tcell.NewEventKey(tcell.KeyRune, tt.ch, tcell.ModNone), nil)
+					assert.Equal(t, 1, runeCalled)
+					assert.Equal(t, 0, ctrlCalled)
+
+					handler(tcell.NewEventKey(tt.ctrlKey, 0, tcell.ModCtrl), nil)
+					assert.Equal(t, 1, runeCalled)
+					assert.Equal(t, 1, ctrlCalled)
+				})
+			}
+		})
+
 		t.Run("no matching key in keymaps", func(t *testing.T) {
 			mockBox := NewMockFocusableBox()
 			commands := tview.NewTextView()

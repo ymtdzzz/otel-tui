@@ -42,8 +42,7 @@ func TestDrawFilter(t *testing.T) {
 
 	t.Run("initial drawing", func(t *testing.T) {
 		filter := setup()
-		filter.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, filter.view, screen)
 
 		got := test.GetScreenContent(t, screen)
 		want := test.LoadTestdata(t, "tui/component/filter/filter_initial.txt")
@@ -65,8 +64,7 @@ func TestDrawFilter(t *testing.T) {
 		handler(tcell.NewEventKey(tcell.KeyRune, 'a', tcell.ModNone), nil)
 		handler(tcell.NewEventKey(tcell.KeyRune, '-', tcell.ModNone), nil)
 
-		filter.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, filter.view, screen)
 
 		got := test.GetScreenContent(t, screen)
 		want := test.LoadTestdata(t, "tui/component/filter/filter_input_change.txt")

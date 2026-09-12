@@ -39,8 +39,7 @@ func setupTracePage(t *testing.T) (*mockSelectTableRowHandler, *TracePage, tcell
 	page.table.table.Focus(nil)
 
 	page.view.SetRect(0, 0, sw, sh)
-	page.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, page.view, screen)
 
 	return mockHandler, page, screen, store
 }
@@ -58,8 +57,7 @@ func TestTracePage(t *testing.T) {
 		payload, _ := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
 		store.AddSpan(&payload)
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		got = test.GetScreenContent(t, screen)
 		want = test.LoadTestdata(t, "tui/component/page/trace/trace_first_span_received.txt")
@@ -79,14 +77,12 @@ func TestTracePage(t *testing.T) {
 			p.Focus(nil)
 		})
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		newPayload, _ := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
 		store.AddSpan(&newPayload)
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		assert.Equal(t, true, page.detail.view.HasFocus())
 	})
@@ -117,8 +113,7 @@ func TestTracePage(t *testing.T) {
 				page.table.filter.View().Blur()
 				page.table.table.Focus(nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/trace/trace_table_filter_spans.txt")
@@ -145,8 +140,7 @@ func TestTracePage(t *testing.T) {
 				handler := page.table.view.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone), nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/trace/trace_table_change_selection.txt")
@@ -165,8 +159,7 @@ func TestTracePage(t *testing.T) {
 				handler := page.table.view.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone), nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				mockHandler.AssertExpectations(t)
 			})
@@ -180,8 +173,7 @@ func TestTracePage(t *testing.T) {
 				handler := page.table.view.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyCtrlX, ' ', tcell.ModNone), nil)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/trace/trace_table_flush.txt")
@@ -192,8 +184,7 @@ func TestTracePage(t *testing.T) {
 				newPayload, _ := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
 				store.AddSpan(&newPayload)
 
-				page.view.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.view, screen)
 
 				got = test.GetScreenContent(t, screen)
 				want = test.LoadTestdata(t, "tui/component/page/trace/trace_table_flush_span_received.txt")
@@ -230,8 +221,7 @@ func TestTracePage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.view.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.view, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)
@@ -293,8 +283,7 @@ func TestTracePage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.view.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.view, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)

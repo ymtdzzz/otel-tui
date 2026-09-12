@@ -38,8 +38,7 @@ func TestGetLogInfoTree(t *testing.T) {
 	detail.update(logs[0])
 
 	detail.view.SetRect(0, 0, sw, sh)
-	detail.view.Draw(screen)
-	screen.Sync()
+	test.Render(t, detail.view, screen)
 
 	got := test.GetScreenContent(t, screen)
 	want := test.LoadTestdata(t, "tui/component/page/log/detail/simple.txt")

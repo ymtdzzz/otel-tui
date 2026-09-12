@@ -49,8 +49,7 @@ func setupTimelinePage(t *testing.T) (*mockTimelineHandler, *TimelinePage, tcell
 	})
 
 	page.base.SetRect(0, 0, sw, sh)
-	page.base.Draw(screen)
-	screen.Sync()
+	test.Render(t, page.base, screen)
 
 	return mockHandler, page, screen, store
 }
@@ -66,8 +65,7 @@ func TestTimelinePage(t *testing.T) {
 
 		page.DrawTimeline(spans.Spans[0].TraceID().String())
 		page.grid.gridView.Focus(nil)
-		page.base.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.base, screen)
 
 		got := test.GetScreenContent(t, screen)
 		want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_initial.txt")
@@ -89,8 +87,7 @@ func TestTimelinePage(t *testing.T) {
 
 				page.DrawTimeline(spans.Spans[0].TraceID().String())
 				page.grid.gridView.Focus(nil)
-				page.base.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.base, screen)
 
 				handler := page.base.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyEscape, ' ', tcell.ModNone), nil)
@@ -112,8 +109,7 @@ func TestTimelinePage(t *testing.T) {
 				handler := page.base.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone), nil)
 
-				page.base.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.base, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_grid_change_selection.txt")
@@ -135,8 +131,7 @@ func TestTimelinePage(t *testing.T) {
 				handler := page.base.InputHandler()
 				handler(tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModNone), nil)
 
-				page.base.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.base, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_grid_collapse_log_pane.txt")
@@ -178,8 +173,7 @@ func TestTimelinePage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.base.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.base, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)
@@ -227,8 +221,7 @@ func TestTimelinePage(t *testing.T) {
 						handler(tt.key, nil)
 					}
 
-					page.base.Draw(screen)
-					screen.Sync()
+					test.Render(t, page.base, screen)
 
 					got := test.GetScreenContent(t, screen)
 					want := test.LoadTestdata(t, tt.wantContentPath)
@@ -255,8 +248,7 @@ func TestTimelinePage(t *testing.T) {
 				page.DrawTimeline(spans.Spans[0].TraceID().String())
 				page.grid.gridView.Focus(nil)
 
-				page.base.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.base, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_log_current_span.txt")
@@ -284,8 +276,7 @@ func TestTimelinePage(t *testing.T) {
 				handler(tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModNone), nil)
 				handler(tcell.NewEventKey(tcell.KeyRune, 'A', tcell.ModNone), nil)
 
-				page.base.Draw(screen)
-				screen.Sync()
+				test.Render(t, page.base, screen)
 
 				got := test.GetScreenContent(t, screen)
 				want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_log_all_spans.txt")

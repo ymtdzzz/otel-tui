@@ -37,8 +37,7 @@ func TestTopologyPage(t *testing.T) {
 		page.UpdateTopology()
 
 		page.view.SetRect(0, 0, sw, sh)
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		got := test.GetScreenContent(t, screen)
 		want := test.LoadTestdata(t, "tui/component/page/topology/topology_initial.txt")
@@ -54,8 +53,7 @@ func TestTopologyPage(t *testing.T) {
 		handler := page.view.InputHandler()
 		handler(tcell.NewEventKey(tcell.KeyCtrlR, ' ', tcell.ModNone), nil)
 
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		got = test.GetScreenContent(t, screen)
 		want = test.LoadTestdata(t, "tui/component/page/topology/topology_updated.txt")
@@ -80,8 +78,7 @@ func TestTopologyPage(t *testing.T) {
 		page.UpdateTopology()
 
 		page.view.SetRect(0, 0, sw, sh)
-		page.view.Draw(screen)
-		screen.Sync()
+		test.Render(t, page.view, screen)
 
 		got := test.GetScreenContent(t, screen)
 		want := test.LoadTestdata(t, "tui/component/page/topology/topology_no_data.txt")

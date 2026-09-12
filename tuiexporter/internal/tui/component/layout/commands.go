@@ -50,11 +50,25 @@ func (m KeyMaps) keyTexts() string {
 	return " " + strings.Join(keytexts, " | ")
 }
 
-func getInt32Key(key *tcell.EventKey) int32 {
+// keyID identifies a key binding. tcell.Key and rune values share the same
+// numeric space (e.g. tcell.KeyCtrlL and 'L' are both 76), so they must be kept
+// in separate fields to avoid collisions.
+type keyID struct {
+	key tcell.Key
+	ch  rune
+	mod tcell.ModMask
+}
+
+func getKeyID(key *tcell.EventKey) keyID {
+	// Rune keys are identified by ch and mod, since Key() is always tcell.KeyRune.
 	if key.Key() == tcell.KeyRune {
-		return key.Rune() + int32(key.Modifiers())
+		return keyID{key: tcell.KeyRune, ch: key.Rune(), mod: key.Modifiers()}
 	}
-	return int32(key.Key())
+	// Other keys are identified by Key() alone, because ch and mod don't match
+	// between a registered binding and a real event. NewEventKey(KeyEnter, ' ',
+	// ModNone) keeps ch=' ' while a terminal sends ch=0, and Ctrl keys arrive
+	// with ModCtrl although bindings are written with ModNone.
+	return keyID{key: key.Key()}
 }
 
 type FocusableBox interface {
@@ -94,15 +108,15 @@ func RegisterCommandList(commands *tview.TextView, c FocusableBox, origFocusFn f
 		}
 	})
 
-	km := map[int32]func(event *tcell.EventKey) *tcell.EventKey{}
+	km := map[keyID]func(event *tcell.EventKey) *tcell.EventKey{}
 	for _, k := range keys {
 		if k.Handler != nil {
-			km[getInt32Key(k.Key)] = k.Handler
+			km[getKeyID(k.Key)] = k.Handler
 		}
 	}
 
 	c.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if handler, ok := km[getInt32Key(event)]; ok {
+		if handler, ok := km[getKeyID(event)]; ok {
 			return handler(event)
 		}
 		return event
