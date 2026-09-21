@@ -10,13 +10,3 @@ updates:
       dependencies:
         patterns:
           - "*"
-  - package-ecosystem: "gomod"
-    directory: "/tuiexporter"
-    schedule:
-      interval: "weekly"
-      time: "09:00"
-      timezone: "Asia/Tokyo"
-    groups:
-      dependencies:
-        patterns:
-          - "*"
