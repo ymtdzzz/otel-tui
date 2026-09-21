@@ -212,7 +212,6 @@ Contributions are always welcome! Whether it's reporting an issue, suggesting a 
 
 ```
 make lint
-make lint-exporter
 make test
 make test-exporter
 ```
