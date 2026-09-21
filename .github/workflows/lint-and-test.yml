@@ -39,9 +39,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-golang-${{ hashFiles(format('{0}/go.sum', matrix.modules)) }}
+          key: ${{ runner.os }}-golang-lint-${{ matrix.modules }}-${{ hashFiles(format('{0}/go.sum', matrix.modules)) }}
           restore-keys: |
-            ${{ runner.os }}-golang-
+            ${{ runner.os }}-golang-lint-${{ matrix.modules }}-
       - name: golangci-lint ${{ matrix.modules }}
         uses: golangci/golangci-lint-action@v9
         with:
@@ -64,9 +64,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-golang-${{ hashFiles('./go.sum') }}
+          key: ${{ runner.os }}-golang-test-root-${{ hashFiles('./go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-golang-
+            ${{ runner.os }}-golang-test-root-
       - name: Run test
         run: make test-coverage
       - uses: actions/upload-artifact@v5
@@ -89,9 +89,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-golang-${{ hashFiles('./tuiexporter/go.sum') }}
+          key: ${{ runner.os }}-golang-test-exporter-${{ hashFiles('./tuiexporter/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-golang-
+            ${{ runner.os }}-golang-test-exporter-
       - name: Run test for exporter
         run: make test-coverage-exporter
       - uses: actions/upload-artifact@v5
