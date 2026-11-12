@@ -8,6 +8,7 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/layout"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -113,144 +114,44 @@ func (d *detail) getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 	switch m.Metric.Type() {
 	case pmetric.MetricTypeGauge:
 		for dpi := 0; dpi < m.Metric.Gauge().DataPoints().Len(); dpi++ {
-			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
-			d := m.Metric.Gauge().DataPoints().At(dpi)
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
-			// value
-			val := tview.NewTreeNode("Value")
-			val.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", d.ValueType().String())))
-			val.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", d.IntValue())))
-			val.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", d.DoubleValue())))
-			dp.AddChild(val)
-			// flags
-			flg := tview.NewTreeNode("Flags")
-			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
-			dp.AddChild(flg)
-			// exampler
-			exs := tview.NewTreeNode("Examplers")
-			dp.AddChild(exs)
-			for ei := 0; ei < d.Exemplars().Len(); ei++ {
-				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
-				exs.AddChild(ex)
-				e := d.Exemplars().At(ei)
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
-				// value
-				v := tview.NewTreeNode("Value")
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
-				ex.AddChild(v)
-				// filtered attributes
-				fattrs := tview.NewTreeNode("Filtered Attributes")
-				ex.AddChild(fattrs)
-				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
-			}
-			// attributes
-			attrs := tview.NewTreeNode("Attributes")
-			layout.AppendAttrsSorted(attrs, d.Attributes())
-			dp.AddChild(attrs)
-
-			dps.AddChild(dp)
+			dps.AddChild(numberDatapointNode(dpi, m.Metric.Gauge().DataPoints().At(dpi)))
 		}
 	case pmetric.MetricTypeSum:
-		for dpi := 0; dpi < m.Metric.Sum().DataPoints().Len(); dpi++ {
-			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
-			d := m.Metric.Sum().DataPoints().At(dpi)
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
-			// value
-			val := tview.NewTreeNode("Value")
-			val.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", d.ValueType().String())))
-			val.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", d.IntValue())))
-			val.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", d.DoubleValue())))
-			dp.AddChild(val)
-			// flags
-			flg := tview.NewTreeNode("Flags")
-			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
-			dp.AddChild(flg)
-			// exampler
-			exs := tview.NewTreeNode("Examplers")
-			dp.AddChild(exs)
-			for ei := 0; ei < d.Exemplars().Len(); ei++ {
-				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
-				exs.AddChild(ex)
-				e := d.Exemplars().At(ei)
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
-				// value
-				v := tview.NewTreeNode("Value")
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
-				ex.AddChild(v)
-				// filtered attributes
-				fattrs := tview.NewTreeNode("Filtered Attributes")
-				ex.AddChild(fattrs)
-				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
-			}
-			// attributes
-			attrs := tview.NewTreeNode("Attributes")
-			layout.AppendAttrsSorted(attrs, d.Attributes())
-			dp.AddChild(attrs)
-
-			dps.AddChild(dp)
+		sum := m.Metric.Sum()
+		root.AddChild(temporalityNode(sum.AggregationTemporality()))
+		root.AddChild(tview.NewTreeNode(fmt.Sprintf("is monotonic: %v", sum.IsMonotonic())))
+		for dpi := 0; dpi < sum.DataPoints().Len(); dpi++ {
+			dps.AddChild(numberDatapointNode(dpi, sum.DataPoints().At(dpi)))
 		}
 	case pmetric.MetricTypeHistogram:
-		for dpi := 0; dpi < m.Metric.Histogram().DataPoints().Len(); dpi++ {
+		hist := m.Metric.Histogram()
+		root.AddChild(temporalityNode(hist.AggregationTemporality()))
+		for dpi := 0; dpi < hist.DataPoints().Len(); dpi++ {
 			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
-			d := m.Metric.Histogram().DataPoints().At(dpi)
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			d := hist.DataPoints().At(dpi)
+			addTimestampNodes(dp, d.StartTimestamp(), d.Timestamp())
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts (%d): %v", d.BucketCounts().Len(), d.BucketCounts().AsRaw())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("explicit bounds (%d): %v", d.ExplicitBounds().Len(), d.ExplicitBounds().AsRaw())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("max: %f", d.Max())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("min: %f", d.Min())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("sum: %f", d.Sum())))
-			// flags
-			flg := tview.NewTreeNode("Flags")
-			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
-			dp.AddChild(flg)
-			// exampler
-			exs := tview.NewTreeNode("Examplers")
-			dp.AddChild(exs)
-			for ei := 0; ei < d.Exemplars().Len(); ei++ {
-				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
-				exs.AddChild(ex)
-				e := d.Exemplars().At(ei)
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
-				// value
-				v := tview.NewTreeNode("Value")
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
-				ex.AddChild(v)
-				// filtered attributes
-				fattrs := tview.NewTreeNode("Filtered Attributes")
-				ex.AddChild(fattrs)
-				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
-			}
-			// attributes
-			attrs := tview.NewTreeNode("Attributes")
-			layout.AppendAttrsSorted(attrs, d.Attributes())
-			dp.AddChild(attrs)
-
+			dp.AddChild(optionalDoubleNode("max", d.HasMax(), d.Max()))
+			dp.AddChild(optionalDoubleNode("min", d.HasMin(), d.Min()))
+			dp.AddChild(optionalDoubleNode("sum", d.HasSum(), d.Sum()))
+			dp.AddChild(flagsNode(d.Flags()))
+			dp.AddChild(exemplarsNode(d.Exemplars()))
+			dp.AddChild(attributesNode(d.Attributes()))
 			dps.AddChild(dp)
 		}
 	case pmetric.MetricTypeExponentialHistogram:
-		for dpi := 0; dpi < m.Metric.ExponentialHistogram().DataPoints().Len(); dpi++ {
+		hist := m.Metric.ExponentialHistogram()
+		root.AddChild(temporalityNode(hist.AggregationTemporality()))
+		for dpi := 0; dpi < hist.DataPoints().Len(); dpi++ {
 			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
-			d := m.Metric.ExponentialHistogram().DataPoints().At(dpi)
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			d := hist.DataPoints().At(dpi)
+			addTimestampNodes(dp, d.StartTimestamp(), d.Timestamp())
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("scale: %d", d.Scale())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("zero count: %d", d.ZeroCount())))
+			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("zero threshold: %f", d.ZeroThreshold())))
 			neg := tview.NewTreeNode("Negative")
 			dp.AddChild(neg)
 			neg.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts: %v", d.Negative().BucketCounts().AsRaw())))
@@ -259,50 +160,20 @@ func (d *detail) getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 			dp.AddChild(pos)
 			pos.AddChild(tview.NewTreeNode(fmt.Sprintf("bucket counts: %v", d.Positive().BucketCounts().AsRaw())))
 			pos.AddChild(tview.NewTreeNode(fmt.Sprintf("offset: %d", d.Positive().Offset())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("max: %f", d.Max())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("min: %f", d.Min())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("sum: %f", d.Sum())))
-			// flags
-			flg := tview.NewTreeNode("Flags")
-			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
-			dp.AddChild(flg)
-			// exampler
-			exs := tview.NewTreeNode("Examplers")
-			dp.AddChild(exs)
-			for ei := 0; ei < d.Exemplars().Len(); ei++ {
-				ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
-				exs.AddChild(ex)
-				e := d.Exemplars().At(ei)
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
-				ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
-				// value
-				v := tview.NewTreeNode("Value")
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
-				v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
-				ex.AddChild(v)
-				// filtered attributes
-				fattrs := tview.NewTreeNode("Filtered Attributes")
-				ex.AddChild(fattrs)
-				layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
-			}
-			// attributes
-			attrs := tview.NewTreeNode("Attributes")
-			layout.AppendAttrsSorted(attrs, d.Attributes())
-			dp.AddChild(attrs)
-
+			dp.AddChild(optionalDoubleNode("max", d.HasMax(), d.Max()))
+			dp.AddChild(optionalDoubleNode("min", d.HasMin(), d.Min()))
+			dp.AddChild(optionalDoubleNode("sum", d.HasSum(), d.Sum()))
+			dp.AddChild(flagsNode(d.Flags()))
+			dp.AddChild(exemplarsNode(d.Exemplars()))
+			dp.AddChild(attributesNode(d.Attributes()))
 			dps.AddChild(dp)
 		}
 	case pmetric.MetricTypeSummary:
 		for dpi := 0; dpi < m.Metric.Summary().DataPoints().Len(); dpi++ {
 			dp := tview.NewTreeNode(fmt.Sprintf("%d", dpi))
 			d := m.Metric.Summary().DataPoints().At(dpi)
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", d.StartTimestamp().String())))
-			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", d.Timestamp().String())))
+			addTimestampNodes(dp, d.StartTimestamp(), d.Timestamp())
 			dp.AddChild(tview.NewTreeNode(fmt.Sprintf("count: %d", d.Count())))
-			d.QuantileValues().At(0).Quantile()
-			d.QuantileValues().At(0).Value()
 			// quantile
 			quants := tview.NewTreeNode("Quantile Values")
 			dp.AddChild(quants)
@@ -313,15 +184,8 @@ func (d *detail) getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 				quant.AddChild(tview.NewTreeNode(fmt.Sprintf("quantile: %f", q.Quantile())))
 				quant.AddChild(tview.NewTreeNode(fmt.Sprintf("value: %f", q.Value())))
 			}
-			// flags
-			flg := tview.NewTreeNode("Flags")
-			flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", d.Flags().NoRecordedValue())))
-			dp.AddChild(flg)
-			// attributes
-			attrs := tview.NewTreeNode("Attributes")
-			layout.AppendAttrsSorted(attrs, d.Attributes())
-			dp.AddChild(attrs)
-
+			dp.AddChild(flagsNode(d.Flags()))
+			dp.AddChild(attributesNode(d.Attributes()))
 			dps.AddChild(dp)
 		}
 	}
@@ -335,6 +199,72 @@ func (d *detail) getMetricInfoTree(m *telemetry.MetricData) *tview.TreeView {
 	layout.AttachModalForTreeAttributes(tree, d.updateCommands)
 
 	return tree
+}
+
+// numberDatapointNode renders a Gauge or Sum datapoint.
+func numberDatapointNode(index int, d pmetric.NumberDataPoint) *tview.TreeNode {
+	dp := tview.NewTreeNode(fmt.Sprintf("%d", index))
+	addTimestampNodes(dp, d.StartTimestamp(), d.Timestamp())
+	val := tview.NewTreeNode("Value")
+	val.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", d.ValueType().String())))
+	val.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", d.IntValue())))
+	val.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", d.DoubleValue())))
+	dp.AddChild(val)
+	dp.AddChild(flagsNode(d.Flags()))
+	dp.AddChild(exemplarsNode(d.Exemplars()))
+	dp.AddChild(attributesNode(d.Attributes()))
+	return dp
+}
+
+func addTimestampNodes(dp *tview.TreeNode, start, ts pcommon.Timestamp) {
+	dp.AddChild(tview.NewTreeNode(fmt.Sprintf("start timestamp: %s", start.String())))
+	dp.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", ts.String())))
+}
+
+func temporalityNode(t pmetric.AggregationTemporality) *tview.TreeNode {
+	return tview.NewTreeNode(fmt.Sprintf("aggregation temporality: %s", t.String()))
+}
+
+// optionalDoubleNode renders a field that the data model marks as optional,
+// so that an unset value is not mistaken for a recorded zero.
+func optionalDoubleNode(name string, isSet bool, value float64) *tview.TreeNode {
+	if !isSet {
+		return tview.NewTreeNode(fmt.Sprintf("%s: (not set)", name))
+	}
+	return tview.NewTreeNode(fmt.Sprintf("%s: %f", name, value))
+}
+
+func flagsNode(flags pmetric.DataPointFlags) *tview.TreeNode {
+	flg := tview.NewTreeNode("Flags")
+	flg.AddChild(tview.NewTreeNode(fmt.Sprintf("no recorded value: %v", flags.NoRecordedValue())))
+	return flg
+}
+
+func exemplarsNode(exemplars pmetric.ExemplarSlice) *tview.TreeNode {
+	exs := tview.NewTreeNode("Examplers")
+	for ei := 0; ei < exemplars.Len(); ei++ {
+		ex := tview.NewTreeNode(fmt.Sprintf("%d", ei))
+		exs.AddChild(ex)
+		e := exemplars.At(ei)
+		ex.AddChild(tview.NewTreeNode(fmt.Sprintf("trace id: %s", e.TraceID())))
+		ex.AddChild(tview.NewTreeNode(fmt.Sprintf("span id: %s", e.SpanID())))
+		ex.AddChild(tview.NewTreeNode(fmt.Sprintf("timestamp: %s", e.Timestamp().String())))
+		v := tview.NewTreeNode("Value")
+		v.AddChild(tview.NewTreeNode(fmt.Sprintf("type: %s", e.ValueType().String())))
+		v.AddChild(tview.NewTreeNode(fmt.Sprintf("int: %d", e.IntValue())))
+		v.AddChild(tview.NewTreeNode(fmt.Sprintf("double: %f", e.DoubleValue())))
+		ex.AddChild(v)
+		fattrs := tview.NewTreeNode("Filtered Attributes")
+		ex.AddChild(fattrs)
+		layout.AppendAttrsSorted(fattrs, e.FilteredAttributes())
+	}
+	return exs
+}
+
+func attributesNode(attributes pcommon.Map) *tview.TreeNode {
+	attrs := tview.NewTreeNode("Attributes")
+	layout.AppendAttrsSorted(attrs, attributes)
+	return attrs
 }
 
 func (d *detail) updateCommands() {
