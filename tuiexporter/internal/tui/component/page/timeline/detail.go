@@ -103,9 +103,17 @@ func (d *detail) getSpanInfoTree(span *telemetry.SpanData) *tview.TreeView {
 	endTimeNode := tview.NewTreeNode(fmt.Sprintf("end time: %s", endTime))
 	root.AddChild(endTimeNode)
 
-	dropped := span.ResourceSpan.Resource().DroppedAttributesCount()
+	dropped := span.Span.DroppedAttributesCount()
 	droppedNode := tview.NewTreeNode(fmt.Sprintf("dropped attributes count: %d", dropped))
 	root.AddChild(droppedNode)
+
+	droppedEvents := span.Span.DroppedEventsCount()
+	droppedEventsNode := tview.NewTreeNode(fmt.Sprintf("dropped events count: %d", droppedEvents))
+	root.AddChild(droppedEventsNode)
+
+	droppedLinks := span.Span.DroppedLinksCount()
+	droppedLinksNode := tview.NewTreeNode(fmt.Sprintf("dropped links count: %d", droppedLinks))
+	root.AddChild(droppedLinksNode)
 
 	attrs := tview.NewTreeNode("Attributes")
 	layout.AppendAttrsSorted(attrs, span.Span.Attributes())
