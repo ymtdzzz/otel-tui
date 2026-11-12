@@ -59,8 +59,9 @@ func TestGetSpanInfoTreeDroppedCounts(t *testing.T) {
 	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
 	tree := detail.getSpanInfoTree(span)
 
-	var got []string
-	for _, child := range tree.GetRoot().GetChildren() {
+	children := tree.GetRoot().GetChildren()
+	got := make([]string, 0, len(children))
+	for _, child := range children {
 		got = append(got, child.GetText())
 	}
 
