@@ -765,3 +765,49 @@ func TestLogDataGetResolvedBody(t *testing.T) {
 
 	assert.Equal(t, want, ld.GetResolvedBody())
 }
+
+func TestLogDataGetEventName(t *testing.T) {
+	tests := []struct {
+		name      string
+		eventName string
+		attr      string
+		want      string
+	}{
+		{
+			name:      "top-level event name",
+			eventName: "device.app.lifecycle",
+			want:      "device.app.lifecycle",
+		},
+		{
+			name: "event.name attribute",
+			attr: "browser.page_view",
+			want: "browser.page_view",
+		},
+		{
+			name:      "top-level event name takes precedence over attribute",
+			eventName: "device.app.lifecycle",
+			attr:      "browser.page_view",
+			want:      "device.app.lifecycle",
+		},
+		{
+			name: "no event name",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l, _ := test.GenerateOTLPLogsPayload(t, 1, 1, []int{1}, [][]int{{1}})
+			lr := l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			lr.SetEventName(tt.eventName)
+			if tt.attr != "" {
+				lr.Attributes().PutStr("event.name", tt.attr)
+			}
+			ld := &LogData{
+				Log: &lr,
+			}
+
+			assert.Equal(t, tt.want, ld.GetEventName())
+		})
+	}
+}
