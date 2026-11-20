@@ -146,6 +146,9 @@ func (l *LogData) GetSeverity() string {
 }
 
 func (l *LogData) GetEventName() string {
+	if name := l.Log.EventName(); name != "" {
+		return name
+	}
 	// see: https://github.com/open-telemetry/semantic-conventions/blob/a4fc971e0c7ffa4b9572654f075d3cb8560db770/docs/general/events.md#event-definition
 	if sname, ok := l.Log.Attributes().Get("event.name"); ok {
 		return sname.AsString()
