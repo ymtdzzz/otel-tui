@@ -190,35 +190,4 @@ There're a lot of things to do. Here are some of them:
 
 ## Contribution
 
-Contributions are always welcome! Whether it's reporting an issue, suggesting a feature, or submitting a pull request, your involvement is greatly appreciated. Below is a simple guide to help you get started.
-
-### Creating a Pull Request
-
-#### Fork the Repository
-
-- Start by forking this repository to your GitHub account.
-
-#### Make Your Changes
-
-- Implement your changes in a new branch.
-
-#### Write Tests
-
-- Add tests to verify your changes. This helps ensure the stability of the project.
-
-#### Run Lint checks and Tests
-
-- Run the linting tools and test suite to verify your changes. Make sure everything passes before proceeding.
-
-```
-make lint
-make test
-make test-exporter
-```
-
-#### Open a Pull Request
-
-- Push your branch to your forked repository.
-- Open a pull request to the main repository, providing a clear description of your changes and their purpose.
-
-Thank you for taking the time to contribute!
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before you open a pull request. To work on an existing issue, comment on it and wait until a maintainer assigns it to you.
