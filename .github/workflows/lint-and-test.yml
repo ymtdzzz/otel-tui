@@ -5,6 +5,8 @@ on:
     branches:
       - main
   pull_request:
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   detect-modules:
@@ -44,6 +46,8 @@ jobs:
             ${{ runner.os }}-golang-lint-${{ matrix.modules }}-
       - name: golangci-lint ${{ matrix.modules }}
         uses: golangci/golangci-lint-action@v9
+        env:
+          GOMEMLIMIT: 3GiB
         with:
           version: latest
           working-directory: ${{ matrix.modules }}
