@@ -1,6 +1,7 @@
 package timeline
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
+	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/tui/component/navigation"
 	"gotest.tools/v3/assert"
 )
 
@@ -55,6 +57,105 @@ func setupTimelinePage(t *testing.T) (*mockTimelineHandler, *TimelinePage, tcell
 }
 
 func TestTimelinePage(t *testing.T) {
+	t.Run("missing spans", func(t *testing.T) {
+		mockHandler, page, screen, _ := setupTimelinePage(t)
+		page.DrawTimeline("")
+		mockHandler.On("switchToPageHandler").Return().Once()
+		caller := new(mockTimelineHandler)
+		caller.On("onEscapeHandler").Return().Once()
+		page.SetOnEscape(caller.onEscapeHandler)
+
+		var focused tview.Primitive
+		navigation.Init(func(p tview.Primitive) {
+			focused = p
+		}, nil, nil)
+		t.Cleanup(func() {
+			navigation.Init(nil, nil, nil)
+		})
+
+		page.DrawTimeline("missing")
+		page.container.Focus(nil)
+		test.Render(t, page.base, screen)
+		got := test.GetScreenContent(t, screen)
+		assert.Assert(t, strings.Contains(got.String(), "No spans found"))
+
+		handler := page.base.InputHandler()
+		for _, key := range []*tcell.EventKey{
+			tcell.NewEventKey(tcell.KeyRune, 't', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyRune, 'g', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyRune, 'G', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyRune, 'd', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModNone),
+			tcell.NewEventKey(tcell.KeyRune, 'A', tcell.ModNone),
+		} {
+			focused = nil
+			handler(key, nil)
+			assert.Assert(t, focused == nil)
+		}
+		if capture := page.grid.gridView.GetInputCapture(); capture != nil {
+			capture(tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone))
+			capture(tcell.NewEventKey(tcell.KeyRune, 'g', tcell.ModNone))
+			capture(tcell.NewEventKey(tcell.KeyRune, 'G', tcell.ModNone))
+		}
+		assert.Assert(t, page.isLogCollapsed)
+		assert.Assert(t, !page.logPane.allLogs)
+
+		test.Render(t, page.base, screen)
+		got = test.GetScreenContent(t, screen)
+		assert.Assert(t, strings.Contains(got.String(), "No spans found"))
+
+		handler(tcell.NewEventKey(tcell.KeyEscape, ' ', tcell.ModNone), nil)
+		mockHandler.AssertExpectations(t)
+		caller.AssertExpectations(t)
+	})
+
+	t.Run("spans deleted from cache", func(t *testing.T) {
+		mockHandler, page, screen, store := setupTimelinePage(t)
+
+		keptPayload, keptSpans := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{3}})
+		store.AddSpan(&keptPayload)
+		removedPayload, removedSpans := test.GenerateOTLPTracesPayload(t, 2, 1, []int{1}, [][]int{{1}})
+		store.AddSpan(&removedPayload)
+
+		keptID := keptSpans.Spans[0].TraceID().String()
+		removedID := removedSpans.Spans[0].TraceID().String()
+
+		mockHandler.On("switchToPageHandler").Return().Times(3)
+
+		page.DrawTimeline(removedID)
+		page.grid.gridView.Focus(nil)
+
+		cached, ok := store.GetTraceCache().GetSpansByTraceID(removedID)
+		assert.Assert(t, ok)
+		store.GetTraceCache().DeleteCache(cached)
+
+		page.DrawTimeline(removedID)
+		page.container.Focus(nil)
+		test.Render(t, page.base, screen)
+		got := test.GetScreenContent(t, screen)
+		assert.Assert(t, strings.Contains(got.String(), "No spans found"))
+
+		page.DrawTimeline(keptID)
+		page.grid.gridView.Focus(nil)
+		test.Render(t, page.base, screen)
+		got = test.GetScreenContent(t, screen)
+		want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_initial.txt")
+		assert.Equal(t, want, got.String())
+
+		before := got.String()
+		page.base.InputHandler()(tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModNone), nil)
+		test.Render(t, page.base, screen)
+		got = test.GetScreenContent(t, screen)
+		after := got.String()
+		assert.Assert(t, before != after)
+		assert.Assert(t, strings.Contains(after, "span-0-0-0"))
+		assert.Assert(t, !strings.Contains(after, "No spans found"))
+
+		mockHandler.AssertExpectations(t)
+	})
+
 	t.Run("initial rendering", func(t *testing.T) {
 		mockHandler, page, screen, store := setupTimelinePage(t)
 
