@@ -43,3 +43,30 @@ func TestDetailInputCaptureAfterModalClosed(t *testing.T) {
 	// resize key should be captured
 	assert.Nil(t, got)
 }
+
+func TestGetSpanInfoTreeDroppedCounts(t *testing.T) {
+	_, testdata := test.GenerateOTLPTracesPayload(t, 1, 1, []int{1}, [][]int{{1}})
+	testdata.RSpans[0].Resource().SetDroppedAttributesCount(9)
+	testdata.Spans[0].SetDroppedAttributesCount(1)
+	testdata.Spans[0].SetDroppedEventsCount(2)
+	testdata.Spans[0].SetDroppedLinksCount(3)
+	span := &telemetry.SpanData{
+		Span:         testdata.Spans[0],
+		ResourceSpan: testdata.RSpans[0],
+		ScopeSpans:   testdata.SSpans[0],
+	}
+
+	detail := newDetail(layout.NewCommandList(), layout.NewResizeManager(layout.ResizeDirectionHorizontal))
+	tree := detail.getSpanInfoTree(span)
+
+	children := tree.GetRoot().GetChildren()
+	got := make([]string, 0, len(children))
+	for _, child := range children {
+		got = append(got, child.GetText())
+	}
+
+	assert.Contains(t, got, "dropped attributes count: 1")
+	assert.Contains(t, got, "dropped events count: 2")
+	assert.Contains(t, got, "dropped links count: 3")
+	assert.NotContains(t, got, "dropped attributes count: 9")
+}
