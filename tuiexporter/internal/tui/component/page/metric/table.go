@@ -2,6 +2,7 @@ package metric
 
 import (
 	"log"
+	"slices"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -20,6 +21,7 @@ type table struct {
 	filter     *filter.Filter
 	detail     *detail
 	chart      *chart
+	selected   *telemetry.MetricData
 }
 
 func newTable(
@@ -54,13 +56,6 @@ func newTable(
 
 	metricData := ctable.NewMetricDataForTable(store.GetFilteredMetrics())
 	t.SetContent(&metricData)
-	store.SetOnMetricAdded(func() {
-		if detail.tree.GetRoot() == nil {
-			// Select the first data row (row 1), not the header (row 0)
-			t.Select(1, 0)
-		}
-	})
-
 	stable := &table{
 		store:      store,
 		view:       container,
@@ -72,6 +67,7 @@ func newTable(
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
+	store.SetOnMetricAdded(stable.onMetricAdded)
 
 	container.
 		AddItem(filter.View(), 1, 0, false).
@@ -119,8 +115,22 @@ func (t *table) onSelectionChangedFunc() func(row, col int) {
 		if selected == nil {
 			return
 		}
+		t.selected = selected
 		t.detail.update(selected)
 		t.chart.update(selected)
 		log.Printf("selected row(original): %d", row)
+	}
+}
+
+// onMetricAdded keeps the selected metric selected when the new metrics sort in above it.
+func (t *table) onMetricAdded() {
+	if t.detail.tree.GetRoot() == nil {
+		// Select the first data row (row 1), not the header (row 0)
+		t.table.Select(1, 0)
+		return
+	}
+	idx := slices.Index(*t.store.GetFilteredMetrics(), t.selected)
+	if row, _ := t.table.GetSelection(); idx >= 0 && row != idx+1 {
+		t.table.Select(idx+1, 0)
 	}
 }
