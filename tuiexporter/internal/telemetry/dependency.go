@@ -28,11 +28,7 @@ func (m SpanDataMap) getDependencies() *dependencyInfo {
 		}
 		parentspan, ok := m[span.Span.ParentSpanID().String()]
 		if !ok {
-			if _, ok := nodeMap[sn.AsString()]; !ok {
-				nodeMap[sn.AsString()] = &node{
-					Service: sn.AsString(),
-				}
-			}
+			getOrCreateNode(nodeMap, sn.AsString())
 			continue
 		}
 		parentsn, ok := parentspan.ResourceSpan.Resource().Attributes().Get("service.name")
@@ -43,48 +39,14 @@ func (m SpanDataMap) getDependencies() *dependencyInfo {
 			continue
 		}
 		depkey := getDepKey(parentsn.AsString(), sn.AsString())
-		if _, ok := counts[depkey]; !ok {
-			// new dependency
-			counts[depkey] = 1
-			if pn, ok := nodeMap[parentsn.AsString()]; ok {
-				if cn, ok := nodeMap[sn.AsString()]; ok {
-					pn.Children = append(pn.Children, cn)
-					cn.Parent = pn
-					continue
-				}
-				cn := &node{
-					Parent:  pn,
-					Service: sn.AsString(),
-				}
-				pn.Children = append(pn.Children, cn)
-				nodeMap[sn.AsString()] = cn
-			} else if cn, ok := nodeMap[sn.AsString()]; ok {
-				if pn, ok := nodeMap[parentsn.AsString()]; ok {
-					pn.Children = append(pn.Children, cn)
-					cn.Parent = pn
-					continue
-				}
-				pn := &node{
-					Service:  parentsn.AsString(),
-					Children: []*node{cn},
-				}
-				cn.Parent = pn
-				nodeMap[parentsn.AsString()] = pn
-			} else {
-				pn := node{
-					Service: parentsn.AsString(),
-				}
-				cn := node{
-					Service: sn.AsString(),
-					Parent:  &pn,
-				}
-				pn.Children = append(pn.Children, &cn)
-				nodeMap[parentsn.AsString()] = &pn
-				nodeMap[sn.AsString()] = &cn
-			}
-		} else {
-			counts[depkey]++
+		counts[depkey]++
+		if counts[depkey] > 1 {
+			continue
 		}
+		pn := getOrCreateNode(nodeMap, parentsn.AsString())
+		cn := getOrCreateNode(nodeMap, sn.AsString())
+		pn.Children = append(pn.Children, cn)
+		cn.Parent = pn
 	}
 
 	// The nodes that do not have a parent are the head nodes
@@ -100,6 +62,15 @@ func (m SpanDataMap) getDependencies() *dependencyInfo {
 		HeadNodes:  heads,
 		CallCounts: counts,
 	}
+}
+
+func getOrCreateNode(nodeMap map[string]*node, service string) *node {
+	if n, ok := nodeMap[service]; ok {
+		return n
+	}
+	n := &node{Service: service}
+	nodeMap[service] = n
+	return n
 }
 
 type dependencyInfo struct {
