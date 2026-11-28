@@ -2,6 +2,7 @@ package log
 
 import (
 	"log"
+	"slices"
 
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
@@ -23,6 +24,7 @@ type table struct {
 	detail          *detail
 	body            *body
 	resolvedLogBody string
+	selected        *telemetry.LogData
 }
 
 func newTable(
@@ -55,13 +57,6 @@ func newTable(
 
 	logData := ctable.NewLogDataForTable(store.GetFilteredLogs())
 	t.SetContent(&logData)
-	store.SetOnLogAdded(func() {
-		if detail.tree.GetRoot() == nil {
-			// Select the first data row (row 1), not the header (row 0)
-			t.Select(1, 0)
-		}
-	})
-
 	stable := &table{
 		store:   store,
 		view:    container,
@@ -73,6 +68,7 @@ func newTable(
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
+	store.SetOnLogAdded(stable.onLogAdded)
 
 	container.
 		AddItem(filter.View(), 1, 0, false).
@@ -140,10 +136,24 @@ func (t *table) onSelectionChangedFunc() func(row, col int) {
 		if selected == nil {
 			return
 		}
+		t.selected = selected
 		t.detail.update(selected)
 		log.Printf("selected row(original): %d", row)
 
 		t.resolvedLogBody = json.PrettyJSON(selected.GetResolvedBody())
 		t.body.update(t.resolvedLogBody)
+	}
+}
+
+// onLogAdded keeps the selected log selected when the new logs sort in above it.
+func (t *table) onLogAdded() {
+	if t.detail.tree.GetRoot() == nil {
+		// Select the first data row (row 1), not the header (row 0)
+		t.table.Select(1, 0)
+		return
+	}
+	idx := slices.Index(*t.store.GetFilteredLogs(), t.selected)
+	if row, _ := t.table.GetSelection(); idx >= 0 && row != idx+1 {
+		t.table.Select(idx+1, 0)
 	}
 }

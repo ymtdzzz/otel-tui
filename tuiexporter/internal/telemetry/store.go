@@ -54,6 +54,14 @@ func (sd *SpanData) GetSpanName() string {
 	return sd.Span.Name()
 }
 
+// sortTime is the span start time, or the received time when the start time is unset
+func (sd *SpanData) sortTime() time.Time {
+	if ts := sd.Span.StartTimestamp(); ts != 0 {
+		return ts.AsTime()
+	}
+	return sd.ReceivedAt
+}
+
 // SvcSpans is a slice of service spans
 // This is a slice of one span of a single service
 type SvcSpans []*SpanData
@@ -108,6 +116,38 @@ func (md *MetricData) GetDataPointNum() string {
 	return ""
 }
 
+// sortTime is the timestamp of the newest datapoint, or the received time when no datapoint has one
+func (md *MetricData) sortTime() time.Time {
+	var newest pcommon.Timestamp
+	switch md.Metric.Type() {
+	case pmetric.MetricTypeGauge:
+		newest = newestTimestamp(md.Metric.Gauge().DataPoints())
+	case pmetric.MetricTypeSum:
+		newest = newestTimestamp(md.Metric.Sum().DataPoints())
+	case pmetric.MetricTypeHistogram:
+		newest = newestTimestamp(md.Metric.Histogram().DataPoints())
+	case pmetric.MetricTypeExponentialHistogram:
+		newest = newestTimestamp(md.Metric.ExponentialHistogram().DataPoints())
+	case pmetric.MetricTypeSummary:
+		newest = newestTimestamp(md.Metric.Summary().DataPoints())
+	}
+	if newest != 0 {
+		return newest.AsTime()
+	}
+	return md.ReceivedAt
+}
+
+func newestTimestamp[P interface{ Timestamp() pcommon.Timestamp }](dps interface {
+	Len() int
+	At(int) P
+}) pcommon.Timestamp {
+	var newest pcommon.Timestamp
+	for i := 0; i < dps.Len(); i++ {
+		newest = max(newest, dps.At(i).Timestamp())
+	}
+	return newest
+}
+
 // LogData is a struct to represent a log
 type LogData struct {
 	Log         *plog.LogRecord
@@ -139,6 +179,17 @@ func (l *LogData) GetTimestampText(full bool) string {
 		return datetime.GetFullTime(l.Log.Timestamp().AsTime())
 	}
 	return datetime.GetSimpleTime(l.Log.Timestamp().AsTime())
+}
+
+// sortTime is the log timestamp, then the observed timestamp, then the received time
+func (l *LogData) sortTime() time.Time {
+	if ts := l.Log.Timestamp(); ts != 0 {
+		return ts.AsTime()
+	}
+	if ts := l.Log.ObservedTimestamp(); ts != 0 {
+		return ts.AsTime()
+	}
+	return l.ReceivedAt
 }
 
 func (l *LogData) GetSeverity() string {
@@ -192,6 +243,7 @@ func NewStore(clock clockwork.Clock) *Store {
 	return &Store{
 		mut:                 sync.Mutex{},
 		clockwork:           clock,
+		sortTrace:           SORT_TYPE_NONE,
 		svcspans:            SvcSpans{},
 		svcspansFiltered:    SvcSpans{},
 		tracecache:          NewTraceCache(),
@@ -273,16 +325,12 @@ func (s *Store) ApplyFilterTraces(svc string, sortType SortType) {
 	s.sortTrace = sortType
 	s.svcspansFiltered = []*SpanData{}
 
-	if svc == "" {
-		s.svcspansFiltered = s.svcspans
-		sortSvcSpans(s.svcspansFiltered, sortType)
-		return
-	}
-
+	// Copy even when unfiltered: sorting must not reorder s.svcspans, which
+	// rotation relies on being in received order.
 	for _, span := range s.svcspans {
 		sname := GetServiceNameFromResource(span.ResourceSpan.Resource())
 		target := sname + " " + span.Span.Name()
-		if strings.Contains(target, svc) {
+		if svc == "" || strings.Contains(target, svc) {
 			s.svcspansFiltered = append(s.svcspansFiltered, span)
 		}
 	}
@@ -299,18 +347,15 @@ func (s *Store) ApplyFilterMetrics(filter string) {
 	s.filterMetric = filter
 	s.metricsFiltered = []*MetricData{}
 
-	if filter == "" {
-		s.metricsFiltered = s.metrics
-		return
-	}
-
 	for _, metric := range s.metrics {
 		sname := GetServiceNameFromResource(metric.ResourceMetric.Resource())
 		target := sname + " " + metric.Metric.Name()
-		if strings.Contains(target, filter) {
+		if filter == "" || strings.Contains(target, filter) {
 			s.metricsFiltered = append(s.metricsFiltered, metric)
 		}
 	}
+
+	sortByTime(s.metricsFiltered, (*MetricData).sortTime)
 }
 
 func (s *Store) updateFilterMetrics() {
@@ -322,18 +367,15 @@ func (s *Store) ApplyFilterLogs(filter string) {
 	s.filterLog = filter
 	s.logsFiltered = []*LogData{}
 
-	if filter == "" {
-		s.logsFiltered = s.logs
-		return
-	}
-
 	for _, log := range s.logs {
 		sname := GetServiceNameFromResource(log.ResourceLog.Resource())
 		target := sname + " " + log.Log.Body().AsString()
-		if strings.Contains(target, filter) {
+		if filter == "" || strings.Contains(target, filter) {
 			s.logsFiltered = append(s.logsFiltered, log)
 		}
 	}
+
+	sortByTime(s.logsFiltered, (*LogData).sortTime)
 }
 
 func (s *Store) updateFilterLogs() {

@@ -1,6 +1,10 @@
 package telemetry
 
-import "sort"
+import (
+	"slices"
+	"sort"
+	"time"
+)
 
 const (
 	SORT_TYPE_NONE         SortType = "none"
@@ -32,12 +36,9 @@ func (t SortType) GetHeaderLabel() string {
 func sortSvcSpans(svcSpans SvcSpans, sortType SortType) {
 	switch sortType {
 	case SORT_TYPE_NONE:
-		sort.Slice(svcSpans, func(i, j int) bool {
-			// default sort is received_at asc
-			return svcSpans[i].ReceivedAt.Before(svcSpans[j].ReceivedAt)
-		})
+		sortByTime(svcSpans, (*SpanData).sortTime)
 	case SORT_TYPE_LATENCY_DESC:
-		sort.Slice(svcSpans, func(i, j int) bool {
+		sort.SliceStable(svcSpans, func(i, j int) bool {
 			istart := svcSpans[i].Span.StartTimestamp().AsTime()
 			iend := svcSpans[i].Span.EndTimestamp().AsTime()
 			iduration := iend.Sub(istart)
@@ -47,7 +48,7 @@ func sortSvcSpans(svcSpans SvcSpans, sortType SortType) {
 			return iduration > jduration
 		})
 	case SORT_TYPE_LATENCY_ASC:
-		sort.Slice(svcSpans, func(i, j int) bool {
+		sort.SliceStable(svcSpans, func(i, j int) bool {
 			istart := svcSpans[i].Span.StartTimestamp().AsTime()
 			iend := svcSpans[i].Span.EndTimestamp().AsTime()
 			iduration := iend.Sub(istart)
@@ -56,5 +57,24 @@ func sortSvcSpans(svcSpans SvcSpans, sortType SortType) {
 			jduration := jend.Sub(jstart)
 			return iduration < jduration
 		})
+	}
+}
+
+// sortByTime sorts items oldest first by timeOf.
+// Items with equal times keep their order, which is the received order.
+func sortByTime[T any](items []T, timeOf func(T) time.Time) {
+	type keyed struct {
+		item T
+		at   time.Time
+	}
+	keys := make([]keyed, len(items))
+	for i, item := range items {
+		keys[i] = keyed{item: item, at: timeOf(item)}
+	}
+	slices.SortStableFunc(keys, func(a, b keyed) int {
+		return a.at.Compare(b.at)
+	})
+	for i, k := range keys {
+		items[i] = k.item
 	}
 }

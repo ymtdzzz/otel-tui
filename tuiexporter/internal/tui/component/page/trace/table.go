@@ -2,6 +2,7 @@ package trace
 
 import (
 	"log"
+	"slices"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -19,6 +20,7 @@ type table struct {
 	spanData *ctable.SpanDataForTable
 	filter   *filter.Filter
 	detail   *detail
+	selected *telemetry.SpanData
 }
 
 func newTable(
@@ -54,13 +56,6 @@ func newTable(
 
 	spanData := ctable.NewSpanDataForTable(store.GetTraceCache(), store.GetFilteredSvcSpans(), filter.SortType())
 	t.SetContent(&spanData)
-	store.SetOnSpanAdded(func() {
-		if detail.tree.GetRoot() == nil {
-			// Select the first data row (row 1), not the header (row 0)
-			t.Select(1, 0)
-		}
-	})
-
 	stable := &table{
 		store:    store,
 		view:     container,
@@ -71,6 +66,7 @@ func newTable(
 	}
 
 	t.SetSelectionChangedFunc(stable.onSelectionChangedFunc())
+	store.SetOnSpanAdded(stable.onSpanAdded)
 
 	container.
 		AddItem(filter.View(), 1, 0, false).
@@ -147,7 +143,31 @@ func (t *table) onSelectionChangedFunc() func(row, col int) {
 		if spans == nil {
 			return
 		}
+		if svcSpans := *t.store.GetFilteredSvcSpans(); row-1 < len(svcSpans) {
+			t.selected = svcSpans[row-1]
+		}
 		t.detail.update(spans)
 		log.Printf("selected row(original): %d", row)
+	}
+}
+
+// onSpanAdded keeps the selected trace selected when the new traces sort in above it.
+// A row is a trace and service pair. Its span can change when a better service
+// root span arrives, so the row is matched by trace ID and service name.
+func (t *table) onSpanAdded() {
+	if t.detail.tree.GetRoot() == nil {
+		// Select the first data row (row 1), not the header (row 0)
+		t.table.Select(1, 0)
+		return
+	}
+	if t.selected == nil {
+		return
+	}
+	traceID, svc := t.selected.Span.TraceID(), t.selected.GetServiceName()
+	idx := slices.IndexFunc(*t.store.GetFilteredSvcSpans(), func(sd *telemetry.SpanData) bool {
+		return sd.Span.TraceID() == traceID && sd.GetServiceName() == svc
+	})
+	if row, _ := t.table.GetSelection(); idx >= 0 && row != idx+1 {
+		t.table.Select(idx+1, 0)
 	}
 }
