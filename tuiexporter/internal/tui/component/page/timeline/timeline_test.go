@@ -77,7 +77,8 @@ func TestTimelinePage(t *testing.T) {
 		page.container.Focus(nil)
 		test.Render(t, page.base, screen)
 		got := test.GetScreenContent(t, screen)
-		assert.Assert(t, strings.Contains(got.String(), "No spans found"))
+		want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_no_spans.txt")
+		assert.Equal(t, want, got.String())
 
 		handler := page.base.InputHandler()
 		for _, key := range []*tcell.EventKey{
@@ -104,7 +105,7 @@ func TestTimelinePage(t *testing.T) {
 
 		test.Render(t, page.base, screen)
 		got = test.GetScreenContent(t, screen)
-		assert.Assert(t, strings.Contains(got.String(), "No spans found"))
+		assert.Equal(t, want, got.String())
 
 		handler(tcell.NewEventKey(tcell.KeyEscape, ' ', tcell.ModNone), nil)
 		mockHandler.AssertExpectations(t)
@@ -135,13 +136,14 @@ func TestTimelinePage(t *testing.T) {
 		page.container.Focus(nil)
 		test.Render(t, page.base, screen)
 		got := test.GetScreenContent(t, screen)
-		assert.Assert(t, strings.Contains(got.String(), "No spans found"))
+		want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_no_spans.txt")
+		assert.Equal(t, want, got.String())
 
 		page.DrawTimeline(keptID)
 		page.grid.gridView.Focus(nil)
 		test.Render(t, page.base, screen)
 		got = test.GetScreenContent(t, screen)
-		want := test.LoadTestdata(t, "tui/component/page/timeline/timeline_initial.txt")
+		want = test.LoadTestdata(t, "tui/component/page/timeline/timeline_initial.txt")
 		assert.Equal(t, want, got.String())
 
 		before := got.String()
