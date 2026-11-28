@@ -31,7 +31,6 @@ type TimelinePage struct {
 func NewTimelinePage(
 	switchToPageFn func(),
 	store *telemetry.Store,
-	onEscape func(),
 ) *TimelinePage {
 	commands := layout.NewCommandList()
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -62,7 +61,6 @@ func NewTimelinePage(
 		container:      container,
 		mainContainer:  mainContainer,
 		store:          store,
-		onEscape:       onEscape,
 		detail:         detail,
 		grid:           grid,
 		logPane:        logPane,
@@ -81,22 +79,17 @@ func (p *TimelinePage) GetPrimitive() tview.Primitive {
 	return p.base
 }
 
-func (p *TimelinePage) SetOnEscape(onEscape func()) {
-	p.onEscape = onEscape
+func (p *TimelinePage) ShowTimelineByRow(row int, onEscape func()) {
+	p.DrawTimeline(p.store.GetTraceIDByFilteredIdx(row), onEscape)
 }
 
-func (p *TimelinePage) ShowTimelineByRow(row int) {
-	p.DrawTimeline(
-		p.store.GetTraceIDByFilteredIdx(row),
-	)
-}
-
-func (p *TimelinePage) DrawTimeline(traceID string) {
+func (p *TimelinePage) DrawTimeline(traceID string, onEscape func()) {
 	if traceID == "" {
 		return
 	}
 
 	p.traceID = traceID
+	p.onEscape = onEscape
 
 	p.container.Clear()
 	p.mainContainer.Clear()

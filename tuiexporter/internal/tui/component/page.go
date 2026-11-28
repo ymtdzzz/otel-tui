@@ -97,8 +97,7 @@ func (p *TUIPages) registerPages(store *telemetry.Store, setFocusFn func(tview.P
 
 	traces := trace.NewTracePage(
 		func(row, _ int) {
-			p.timeline.SetOnEscape(func() { p.switchToPage(layout.PageIDTraces) })
-			p.timeline.ShowTimelineByRow(row - 1)
+			p.timeline.ShowTimelineByRow(row-1, func() { p.switchToPage(layout.PageIDTraces) })
 		},
 		store,
 	)
@@ -111,9 +110,6 @@ func (p *TUIPages) registerPages(store *telemetry.Store, setFocusFn func(tview.P
 			p.switchToPage(layout.PageIDTimeline)
 		},
 		store,
-		func() {
-			p.switchToPage(layout.PageIDTraces)
-		},
 	)
 	p.timeline = timeline
 	p.pages.AddPage(layout.PageIDTimeline, timeline.GetPrimitive(), true, false)
@@ -131,8 +127,7 @@ func (p *TUIPages) registerPages(store *telemetry.Store, setFocusFn func(tview.P
 
 	logs := clog.NewLogPage(
 		func(traceID string) {
-			p.timeline.SetOnEscape(func() { p.switchToPage(layout.PageIDLogs) })
-			p.timeline.DrawTimeline(traceID)
+			p.timeline.DrawTimeline(traceID, func() { p.switchToPage(layout.PageIDLogs) })
 		},
 		store,
 	)
