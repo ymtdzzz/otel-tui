@@ -31,7 +31,6 @@ type TimelinePage struct {
 func NewTimelinePage(
 	switchToPageFn func(),
 	store *telemetry.Store,
-	onEscape func(),
 ) *TimelinePage {
 	commands := layout.NewCommandList()
 	base := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -62,7 +61,6 @@ func NewTimelinePage(
 		container:      container,
 		mainContainer:  mainContainer,
 		store:          store,
-		onEscape:       onEscape,
 		detail:         detail,
 		grid:           grid,
 		logPane:        logPane,
@@ -81,30 +79,56 @@ func (p *TimelinePage) GetPrimitive() tview.Primitive {
 	return p.base
 }
 
-func (p *TimelinePage) ShowTimelineByRow(row int) {
-	p.DrawTimeline(
-		p.store.GetTraceIDByFilteredIdx(row),
-	)
+func (p *TimelinePage) ShowTimelineByRow(row int, onEscape func()) {
+	p.DrawTimeline(p.store.GetTraceIDByFilteredIdx(row), onEscape)
 }
 
-func (p *TimelinePage) DrawTimeline(traceID string) {
+func (p *TimelinePage) DrawTimeline(traceID string, onEscape func()) {
 	if traceID == "" {
 		return
 	}
 
 	p.traceID = traceID
+	p.onEscape = onEscape
 
 	p.container.Clear()
 	p.mainContainer.Clear()
 
 	span := p.grid.updateGrid(traceID)
+	if span == nil {
+		// updateGrid installs grid shortcuts that index span rows. Those rows
+		// are empty here, so drop the shortcuts until a draw that has spans.
+		p.grid.gridView.SetInputCapture(nil)
+		p.container.AddItem(tview.NewTextView().SetText("No spans found"), 0, 1, false)
+		p.registerNoSpanCommands()
+		p.switchToPageFn()
+		navigation.Focus(p.container)
+		return
+	}
+
 	p.detail.update(span)
 	p.logPane.updateLog(traceID, span.Span.SpanID().String())
 
 	p.updateContainer()
+	p.registerCommands()
 
 	p.switchToPageFn()
 	navigation.Focus(p.grid.gridView)
+}
+
+// registerNoSpanCommands keeps Esc on the container and drops the timeline
+// shortcuts. t would focus the empty grid (Enter/g/G then panic), and d/l/L
+// would move focus off this container so Esc no longer reaches onEscape.
+func (p *TimelinePage) registerNoSpanCommands() {
+	layout.RegisterCommandList(p.commands, p.container, nil, layout.KeyMaps{
+		{
+			Key: tcell.NewEventKey(tcell.KeyEsc, ' ', tcell.ModNone),
+			Handler: func(event *tcell.EventKey) *tcell.EventKey {
+				p.onEscape()
+				return nil
+			},
+		},
+	})
 }
 
 func (p *TimelinePage) registerCommands() {
