@@ -1,6 +1,7 @@
 package trace
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/telemetry"
 	"github.com/ymtdzzz/otel-tui/tuiexporter/internal/test"
 )
+
+func TestMain(m *testing.M) {
+	time.Local = time.UTC
+	os.Exit(m.Run())
+}
 
 type mockSelectTableRowHandler struct {
 	mock.Mock
